@@ -39,8 +39,8 @@ import re
 _DEFAULT_TIMEOUT = 2000 # 2sec timeout used as default for functions that take timeouts
 _DEFAULT_RECORD  = 20000 # 20sec record time
 
-_RE_CODE = re.compile(r'(^\d*)\s*(.*)')
-_RE_KV = re.compile(r'(?P<key>\w+)=(?P<value>[^\s]+)\s*(?:\((?P<data>.*)\))*')
+_RE_CODE = re.compile(r'(^\d*)\s*(.*)') #Matches Asterisk's response-code lines
+_RE_KV = re.compile(r'(?P<key>\w+)=(?P<value>[^\s]+)\s*(?:\((?P<data>.*)\))*') #Matches Asterisk's key-value response-pairs
 
 class _AGI(object):
     """
@@ -48,31 +48,83 @@ class _AGI(object):
     It handles encoding commands to Asterisk and parsing responses from
     Asterisk. 
     """
+    _environment = None #The environment variables received from Asterisk for this channel
     _rfile = None #The input file-object
     _wfile = None #The output file-object
     
     def __init__(self):
-        self.env = {}
-        self._get_agi_env()
-
-    def _get_agi_env(self):
-        while 1:
+        """
+        Sets up variables required to process an AGI session.
+        """
+        self._environment = {}
+        self._parse_agi_environment()
+        
+    def _parse_agi_environment(self):
+        """
+        Reads all of Asterisk's environment variables and stores them in memory.
+        """
+        while True:
             line = self._read_line()
-            if line == '':
-                #blank line signals end
+            if line == '': #Blank line signals end
                 break
-            key,data = line.split(':')[0], ':'.join(line.split(':')[1:])
-            key = key.strip()
-            data = data.strip()
-            if key <> '':
-                self.env[key] = data
                 
-    def _quote(self, string):
-        return ''.join(['"', str(string), '"'])
+            if ':' in line:
+                (key, data) = line.split(':', 1)
+                key = key.strip()
+                data = data.strip()
+                if key:
+                    self._environment[key] = data
+                    
+    def _quote(self, value):
+        """
+        Encapsulates `value` in double-quotes and coerces it into a string, if
+        necessary.
+        """
+        return '"%(string)s"' % {
+         'string': str(string),
+        }
         
     def _test_hangup(self):
-        #Test other hangup types.
+        """
+        Tests to see if the channel has been hung up.
+        
+        At present, this is a no-op because no generic hang-up conditions are
+        known, but subclasses may have specific scenarios to test for.
+        """
         return
+        
+    def agi_get_environment(self):
+        """
+        Returns Asterisk's initial environment values.
+        
+        Note that this function returns a copy of the values, so repeated calls
+        are less favourable than storing the returned value locally and
+        dissecting it there.
+        """
+        return self._environment.copy()
+        
+    def noop(self):
+        """
+        Does nothing.
+        
+        Good for testing the connection to the Asterisk server, like a ping, but
+        not useful for much else.
+        """
+        self.execute('NOOP')
+        
+    def verbose(self, message, level=1):
+        """
+        Causes Asterisk to process `message`, logging it to console or disk,
+        depending on whether `level` is greater-than-or-equal-to Asterisk's
+        corresponding verbosity threshold.
+        
+        `level` defaults to 1, which is nominally akin to 'INFO', with 0 being
+        'DEBUG', 2, being 'WARN', 3 being 'ERROR', and 4 being 'CRITICAL'.
+        """
+        self.execute('VERBOSE', self._quote(message), level)
+        
+        
+        
         
     def execute(self, command, *args):
         self._test_hangup()
@@ -546,13 +598,6 @@ class _AGI(object):
         res, value = result['result']
         return value
 
-    def verbose(self, message, level=1):
-        """agi.verbose(message='', level=1) --> None
-        Sends <message> to the console via verbose message system.
-        <level> is the the verbose level (1-4)
-        """
-        self.execute('VERBOSE', self._quote(message), level)
-
     def database_get(self, family, key):
         """agi.database_get(family, key) --> str
         Retrieves an entry in the Asterisk database for a given family and key.
@@ -601,11 +646,8 @@ class _AGI(object):
         if res == '0':
             raise AGIDBError('Unable to delete tree from database: family=%s, key=%s' % (family, key))
 
-    def noop(self):
-        """agi.noop() --> None
-        Does nothing
-        """
-        self.execute('NOOP')
+    
+        
         
 class AGIException(Exception):
     """
