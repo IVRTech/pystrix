@@ -34,10 +34,22 @@ Legal
  Authors:
  - Neil Tallim <n.tallim@ivrnet.com>
 """
+import collections
 import re
+
+_ValueData = collections.namedtuple('ValueData', ('value', 'data'))
 
 _RE_CODE = re.compile(r'(^\d*)\s*(.*)') #Matches Asterisk's response-code lines
 _RE_KV = re.compile(r'(?P<key>\w+)=(?P<value>[^\s]+)\s*(?:\((?P<data>.*)\))*') #Matches Asterisk's key-value response-pairs
+
+CHANNEL_DOWN_AVAILABLE = 0 #Channel is down and available
+CHANNEL_DOWN_RESERVED = 1 #Channel is down and reserved
+CHANNEL_OFFHOOK = 2 #Channel is off-hook
+CHANNEL_DIALED = 3 #A destination address has been specified
+CHANNEL_ALERTING = 4 #The channel is locally ringing
+CHANNEL_REMOTE_ALERTING = 5 #The channel is remotely ringing
+CHANNEL_UP = 6 #The channel is connected
+CHANNEL_BUSY = 7 #The channel is in a busy, non-conductive state
 
 class _AGI(object):
     """
@@ -100,12 +112,59 @@ class _AGI(object):
         """
         return self._environment.copy()
         
+    def answer(self):
+        """
+        Answers the call on the channel.
+        
+        If the channel has already been answered, this is a no-op.
+
+        `AGIAppError` is raised on failure, most commonly because the connection
+        could not be established.
+        """
+        self.execute('ANSWER')
+
+    def channel_status(self, channel=''):
+        """
+        Returns one of the channel-state constants listed below:
+        - CHANNEL_DOWN_AVAILABLE : Channel is down and available
+        - CHANNEL_DOWN_RESERVED : Channel is down and reserved
+        - CHANNEL_OFFHOOK : Channel is off-hook
+        - CHANNEL_DIALED : A destination address has been specified
+        - CHANNEL_ALERTING : The channel is locally ringing
+        - CHANNEL_REMOTE_ALERTING : The channel is remotely ringing
+        - CHANNEL_UP : The channel is connected
+        - CHANNEL_BUSY : The channel is in a busy, non-conductive state
+
+        The value returned is an integer in the range 0-7, values outside of
+        that range were undefined at the time of writing, but will be returned
+        verbatim. Applications unprepared to handle unknown states should
+        raise an exception upon their receipt or otherwise handle the code
+        gracefully.
+
+        `AGIAppError` is raised on failure, most commonly because the channel is
+        in a hung-up state.
+        """
+        result = self.execute('CHANNEL STATUS', channel)
+        result = result.get('result')
+        if not result:
+            raise AGIAppError("'result' key-value pair not received from Asterisk")
+
+        try:
+            return int(result.value)
+        except ValueError:
+            raise AGIAppError("'result' key-value pair received from Asterisk contained a non-numeric value: %(value)s" % {
+             'value': result.value,
+            })
+            
     def noop(self):
         """
         Does nothing.
         
         Good for testing the connection to the Asterisk server, like a ping, but
-        not useful for much else.
+        not useful for much else. If you wish to log information through
+        Asterisk, use the `verbose` method instead.
+        
+        `AGIAppError` is raised on failure.
         """
         self.execute('NOOP')
         
@@ -117,6 +176,8 @@ class _AGI(object):
         
         `level` defaults to 1, which is nominally akin to 'INFO', with 0 being
         'DEBUG', 2, being 'WARN', 3 being 'ERROR', and 4 being 'CRITICAL'.
+        
+        `AGIAppError` is raised on failure.
         """
         self.execute('VERBOSE', self._quote(message), level)
         
@@ -126,10 +187,10 @@ class _AGI(object):
     def execute(self, command, *args):
         self._test_hangup()
         
-        self.send_command(command, *args)
-        return self.get_result()
+        self._send_command(command, *args)
+        return self._get_result()
         
-    def send_command(self, command, *args):
+    def _send_command(self, command, *args):
         """Send a command to Asterisk"""
         command = ('%s %s' % (command.strip(), ' '.join(map(str,args)))).strip()
         if command[-1] != '\n':
@@ -143,26 +204,24 @@ class _AGI(object):
              'error': str(e),
             })
             
-    def get_result(self):
+    def _get_result(self):
         """Read the result of a command from Asterisk"""
         code = 0
         result = {'result':('','')}
         line = self._read_line()
         m = _RE_CODE.search(line)
         if m:
-            code, response = m.groups()
-            code = int(code)
-
+            code = int(m.group(1))
+            
         if code == 200:
-            for key,value,data in _RE_KV.findall(response):
-                result[key] = (value, data)
-
+            for (key, value, data) in _RE_KV.findall(m.group(2)):
+                result[key] = _ValueData(value, data)
+                
                 # If user hangs up... we get 'hangup' in the data
                 if data == 'hangup':
-                    raise AGIResultHangup("User hungup during execution")
-
-                if key == 'result' and value == '-1':
-                    raise AGIAppError("Error executing application, or hangup")
+                    raise AGIResultHangup("User hung up during execution")
+                elif key == 'result' and value == '-1':
+                    raise AGIAppError("Error executing application or the channel was hung up")
                     
             return result
         elif code == 510:
@@ -201,12 +260,9 @@ class _AGI(object):
             digits = ''.join(map(str, digits))
         return self._quote(digits)
 
-    def answer(self):
-        """agi.answer() --> None
-        Answer channel if not already in answer state.
-        """
-        self.execute('ANSWER')['result'][0]
-
+    
+    
+        
     def wait_for_digit(self, timeout=-1):
         """agi.wait_for_digit(timeout=-1) --> digit
         Waits for up to 'timeout' milliseconds for a channel to receive a DTMF
@@ -534,29 +590,7 @@ class _AGI(object):
         """
         self.execute('SET CALLERID', number)
 
-    def channel_status(self, channel=''):
-        """agi.channel_status(channel='') --> int
-        Returns the status of the specified channel.  If no channel name is
-        given the returns the status of the current channel.
-
-        Return values:
-        0 Channel is down and available
-        1 Channel is down, but reserved
-        2 Channel is off hook
-        3 Digits (or equivalent) have been dialed
-        4 Line is ringing
-        5 Remote end is ringing
-        6 Line is up
-        7 Line is busy
-        """
-        try:
-           result = self.execute('CHANNEL STATUS', channel)
-        except AGIHangup:
-           raise
-        except AGIAppError:
-           result = {'result': ('-1','')}
-
-        return int(result['result'][0])
+    
 
     def set_variable(self, name, value):
         """Set a channel variable.

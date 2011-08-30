@@ -40,6 +40,8 @@ Legal
  - Neil Tallim <n.tallim@ivrnet.com>
 """
 from agi_core import (
+ CHANNEL_DOWN_AVAILABLE, CHANNEL_DOWN_RESERVED, CHANNEL_OFFHOOK, CHANNEL_DIALED, CHANNEL_ALERTING,
+ CHANNEL_REMOTE_ALERTING, CHANNEL_UP, CHANNEL_BUSY,
  AGIException, AGIError, AGIUnknownError, AGIAppError, AGIHangup,
  AGISIGPIPEHangup, AGIResultHangup, AGIDBError, AGIUsageError,
  AGIInvalidCommand,
