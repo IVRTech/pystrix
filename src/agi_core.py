@@ -336,7 +336,9 @@ class _AGI(object):
                     
             return result
         elif code == 510:
-            raise AGIInvalidCommand(response)
+            raise AGIInvalidCommandError(response)
+        elif code == 511:
+            raise AGIDeadChannelError(response)
         elif code == 520:
             usage = [line]
             line = self._read_line()
@@ -753,7 +755,13 @@ class AGIDBError(AGIAppError):
     database.
     """
     
-class AGIInvalidCommand(AGIError):
+class AGIDeadChannelError(AGIError):
+    """
+    Indicates that a command was issued on a channel that can no longer process
+    it.
+    """
+    
+class AGIInvalidCommandError(AGIError):
     """
     Indicates that a request made to Asterisk was not understood.
     """
