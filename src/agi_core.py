@@ -40,7 +40,7 @@ import re
 _ValueData = collections.namedtuple('ValueData', ('value', 'data'))
 
 _RE_CODE = re.compile(r'(^\d*)\s*(.*)') #Matches Asterisk's response-code lines
-_RE_KV = re.compile(r'(?P<key>\w+)=(?P<value>[^\s]+)\s*(?:\((?P<data>.*)\))*') #Matches Asterisk's key-value response-pairs
+_RE_KV = re.compile(r'(?P<key>\w+)=(?P<value>[^\s]+)\s*(?:\((?P<data>.*)\))?') #Matches Asterisk's key-value response-pairs
 
 CHANNEL_DOWN_AVAILABLE = 0 #Channel is down and available
 CHANNEL_DOWN_RESERVED = 1 #Channel is down and reserved
@@ -144,8 +144,8 @@ class _AGI(object):
         `AGIAppError` is raised on failure, most commonly because the channel is
         in a hung-up state.
         """
-        result = self.execute('CHANNEL STATUS', channel)
-        result = result.get('result')
+        response = self.execute('CHANNEL STATUS', channel)
+        result = response.get('result')
         if not result:
             raise AGIAppError("'result' key-value pair not received from Asterisk")
 
@@ -154,6 +154,115 @@ class _AGI(object):
         except ValueError:
             raise AGIAppError("'result' key-value pair received from Asterisk contained a non-numeric value: %(value)s" % {
              'value': result.value,
+            })
+            
+    def control_stream_file(self, filename, escape_digits='', skipms=0, forward='', rewind='', pause=''):
+        """
+        Plays back the specified file, which is the `filename` of the file to be played, either in
+        an Asterisk-searched directory or as an absolute path, without extension. ('myfile.wav'
+        would be specified as 'myfile', to allow Asterisk to choose the most efficient encoding,
+        based on extension, for the channel)
+        
+        `escape_digits` must be a list of DTMF digits, specified as a string or a sequence of
+        possibly mixed ints and strings. Playback ends immediately when one is received.
+
+        `skipms` may be used to jump an arbitrary number of milliseconds into the audio data.
+
+        If specified, `forward`, `rewind`, and `pause` are DTMF characters that will seek forwards
+        and backwards in the audio stream or pause it temporarily; by default, these features are
+        disabled.
+
+        If a DTMF key is received, it is returned as a string. If nothing is received or the file
+        could not be played back (see Asterisk logs), '0' is returned. None is returned if the
+        'result' key isn't received.
+        
+        `AGIAppError` is raised on failure, most commonly because the channel was
+        hung-up.
+        """
+        escape_digits = self._process_digit_list(escape_digits)
+        response = self.execute(
+         'CONTROL STREAM FILE', self._quote(filename),
+         escape_digits, self._quote(skipms), self._quote(fwd), self._quote(rew), self._quote(pause)
+        )
+        result = response.get('result')
+        if result:
+            return result.value
+            
+    def database_del(self, family, key):
+        """
+        Deletes the specified family/key entry from Asterisk's database.
+        
+        `AGIAppError` is raised on failure.
+        
+        `AGIDBError` is raised if the key could not be removed, which usually indicates that it
+        didn't exist in the first place.
+        """
+        response = self.execute('DATABASE DEL', self._quote(family), self._quote(key))
+        result = response.get('result')
+        if result and result.value == '0':
+            raise AGIDBError("Unable to delete from database: family=%(family)s, key=%(key)s" % {
+             'family': family,
+             'key': key,
+            })
+            
+    def database_deltree(self, family, keytree=''):
+        """
+        Deletes the specificed family (and optinally keytree) from Asterisk's database.
+
+        `AGIAppError` is raised on failure.
+        
+        `AGIDBError` is raised if the family (or keytree) could not be removed, which usually
+        indicates that it didn't exist in the first place.
+        """
+        response = self.execute('DATABASE DELTREE', self._quote(family), self._quote(key))
+        result = response.get('result')
+        if result and result.value == '0':
+            raise AGIDBError("Unable to delete family from database: family=%(family)s, keytree=%(keytree)s" % {
+             'family': family,
+             'keytree': keytree or '<unspecified>',
+            })
+            
+    def database_get(self, family, key):
+        """
+        Retrieves the value of the specified family/key entry from Asterisk's database.
+        
+        `AGIAppError` is raised on failure.
+        
+        `AGIDBError` is raised if the key could not be found or if some other database problem
+        occurs.
+        """
+        response = self.execute('DATABASE GET', self._quote(family), self._quote(key))
+        result = response.get('result')
+        if result:
+            if result.value == '0':
+                raise AGIDBError("Key not found in database: family=%(family)s, key=%(key)s" % {
+                 'family': family,
+                 'key': key,
+                })
+            elif result.value == '1':
+                return result.data
+        raise AGIDBError("Unable to query database: family=%(family)s, key=%(key)s, result=%(result)s" % {
+         'family': family,
+         'key': key,
+         'result': (result and result.value) or '<no-result>',
+        })
+        
+    def database_put(self, family, key, value):
+        """
+        Inserts or updates value of the specified family/key entry in Asterisk's database.
+        
+        `AGIAppError` is raised on failure.
+        
+        `AGIDBError` is raised if the key could not be inserted or if some other database problem
+        occurs.
+        """
+        response = self.execute('DATABASE PUT', self._quote(family), self._quote(key), self._quote(value))
+        result = response.get('result')
+        if not result or result.value == '0':
+            raise AGIDBError("Unable to store value in database: family=%(family)s, key=%(key)s, value=%(value)s" % {
+             'family': family,
+             'key': key,
+             'value': value,
             })
             
     def noop(self):
@@ -180,6 +289,8 @@ class _AGI(object):
         `AGIAppError` is raised on failure.
         """
         self.execute('VERBOSE', self._quote(message), level)
+        
+        
         
         
         
@@ -332,26 +443,7 @@ class _AGI(object):
             except:
                 raise AGIError('Unable to convert result to char: %s' % res)
     
-    def control_stream_file(self, filename, escape_digits='', skipms=3000, fwd='', rew='', pause=''):
-        """
-        Send the given file, allowing playback to be interrupted by the given
-        digits, if any.  escape_digits is a string '12345' or a list  of 
-        ints [1,2,3,4,5] or strings ['1','2','3'] or mixed [1,'2',3,'4']
-        If sample offset is provided then the audio will seek to sample
-        offset before play starts.  Returns  digit if one was pressed.
-        Throws AGIError if the channel was disconnected.  Remember, the file
-        extension must not be included in the filename.
-        """
-        escape_digits = self._process_digit_list(escape_digits)
-        response = self.execute('CONTROL STREAM FILE', self._quote(filename), escape_digits, self._quote(skipms), self._quote(fwd), self._quote(rew), self._quote(pause))
-        res = response['result'][0]
-        if res == '0':
-            return ''
-        else:
-            try:
-                return chr(int(res))
-            except:
-                raise AGIError('Unable to convert result to char: %s' % res)
+    
 
     def send_image(self, filename):
         """agi.send_image(filename) --> None
@@ -629,53 +721,7 @@ class _AGI(object):
         res, value = result['result']
         return value
 
-    def database_get(self, family, key):
-        """agi.database_get(family, key) --> str
-        Retrieves an entry in the Asterisk database for a given family and key.
-        Returns 0 if <key> is not set.  Returns 1 if <key>
-        is set and returns the variable in parenthesis
-        example return code: 200 result=1 (testvariable)
-        """
-        family = '"%s"' % family
-        key = '"%s"' % key
-        result = self.execute('DATABASE GET', self._quote(family), self._quote(key))
-        res, value = result['result']
-        if res == '0':
-            raise AGIDBError('Key not found in database: family=%s, key=%s' % (family, key))
-        elif res == '1':
-            return value
-        else:
-            raise AGIError('Unknown exception for : family=%s, key=%s, result=%s' % (family, key, pprint.pformat(result)))
-
-    def database_put(self, family, key, value):
-        """agi.database_put(family, key, value) --> None
-        Adds or updates an entry in the Asterisk database for a
-        given family, key, and value.
-        """
-        result = self.execute('DATABASE PUT', self._quote(family), self._quote(key), self._quote(value))
-        res, value = result['result']
-        if res == '0':
-            raise AGIDBError('Unable to put vaule in databale: family=%s, key=%s, value=%s' % (family, key, value))
-            
-    def database_del(self, family, key):
-        """agi.database_del(family, key) --> None
-        Deletes an entry in the Asterisk database for a
-        given family and key.
-        """
-        result = self.execute('DATABASE DEL', self._quote(family), self._quote(key))
-        res, value = result['result']
-        if res == '0':
-            raise AGIDBError('Unable to delete from database: family=%s, key=%s' % (family, key))
-
-    def database_deltree(self, family, key=''):
-        """agi.database_deltree(family, key='') --> None
-        Deletes a family or specific keytree with in a family
-        in the Asterisk database.
-        """
-        result = self.execute('DATABASE DELTREE', self._quote(family), self._quote(key))
-        res, value = result['result']
-        if res == '0':
-            raise AGIDBError('Unable to delete tree from database: family=%s, key=%s' % (family, key))
+    
 
     
         
