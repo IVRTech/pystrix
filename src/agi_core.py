@@ -37,10 +37,11 @@ Legal
 import collections
 import re
 
-_ValueData = collections.namedtuple('ValueData', ('value', 'data'))
+_ValueData = collections.namedtuple('ValueData', ('value', 'data', 'raw'))
 
 _RE_CODE = re.compile(r'(^\d*)\s*(.*)') #Matches Asterisk's response-code lines
-_RE_KV = re.compile(r'(?P<key>\w+)=(?P<value>[^\s]+)\s*(?:\((?P<data>.*)\))?') #Matches Asterisk's key-value response-pairs
+_RE_KV = re.compile(r'(?P<key>\w+)=(?P<raw>.*)') #Matches Asterisk's key-value response-pairs
+_RE_VD = re.compile(r'(?P<value>[^\s]+)(?:\s+\((?P<data>.*)\))?') #Matches Asterisk's value-data response-pairs
 
 CHANNEL_DOWN_AVAILABLE = 0 #Channel is down and available
 CHANNEL_DOWN_RESERVED = 1 #Channel is down and reserved
@@ -122,9 +123,40 @@ class _AGI(object):
         could not be established.
         """
         self.execute('ANSWER')
+        
+    def appexec(self, application, options=()):
+        """
+        Executes an arbitrary Asterisk `application` with the given `options`, returning that
+        application's output.
 
+        `options` is an optional sequence of arguments, with any double-quote characters or pipes
+        explicitly escaped.
+
+        `AGIAppError is raised if the application could not be executed.
+        """
+        """agi.appexec(application, options='')
+        Executes <application> with given <options>.
+        Returns whatever the application returns, or -2 on failure to find
+        application
+        """
+        options = '|'.join(options)
+        response = self.execute('EXEC', application, (options and self._quote(options)) or '')
+        result = response.get('result')
+        if result:
+            if result.value == '-2':
+                raise AGIAppError("Unable to execute application '%(application)s'" % {
+                 'application': application,
+                })
+            return result.raw
+        raise AGIAppError("No response received after executing application '%(application)s'" % {
+         'application': application,
+        })
+        
     def channel_status(self, channel=''):
         """
+        Provides the current state of this channel or, if `channel` is set, that of the named
+        channel.
+        
         Returns one of the channel-state constants listed below:
         - CHANNEL_DOWN_AVAILABLE : Channel is down and available
         - CHANNEL_DOWN_RESERVED : Channel is down and reserved
@@ -144,7 +176,7 @@ class _AGI(object):
         `AGIAppError` is raised on failure, most commonly because the channel is
         in a hung-up state.
         """
-        response = self.execute('CHANNEL STATUS', channel)
+        response = self.execute('CHANNEL STATUS', (channel and self._quote(channel)) or '')
         result = response.get('result')
         if not result:
             raise AGIAppError("'result' key-value pair not received from Asterisk")
@@ -182,7 +214,8 @@ class _AGI(object):
         escape_digits = self._process_digit_list(escape_digits)
         response = self.execute(
          'CONTROL STREAM FILE', self._quote(filename),
-         escape_digits, self._quote(skipms), self._quote(fwd), self._quote(rew), self._quote(pause)
+         self._quote(escape_digits), self._quote(skipms),
+         self._quote(fwd), self._quote(rew), self._quote(pause)
         )
         result = response.get('result')
         if result:
@@ -288,7 +321,7 @@ class _AGI(object):
         
         `AGIAppError` is raised on failure.
         """
-        self.execute('VERBOSE', self._quote(message), level)
+        self.execute('VERBOSE', self._quote(message), self._quote(level))
         
         
         
@@ -325,8 +358,14 @@ class _AGI(object):
             code = int(m.group(1))
             
         if code == 200:
-            for (key, value, data) in _RE_KV.findall(m.group(2)):
-                result[key] = _ValueData(value, data)
+            for (key, raw) in _RE_KV.findall(m.group(2)):
+                value = raw
+                data = None
+                kd_m = _RE_KD.match(raw)
+                if kd_m:
+                    value = kd_m.group('value')
+                    data = kd_m.group('data')
+                result[key] = _ValueData(value, data, raw)
                 
                 # If user hangs up... we get 'hangup' in the data
                 if data == 'hangup':
@@ -666,17 +705,7 @@ class _AGI(object):
         """
         self.execute('HANGUP', channel)
 
-    def appexec(self, application, options=''):
-        """agi.appexec(application, options='')
-        Executes <application> with given <options>.
-        Returns whatever the application returns, or -2 on failure to find
-        application
-        """
-        result = self.execute('EXEC', application, self._quote(options))
-        res = result['result'][0]
-        if res == '-2':
-            raise AGIAppError('Unable to find application: %s' % application)
-        return res
+    
 
     def set_callerid(self, number):
         """agi.set_callerid(number) --> None
