@@ -36,9 +36,6 @@ Legal
 """
 import re
 
-_DEFAULT_TIMEOUT = 2000 # 2sec timeout used as default for functions that take timeouts
-_DEFAULT_RECORD  = 20000 # 20sec record time
-
 _RE_CODE = re.compile(r'(^\d*)\s*(.*)') #Matches Asterisk's response-code lines
 _RE_KV = re.compile(r'(?P<key>\w+)=(?P<value>[^\s]+)\s*(?:\((?P<data>.*)\))*') #Matches Asterisk's key-value response-pairs
 
@@ -210,8 +207,8 @@ class _AGI(object):
         """
         self.execute('ANSWER')['result'][0]
 
-    def wait_for_digit(self, timeout=_DEFAULT_TIMEOUT):
-        """agi.wait_for_digit(timeout=_DEFAULT_TIMEOUT) --> digit
+    def wait_for_digit(self, timeout=-1):
+        """agi.wait_for_digit(timeout=-1) --> digit
         Waits for up to 'timeout' milliseconds for a channel to receive a DTMF
         digit.  Returns digit dialed
         Throws AGIError on channel falure
@@ -233,8 +230,8 @@ class _AGI(object):
         """
         self.execute('SEND TEXT', self._quote(text))['result'][0]
 
-    def receive_char(self, timeout=_DEFAULT_TIMEOUT):
-        """agi.receive_char(timeout=_DEFAULT_TIMEOUT) --> chr
+    def receive_char(self, timeout=0):
+        """agi.receive_char(timeout=0) --> chr
         Receives a character of text on a channel.  Specify timeout to be the
         maximum time to wait for input in milliseconds, or 0 for infinite. Most channels
         do not support the reception of text.
@@ -425,8 +422,8 @@ class _AGI(object):
             except:
                 raise AGIError('Unable to convert result to char: %s' % res)
 
-    def get_data(self, filename, timeout=_DEFAULT_TIMEOUT, max_digits=255):
-        """agi.get_data(filename, timeout=_DEFAULT_TIMEOUT, max_digits=255) --> digits
+    def get_data(self, filename, timeout=0, max_digits=255):
+        """agi.get_data(filename, timeout=0, max_digits=255) --> digits
         Stream the given file and receive dialed digits
         """
         result = self.execute('GET DATA', filename, timeout, max_digits)
@@ -489,8 +486,8 @@ class _AGI(object):
         self.set_extension(extension)
         self.set_priority(priority)
 
-    def record_file(self, filename, format='gsm', escape_digits='#', timeout=_DEFAULT_RECORD, offset=0, beep='beep'):
-        """agi.record_file(filename, format, escape_digits, timeout=_DEFAULT_TIMEOUT, offset=0, beep='beep') --> None
+    def record_file(self, filename, format='gsm', escape_digits='#', timeout=-1, offset=0, beep='beep'):
+        """agi.record_file(filename, format, escape_digits, timeout=-1, offset=0, beep='beep') --> None
         Record to a file until a given dtmf digit in the sequence is received
         The format will specify what kind of file will be recorded.  The timeout 
         is the maximum record time in milliseconds, or -1 for no timeout. Offset 
