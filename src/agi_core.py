@@ -37,11 +37,11 @@ Legal
 import collections
 import re
 
-_ValueData = collections.namedtuple('ValueData', ('value', 'data', 'raw'))
+_Response = collections.namedtuple('Response', ('items', 'raw'))
+_ValueData = collections.namedtuple('ValueData', ('value', 'data'))
 
 _RE_CODE = re.compile(r'(^\d*)\s*(.*)') #Matches Asterisk's response-code lines
-_RE_KV = re.compile(r'(?P<key>\w+)=(?P<raw>.*)') #Matches Asterisk's key-value response-pairs
-_RE_VD = re.compile(r'(?P<value>[^\s]+)(?:\s+\((?P<data>.*)\))?') #Matches Asterisk's value-data response-pairs
+_RE_KV = re.compile(r'(?P<key>\w+)=(?P<value>[^\s]+)(?:\s+\((?P<data>.*)\))?') #Matches Asterisk's key-value response-pairs
 
 CHANNEL_DOWN_AVAILABLE = 0 #Channel is down and available
 CHANNEL_DOWN_RESERVED = 1 #Channel is down and reserved
@@ -122,7 +122,7 @@ class _AGI(object):
         `AGIAppError` is raised on failure, most commonly because the connection
         could not be established.
         """
-        self.execute('ANSWER')
+        self.execute('ANSWER', True)
         
     def appexec(self, application, options=()):
         """
@@ -140,17 +140,13 @@ class _AGI(object):
         application
         """
         options = '|'.join(options)
-        response = self.execute('EXEC', application, (options and self._quote(options)) or '')
+        response = self.execute('EXEC', False, application, (options and self._quote(options)) or '')
         result = response.get('result')
-        if result:
-            if result.value == '-2':
-                raise AGIAppError("Unable to execute application '%(application)s'" % {
-                 'application': application,
-                })
-            return result.raw
-        raise AGIAppError("No response received after executing application '%(application)s'" % {
-         'application': application,
-        })
+        if result.value == '-2':
+            raise AGIAppError("Unable to execute application '%(application)s'" % {
+             'application': application,
+            })
+        return result.raw[7:] #Everything after 'result='
         
     def channel_status(self, channel=''):
         """
@@ -176,11 +172,8 @@ class _AGI(object):
         `AGIAppError` is raised on failure, most commonly because the channel is
         in a hung-up state.
         """
-        response = self.execute('CHANNEL STATUS', (channel and self._quote(channel)) or '')
+        response = self.execute('CHANNEL STATUS', True, (channel and self._quote(channel)) or '')
         result = response.get('result')
-        if not result:
-            raise AGIAppError("'result' key-value pair not received from Asterisk")
-
         try:
             return int(result.value)
         except ValueError:
@@ -190,6 +183,8 @@ class _AGI(object):
             
     def control_stream_file(self, filename, escape_digits='', skipms=0, forward='', rewind='', pause=''):
         """
+        See also `get_data`, `get_option`, `stream_file`.
+        
         Plays back the specified file, which is the `filename` of the file to be played, either in
         an Asterisk-searched directory or as an absolute path, without extension. ('myfile.wav'
         would be specified as 'myfile', to allow Asterisk to choose the most efficient encoding,
@@ -205,22 +200,28 @@ class _AGI(object):
         disabled.
 
         If a DTMF key is received, it is returned as a string. If nothing is received or the file
-        could not be played back (see Asterisk logs), '0' is returned. None is returned if the
-        'result' key isn't received.
+        could not be played back (see Asterisk logs), None is returned. '#' is always interpreted
+        as an end-of-sequence character and will never be present in the output.
         
         `AGIAppError` is raised on failure, most commonly because the channel was
         hung-up.
         """
         escape_digits = self._process_digit_list(escape_digits)
         response = self.execute(
-         'CONTROL STREAM FILE', self._quote(filename),
+         'CONTROL STREAM FILE', True, self._quote(filename),
          self._quote(escape_digits), self._quote(skipms),
-         self._quote(fwd), self._quote(rew), self._quote(pause)
+         self._quote(forward), self._quote(rewind), self._quote(pause)
         )
         result = response.get('result')
-        if result:
-            return result.value
-            
+        if not result.value == '0':
+            try:
+                return chr(int(result.value))
+            except ValueError:
+                raise AGIAppError("Unable to convert Asterisk result to DTMF character: %(value)s" % {
+                 'value': result.value,
+                })
+        return None
+        
     def database_del(self, family, key):
         """
         Deletes the specified family/key entry from Asterisk's database.
@@ -230,9 +231,9 @@ class _AGI(object):
         `AGIDBError` is raised if the key could not be removed, which usually indicates that it
         didn't exist in the first place.
         """
-        response = self.execute('DATABASE DEL', self._quote(family), self._quote(key))
+        response = self.execute('DATABASE DEL', True, self._quote(family), self._quote(key))
         result = response.get('result')
-        if result and result.value == '0':
+        if result.value == '0':
             raise AGIDBError("Unable to delete from database: family=%(family)s, key=%(key)s" % {
              'family': family,
              'key': key,
@@ -247,9 +248,9 @@ class _AGI(object):
         `AGIDBError` is raised if the family (or keytree) could not be removed, which usually
         indicates that it didn't exist in the first place.
         """
-        response = self.execute('DATABASE DELTREE', self._quote(family), self._quote(key))
+        response = self.execute('DATABASE DELTREE', True, self._quote(family), self._quote(key))
         result = response.get('result')
-        if result and result.value == '0':
+        if result.value == '0':
             raise AGIDBError("Unable to delete family from database: family=%(family)s, keytree=%(keytree)s" % {
              'family': family,
              'keytree': keytree or '<unspecified>',
@@ -264,20 +265,20 @@ class _AGI(object):
         `AGIDBError` is raised if the key could not be found or if some other database problem
         occurs.
         """
-        response = self.execute('DATABASE GET', self._quote(family), self._quote(key))
+        response = self.execute('DATABASE GET', False, self._quote(family), self._quote(key))
         result = response.get('result')
-        if result:
-            if result.value == '0':
-                raise AGIDBError("Key not found in database: family=%(family)s, key=%(key)s" % {
-                 'family': family,
-                 'key': key,
-                })
-            elif result.value == '1':
-                return result.data
+        if result.value == '0':
+            raise AGIDBError("Key not found in database: family=%(family)s, key=%(key)s" % {
+             'family': family,
+             'key': key,
+            })
+        elif result.value == '1':
+            return result.data
+            
         raise AGIDBError("Unable to query database: family=%(family)s, key=%(key)s, result=%(result)s" % {
          'family': family,
          'key': key,
-         'result': (result and result.value) or '<no-result>',
+         'result': result.value,
         })
         
     def database_put(self, family, key, value):
@@ -289,15 +290,123 @@ class _AGI(object):
         `AGIDBError` is raised if the key could not be inserted or if some other database problem
         occurs.
         """
-        response = self.execute('DATABASE PUT', self._quote(family), self._quote(key), self._quote(value))
+        response = self.execute('DATABASE PUT', True self._quote(family), self._quote(key), self._quote(value))
         result = response.get('result')
-        if not result or result.value == '0':
+        if result.value == '0':
             raise AGIDBError("Unable to store value in database: family=%(family)s, key=%(key)s, value=%(value)s" % {
              'family': family,
              'key': key,
              'value': value,
             })
             
+    def get_data(self, filename, timeout=2000, max_digits=255):
+        """
+        See also `control_stream_file`, `get_option`, `stream_file`.
+        
+        Plays back the specified file, which is the `filename` of the file to be played, either in
+        an Asterisk-searched directory or as an absolute path, without extension. ('myfile.wav'
+        would be specified as 'myfile', to allow Asterisk to choose the most efficient encoding,
+        based on extension, for the channel)
+        
+        `timeout` is the number of milliseconds to wait between DTMF presses or following the end
+        of playback if no keys were pressed to interrupt playback prior to that point. It defaults
+        to 2000.
+
+        `max_digits` is the number of DTMF keypresses that will be accepted. It defaults to 255.
+
+        The value returned is a tuple consisting of (dtmf_keys:str, timeout:bool). '#' is always
+        interpreted as an end-of-sequence character and will never be present in the output.
+        
+        `AGIAppError` is raised on failure, most commonly because the channel was
+        hung-up.
+        """
+        response = self.execute('GET DATA', True, self._quote(filename), self._quote(timeout), self._quote(max_digits))
+        result = response.get('result')
+        return (result.value, result.data == 'timeout')
+        
+    def get_full_variable(self, variable, channel=''):
+        """
+        Returns a `variable` associated with this channel or, if `channel` is set, that
+        of the named channel, with full expression-processing.
+        
+        The value of the requested variable is returned as a string. If the variable is
+        undefined, `None` is returned.
+
+        `AGIAppError` is raised on failure.
+        """
+        response = self.execute('GET FULL VARIABLE', False, self._quote(variable), (channel and self._quote(channel)) or '')
+        result = response.get('result')
+        if result.value == '1':
+            return result.data
+        return None
+        
+    def get_variable(self, name):
+        """
+        Returns a `variable` associated with this channel or, if `channel` is set, that
+        of the named channel.
+        
+        The value of the requested variable is returned as a string. If the variable is
+        undefined, `None` is returned.
+
+        `AGIAppError` is raised on failure.
+        """
+        response = self.execute('GET VARIABLE', False, self._quote(variable), (channel and self._quote(channel)) or '')
+        result = response.get('result')
+        if result.value == '1':
+            return result.data
+        return None
+        
+    def get_option(self, filename, escape_digits='', timeout=2000):
+        """
+        See also `control_stream_file`, `get_data`, `stream_file`.
+
+        Plays back the specified file, which is the `filename` of the file to be played, either in
+        an Asterisk-searched directory or as an absolute path, without extension. ('myfile.wav'
+        would be specified as 'myfile', to allow Asterisk to choose the most efficient encoding,
+        based on extension, for the channel)
+        
+        `escape_digits` must be a list of DTMF digits, specified as a string or a sequence of
+        possibly mixed ints and strings. Playback ends immediately when one is received.
+        
+        `timeout` is the number of milliseconds to wait following the end of playback if no keys
+        were pressed to interrupt playback prior to that point. It defaults to 2000.
+        
+        The value returned is a tuple consisting of (dtmf_key:str, offset:int), where the offset is
+        the number of milliseconds that elapsed since the start of playback. '#' is always
+        interpreted as an end-of-sequence character and will never be present in the output.
+        
+        `AGIAppError` is raised on failure, most commonly because the channel was
+        hung-up.
+        """
+        escape_digits = self._process_digit_list(escape_digits)
+        response = self.execute(
+         'GET OPTION', True, self._quote(filename),
+         self._quote(escape_digits), self._quote(timeout)
+        )
+        result = response.get('result')
+        if not result.value == '0':
+            try:
+                dtmf_character = chr(int(result.value))
+            except ValueError:
+                raise AGIAppError("Unable to convert Asterisk result to DTMF character: %(value)s" % {
+                 'value': result.value,
+                })
+            try:
+                return (dtmf_character, int(response.get('endpos').value))
+            except ValueError:
+                raise AGIAppError("Unable to convert Asterisk offset result to integer: %(value)s" % {
+                 'value': response.get('endpos').value,
+                })
+        return None
+
+    def hangup(self, channel=''):
+        """
+        Hangs up this channel or, if `channel` is set, the named channel.
+
+        `AGIAppError` is raised on failure.
+        """
+        self.execute('HANGUP', True, self._quote(channel))
+        
     def noop(self):
         """
         Does nothing.
@@ -308,7 +417,7 @@ class _AGI(object):
         
         `AGIAppError` is raised on failure.
         """
-        self.execute('NOOP')
+        self.execute('NOOP', True)
         
     def verbose(self, message, level=1):
         """
@@ -321,18 +430,38 @@ class _AGI(object):
         
         `AGIAppError` is raised on failure.
         """
-        self.execute('VERBOSE', self._quote(message), self._quote(level))
+        self.execute('VERBOSE', True, self._quote(message), self._quote(level))
+        
+    def wait_for_digit(self, timeout=-1):
+        """
+        Waits for up to `timeout` milliseconds for a DTMF keypress to be received, returning that
+        value. By default, this function blocks indefinitely.
+
+        If not DTMF key is pressed, `None` is returned.
+        
+        `AGIAppError` is raised on failure, most commonly because the channel was
+        hung-up.
+        """
+        response = self.execute('WAIT FOR DIGIT', True, self._quote(timeout))
+        result = response.get('result')
+        if not result.value == '0':
+            try:
+                return chr(int(result.value))
+            except ValueError:
+                raise AGIAppError("Unable to convert Asterisk result to DTMF character: %(value)s" % {
+                 'value': result.value,
+                })
+                
+                
         
         
         
         
-        
-        
-    def execute(self, command, *args):
+    def execute(self, command, check_hangup, *args):
         self._test_hangup()
         
         self._send_command(command, *args)
-        return self._get_result()
+        return self._get_result(check_hangup)
         
     def _send_command(self, command, *args):
         """Send a command to Asterisk"""
@@ -348,32 +477,30 @@ class _AGI(object):
              'error': str(e),
             })
             
-    def _get_result(self):
+    def _get_result(self, check_hangup=True):
         """Read the result of a command from Asterisk"""
         code = 0
-        result = {'result':('','')}
+        response = {}
         line = self._read_line()
         m = _RE_CODE.search(line)
         if m:
             code = int(m.group(1))
             
         if code == 200:
-            for (key, raw) in _RE_KV.findall(m.group(2)):
-                value = raw
-                data = None
-                kd_m = _RE_KD.match(raw)
-                if kd_m:
-                    value = kd_m.group('value')
-                    data = kd_m.group('data')
-                result[key] = _ValueData(value, data, raw)
+            raw = m.group(2)
+            for (key, value, data) in _RE_KV.findall(m.group(2)):
+                if key == 'result':
+                    if value == '-1':
+                        raise AGIAppError("Error executing application or the channel was hung up")
+                    if check_hangup and data == 'hangup':
+                        raise AGIResultHangup("User hung up during execution")
+                        
+                result[key] = _ValueData(value, data)
                 
-                # If user hangs up... we get 'hangup' in the data
-                if data == 'hangup':
-                    raise AGIResultHangup("User hung up during execution")
-                elif key == 'result' and value == '-1':
-                    raise AGIAppError("Error executing application or the channel was hung up")
-                    
-            return result
+            if not 'result' in response:
+                raise AGIError("Asterisk did not provide a 'result' key-value pair")
+                
+            return (response, raw)
         elif code == 510:
             raise AGIInvalidCommandError(response)
         elif code == 511:
@@ -415,21 +542,7 @@ class _AGI(object):
     
     
         
-    def wait_for_digit(self, timeout=-1):
-        """agi.wait_for_digit(timeout=-1) --> digit
-        Waits for up to 'timeout' milliseconds for a channel to receive a DTMF
-        digit.  Returns digit dialed
-        Throws AGIError on channel falure
-        """
-        res = self.execute('WAIT FOR DIGIT', timeout)['result'][0]
-        if res == '0':
-            return ''
-        else:
-            try:
-                return chr(int(res))
-            except ValueError:
-                raise AGIError('Unable to convert result to digit: %s' % res)
-
+    
     def send_text(self, text=''):
         """agi.send_text(text='') --> None
         Sends the given text on a channel.  Most channels do not support the
@@ -611,37 +724,7 @@ class _AGI(object):
             except:
                 raise AGIError('Unable to convert result to char: %s' % res)
 
-    def get_data(self, filename, timeout=0, max_digits=255):
-        """agi.get_data(filename, timeout=0, max_digits=255) --> digits
-        Stream the given file and receive dialed digits
-        """
-        result = self.execute('GET DATA', filename, timeout, max_digits)
-        res, value = result['result']
-        return res
-    
-    def get_option(self, filename, escape_digits='', timeout=0):
-        """agi.get_option(filename, escape_digits='', timeout=0) --> digit
-        Send the given file, allowing playback to be interrupted by the given
-        digits, if any.  escape_digits is a string '12345' or a list  of 
-        ints [1,2,3,4,5] or strings ['1','2','3'] or mixed [1,'2',3,'4']
-        Returns  digit if one was pressed.
-        Throws AGIError if the channel was disconnected.  Remember, the file
-        extension must not be included in the filename.
-        """
-        escape_digits = self._process_digit_list(escape_digits)
-        if timeout:
-            response = self.execute('GET OPTION', filename, escape_digits, timeout)
-        else:
-            response = self.execute('GET OPTION', filename, escape_digits)
 
-        res = response['result'][0]
-        if res == '0':
-            return ''
-        else:
-            try:
-                return chr(int(res))
-            except:
-                raise AGIError('Unable to convert result to char: %s' % res)
 
     def set_context(self, context):
         """agi.set_context(context)
@@ -698,12 +781,7 @@ class _AGI(object):
         """
         self.execute('SET AUTOHANGUP', secs)
 
-    def hangup(self, channel=''):
-        """agi.hangup(channel='')
-        Hangs up the specified channel.
-        If no channel name is given, hangs up the current channel
-        """
-        self.execute('HANGUP', channel)
+    
 
     
 
@@ -720,37 +798,7 @@ class _AGI(object):
         """
         self.execute('SET VARIABLE', self._quote(name), self._quote(value))
 
-    def get_variable(self, name):
-        """Get a channel variable.
-
-        This function returns the value of the indicated channel variable.  If
-        the variable is not set, an empty string is returned.
-        """
-        try:
-           result = self.execute('GET VARIABLE', self._quote(name))
-        except AGIResultHangup:
-           result = {'result': ('1', 'hangup')}
-
-        res, value = result['result']
-        return value
-
-    def get_full_variable(self, name, channel = None):
-        """Get a channel variable.
-
-        This function returns the value of the indicated channel variable.  If
-        the variable is not set, an empty string is returned.
-        """
-        try:
-           if channel:
-              result = self.execute('GET FULL VARIABLE', self._quote(name), self._quote(channel))
-           else:
-              result = self.execute('GET FULL VARIABLE', self._quote(name))
-
-        except AGIResultHangup:
-           result = {'result': ('1', 'hangup')}
-
-        res, value = result['result']
-        return value
+    
 
     
 
