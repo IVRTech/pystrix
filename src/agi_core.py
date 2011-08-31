@@ -52,6 +52,15 @@ CHANNEL_REMOTE_ALERTING = 5 #The channel is remotely ringing
 CHANNEL_UP = 6 #The channel is connected
 CHANNEL_BUSY = 7 #The channel is in a busy, non-conductive state
 
+FORMAT_SLN = 'sln'
+FORMAT_G723 = 'g723'
+FORMAT_G729 = 'g729'
+FORMAT_GSM = 'gsm'
+FORMAT_ALAW = 'alaw'
+FORMAT_ULAW = 'ulaw'
+FORMAT_VOX = 'vox'
+FORMAT_WAV = 'wav'
+
 TDD_ON = 'on'
 TDD_OFF = 'off'
 TDD_MATE = 'mate'
@@ -168,12 +177,12 @@ class _AGI(object):
         """
         options = '|'.join(options)
         response = self.execute('EXEC', False, application, (options and self._quote(options)) or '')
-        result = response.get('result')
+        result = response.items.get('result')
         if result.value == '-2':
-            raise AGIAppError("Unable to execute application '%(application)s'" % {
+            raise AGIAppError("Unable to execute application '%(application)r'" % {
              'application': application,
-            })
-        return result.raw[7:] #Everything after 'result='
+            }, response.items)
+        return response.raw[7:] #Everything after 'result='
         
     def channel_status(self, channel=''):
         """
@@ -200,13 +209,13 @@ class _AGI(object):
         in a hung-up state.
         """
         response = self.execute('CHANNEL STATUS', True, (channel and self._quote(channel)) or '')
-        result = response.get('result')
+        result = response.items.get('result')
         try:
             return int(result.value)
         except ValueError:
-            raise AGIAppError("'result' key-value pair received from Asterisk contained a non-numeric value: %(value)s" % {
+            raise AGIAppError("'result' key-value pair received from Asterisk contained a non-numeric value: %(value)r" % {
              'value': result.value,
-            })
+            }, response.items)
             
     def control_stream_file(self, filename, escape_digits='', sample_offset=0, forward='', rewind='', pause=''):
         """
@@ -217,9 +226,9 @@ class _AGI(object):
         would be specified as 'myfile', to allow Asterisk to choose the most efficient encoding,
         based on extension, for the channel)
         
-        `escape_digits` must be a list of DTMF digits, specified as a string or a sequence of
-        possibly mixed ints and strings. Playback ends immediately when one is received.
-
+        `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
+        of possibly mixed ints and strings. Playback ends immediately when one is received.
+        
         `sample_offset` may be used to jump an arbitrary number of milliseconds into the audio data.
 
         If specified, `forward`, `rewind`, and `pause` are DTMF characters that will seek forwards
@@ -227,8 +236,7 @@ class _AGI(object):
         disabled.
 
         If a DTMF key is received, it is returned as a string. If nothing is received or the file
-        could not be played back (see Asterisk logs), None is returned. '#' is always interpreted
-        as an end-of-sequence character and will never be present in the output.
+        could not be played back (see Asterisk logs), None is returned.
         
         `AGIAppError` is raised on failure, most commonly because the channel was
         hung-up.
@@ -239,14 +247,14 @@ class _AGI(object):
          self._quote(escape_digits), self._quote(sample_offset),
          self._quote(forward), self._quote(rewind), self._quote(pause)
         )
-        result = response.get('result')
+        result = response.items.get('result')
         if not result.value == '0':
             try:
                 return chr(int(result.value))
             except ValueError:
-                raise AGIAppError("Unable to convert Asterisk result to DTMF character: %(value)s" % {
+                raise AGIAppError("Unable to convert Asterisk result to DTMF character: %(value)r" % {
                  'value': result.value,
-                })
+                }, response.items)
         return None
         
     def database_del(self, family, key):
@@ -259,12 +267,12 @@ class _AGI(object):
         didn't exist in the first place.
         """
         response = self.execute('DATABASE DEL', True, self._quote(family), self._quote(key))
-        result = response.get('result')
+        result = response.items.get('result')
         if result.value == '0':
-            raise AGIDBError("Unable to delete from database: family=%(family)s, key=%(key)s" % {
+            raise AGIDBError("Unable to delete from database: family=%(family)r, key=%(key)r" % {
              'family': family,
              'key': key,
-            })
+            }, response.items)
             
     def database_deltree(self, family, keytree=''):
         """
@@ -276,12 +284,12 @@ class _AGI(object):
         indicates that it didn't exist in the first place.
         """
         response = self.execute('DATABASE DELTREE', True, self._quote(family), self._quote(key))
-        result = response.get('result')
+        result = response.items.get('result')
         if result.value == '0':
-            raise AGIDBError("Unable to delete family from database: family=%(family)s, keytree=%(keytree)s" % {
+            raise AGIDBError("Unable to delete family from database: family=%(family)r, keytree=%(keytree)r" % {
              'family': family,
              'keytree': keytree or '<unspecified>',
-            })
+            }, response.items)
             
     def database_get(self, family, key):
         """
@@ -293,20 +301,20 @@ class _AGI(object):
         occurs.
         """
         response = self.execute('DATABASE GET', False, self._quote(family), self._quote(key))
-        result = response.get('result')
+        result = response.items.get('result')
         if result.value == '0':
-            raise AGIDBError("Key not found in database: family=%(family)s, key=%(key)s" % {
+            raise AGIDBError("Key not found in database: family=%(family)r, key=%(key)r" % {
              'family': family,
              'key': key,
-            })
+            }, response.items)
         elif result.value == '1':
             return result.data
             
-        raise AGIDBError("Unable to query database: family=%(family)s, key=%(key)s, result=%(result)s" % {
+        raise AGIDBError("Unable to query database: family=%(family)r, key=%(key)r, result=%(result)r" % {
          'family': family,
          'key': key,
          'result': result.value,
-        })
+        }, response.items)
         
     def database_put(self, family, key, value):
         """
@@ -318,13 +326,13 @@ class _AGI(object):
         occurs.
         """
         response = self.execute('DATABASE PUT', True self._quote(family), self._quote(key), self._quote(value))
-        result = response.get('result')
+        result = response.items.get('result')
         if result.value == '0':
-            raise AGIDBError("Unable to store value in database: family=%(family)s, key=%(key)s, value=%(value)s" % {
+            raise AGIDBError("Unable to store value in database: family=%(family)r, key=%(key)r, value=%(value)r" % {
              'family': family,
              'key': key,
              'value': value,
-            })
+            }, response.items)
             
     def get_data(self, filename, timeout=2000, max_digits=255):
         """
@@ -342,13 +350,13 @@ class _AGI(object):
         `max_digits` is the number of DTMF keypresses that will be accepted. It defaults to 255.
 
         The value returned is a tuple consisting of (dtmf_keys:str, timeout:bool). '#' is always
-        interpreted as an end-of-sequence character and will never be present in the output.
+        interpreted as an end-of-event character and will never be present in the output.
         
         `AGIAppError` is raised on failure, most commonly because the channel was
         hung-up.
         """
         response = self.execute('GET DATA', True, self._quote(filename), self._quote(timeout), self._quote(max_digits))
-        result = response.get('result')
+        result = response.items.get('result')
         return (result.value, result.data == 'timeout')
         
     def get_full_variable(self, variable, channel=''):
@@ -362,7 +370,7 @@ class _AGI(object):
         `AGIAppError` is raised on failure.
         """
         response = self.execute('GET FULL VARIABLE', False, self._quote(variable), (channel and self._quote(channel)) or '')
-        result = response.get('result')
+        result = response.items.get('result')
         if result.value == '1':
             return result.data
         return None
@@ -376,16 +384,15 @@ class _AGI(object):
         would be specified as 'myfile', to allow Asterisk to choose the most efficient encoding,
         based on extension, for the channel)
         
-        `escape_digits` must be a list of DTMF digits, specified as a string or a sequence of
-        possibly mixed ints and strings. Playback ends immediately when one is received.
+        `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
+        of possibly mixed ints and strings. Playback ends immediately when one is received.
         
         `timeout` is the number of milliseconds to wait following the end of playback if no keys
         were pressed to interrupt playback prior to that point. It defaults to 2000.
         
         The value returned is a tuple consisting of (dtmf_key:str, offset:int), where the offset is
         the number of milliseconds that elapsed since the start of playback, or None if playback
-        completed successfully or the sample could not be opened. '#' is always interpreted as an
-        end-of-sequence character and will never be present in the output.
+        completed successfully or the sample could not be opened.
         
         `AGIAppError` is raised on failure, most commonly because the channel was
         hung-up.
@@ -395,20 +402,20 @@ class _AGI(object):
          'GET OPTION', True, self._quote(filename),
          self._quote(escape_digits), self._quote(timeout)
         )
-        result = response.get('result')
+        result = response.items.get('result')
         if not result.value == '0':
             try:
                 dtmf_character = chr(int(result.value))
             except ValueError:
-                raise AGIAppError("Unable to convert Asterisk result to DTMF character: %(value)s" % {
+                raise AGIAppError("Unable to convert Asterisk result to DTMF character: %(value)r" % {
                  'value': result.value,
-                })
+                }, response.items)
             try:
                 return (dtmf_character, int(response.get('endpos').value))
             except ValueError:
-                raise AGIAppError("Unable to convert Asterisk offset result to integer: %(value)s" % {
-                 'value': response.get('endpos').value,
-                })
+                raise AGIAppError("Unable to convert Asterisk offset result to integer: %(value)r" % {
+                 'value': response.items.get('endpos').value,
+                }, response.items)
         return None
         
     def get_variable(self, name):
@@ -422,7 +429,7 @@ class _AGI(object):
         `AGIAppError` is raised on failure.
         """
         response = self.execute('GET VARIABLE', False, self._quote(variable), (channel and self._quote(channel)) or '')
-        result = response.get('result')
+        result = response.items.get('result')
         if result.value == '1':
             return result.data
         return None
@@ -446,6 +453,121 @@ class _AGI(object):
         `AGIAppError` is raised on failure.
         """
         self.execute('NOOP', True)
+
+    def receive_char(self, timeout=0):
+        """
+        Receives a single character of text from a supporting channel, discarding anything else in
+        the character buffer.
+
+        `timeout` is the number of milliseconds to wait for a character to be received, defaulting
+        to infinite.
+
+        The value returned is a tuple of the form (char:str, timeout:bool), with the timeout element
+        indicating whether the function returned because of a timeout, which may result in an empty
+        string. `None` is returned if the channel does not support text.
+
+        `AGIAppError` is raised on failure.
+        """
+        response = self.execute('RECEIVE CHAR', True, self._quote(timeout))
+        result = response.items.get('result')
+        if not result.value == '0':
+            try:
+                return (chr(int(result.value)), result.data == 'timeout')
+            except:
+                raise AGIAppError("Unable to convert Asterisk result to character: %(value)r" % {
+                 'value': result.value,
+                }, response.items)
+        return None
+
+    def receive_text(self, timeout=0):
+        """
+        Receives a block of text from a supporting channel.
+
+        `timeout` is the number of milliseconds to wait for text to be received, defaulting
+        to infinite. Presumably, the first block received is immediately returned in full.
+
+        The value returned is a string.
+
+        `AGIAppError` is raised on failure.
+        """
+        response = self.execute('RECEIVE TEXT', True, self._quote(timeout))
+        result = response.items.get('result')
+        return result.value
+        
+    def record_file(self, filename, format=FORMAT_WAV, escape_digits='', timeout=-1, sample_offset=0, beep=True, silence=None):
+        """
+        Records audio to the specified file, which is the `filename` of the file to be written,
+        defaulting to Asterisk's sounds path or an absolute path, without extension. ('myfile.wav'
+        would be specified as 'myfile') `format` is one of the following, which sets the extension
+        and encoding, with WAV being the default:
+        - FORMAT_SLN
+        - FORMAT_G723
+        - FORMAT_G729
+        - FORMAT_GSM
+        - FORMAT_ALAW
+        - FORMAT_ULAW
+        - FORMAT_VOX
+        - FORMAT_WAV : PCM16
+
+        The filename may also contain the special string '%d', which Asterisk will replace with an
+        auto-incrementing number, with the resulting filename appearing in the 'RECORDED_FILE'
+        channel variable.
+        
+        `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
+        of possibly mixed ints and strings. Playback ends immediately when one is received.
+        
+        `timeout` is the number of milliseconds to wait following the end of playback if no keys
+        were pressed to end recording prior to that point. By default, it waits forever.
+
+        `sample_offset` may be used to jump an arbitrary number of milliseconds into the audio data.
+
+        `beep`, if `True`, the default, causes an audible beep to be heard when recording begins.
+
+        `silence`, if given, is the number of seconds of silence to allow before terminating
+        recording early.
+        
+        The value returned is a tuple consisting of (dtmf_key:str, offset:int, timeout:bool), where
+        the offset is the number of milliseconds that elapsed since the start of playback dtmf_key
+        may be the empty string if no key was pressed, and timeout is `False` if recording ended due
+        to another condition (DTMF or silence).
+        
+        The raising of `AGIResultHangup` is another condition that signals a successful recording,
+        though it also means the user hung up.
+        
+        `AGIAppError` is raised on failure, most commonly because the destination file isn't
+        writable.
+        """
+        escape_digits = self._process_digit_list(escape_digits)
+        response = None
+        response = self.execute(
+         'RECORD FILE', self._quote(filename), self._quote(format),
+         self._quote(escape_digits), self._quote(timeout), self._quote(sample_offset),
+         (beep and self._quote('beep') or None),
+         (silence and self._quote('s=' + str(silence)) or None)
+        )
+        result = response.items.get('result')
+        
+        offset = response.get('endpos')
+        if offset and offset.data.isdigit():
+            offset = int(offset.data)
+        else:
+            offset = -1
+            
+        if result.data == 'randomerror':
+            raise AGIAppError("Unknown error occurred %(ms)i into recording: %(error)s" % {
+             'ms': offset,
+             'error': result.value,
+            })
+        elif result.data == 'timeout':
+            return ('', offset, True)
+        elif result.data == 'dtmf':
+            try:
+                return (chr(int(result.value)), offset, False)
+            except ValueError:
+                raise AGIAppError("Unable to convert Asterisk result to DTMF character: %(value)r" % {
+                 'value': result.value,
+                }, response.items)
+        return ('', offset, True) #Assume a timeout if any other result data is received.
         
     def stream_file(self, filename, escape_digits='', sample_offset=0):
         """
@@ -456,15 +578,14 @@ class _AGI(object):
         would be specified as 'myfile', to allow Asterisk to choose the most efficient encoding,
         based on extension, for the channel)
         
-        `escape_digits` must be a list of DTMF digits, specified as a string or a sequence of
-        possibly mixed ints and strings. Playback ends immediately when one is received.
+        `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
+        of possibly mixed ints and strings. Playback ends immediately when one is received.
         
         `sample_offset` may be used to jump an arbitrary number of milliseconds into the audio data.
         
         The value returned is a tuple consisting of (dtmf_key:str, offset:int), where the offset is
         the number of milliseconds that elapsed since the start of playback, or None if playback
-        completed successfully or the sample could not be opened. '#' is always interpreted as an
-        end-of-sequence character and will never be present in the output.
+        completed successfully or the sample could not be opened.
         
         `AGIAppError` is raised on failure, most commonly because the channel was
         hung-up.
@@ -474,20 +595,20 @@ class _AGI(object):
          'STREAM FILE', True, self._quote(filename),
          self._quote(escape_digits), self._quote(sample_offset)
         )
-        result = response.get('result')
+        result = response.items.get('result')
         if not result.value == '0':
             try:
                 dtmf_character = chr(int(result.value))
             except ValueError:
-                raise AGIAppError("Unable to convert Asterisk result to DTMF character: %(value)s" % {
+                raise AGIAppError("Unable to convert Asterisk result to DTMF character: %(value)r" % {
                  'value': result.value,
-                })
+                }, response.items)
             try:
                 return (dtmf_character, int(response.get('endpos').value))
             except ValueError:
-                raise AGIAppError("Unable to convert Asterisk offset result to integer: %(value)s" % {
-                 'value': response.get('endpos').value,
-                })
+                raise AGIAppError("Unable to convert Asterisk offset result to integer: %(value)r" % {
+                 'value': response.items.get('endpos').value,
+                }, response.items)
         return None
         
     def tdd_mode(self, mode):
@@ -502,7 +623,7 @@ class _AGI(object):
         all non-capable channels will cause an exception to occur.
         """
         response = self.execute('TDD MODE', mode)
-        result = response.get('result')
+        result = response.items.get('result')
         return result.value == '1'
         
     def verbose(self, message, level=1):
@@ -523,22 +644,23 @@ class _AGI(object):
         Waits for up to `timeout` milliseconds for a DTMF keypress to be received, returning that
         value. By default, this function blocks indefinitely.
 
-        If not DTMF key is pressed, `None` is returned.
+        If no DTMF key is pressed, `None` is returned.
         
         `AGIAppError` is raised on failure, most commonly because the channel was
         hung-up.
         """
         response = self.execute('WAIT FOR DIGIT', True, self._quote(timeout))
-        result = response.get('result')
+        result = response.items.get('result')
         if not result.value == '0':
             try:
                 return chr(int(result.value))
             except ValueError:
-                raise AGIAppError("Unable to convert Asterisk result to DTMF character: %(value)s" % {
+                raise AGIAppError("Unable to convert Asterisk result to DTMF character: %(value)r" % {
                  'value': result.value,
-                })
-                
-                
+                }, response.items)
+        return None
+        
+        
         
         
         
@@ -546,7 +668,7 @@ class _AGI(object):
         
     def _send_command(self, command, *args):
         """Send a command to Asterisk"""
-        command = ('%s %s' % (command.strip(), ' '.join(map(str,args)))).strip()
+        command = ('%s %s' % (command.strip(), ' '.join([str(arg) for arg in args if not arg is None]))).strip()
         if command[-1] != '\n':
             command += '\n'
             
@@ -570,17 +692,17 @@ class _AGI(object):
         if code == 200:
             raw = m.group(2)
             for (key, value, data) in _RE_KV.findall(m.group(2)):
-                if key == 'result':
-                    if value == '-1':
-                        raise AGIAppError("Error executing application or the channel was hung up")
-                    if check_hangup and data == 'hangup':
-                        raise AGIResultHangup("User hung up during execution")
-                        
-                result[key] = _ValueData(value, data)
+                response[key] = _ValueData(value, data)
                 
             if not 'result' in response:
-                raise AGIError("Asterisk did not provide a 'result' key-value pair")
-                
+                raise AGIError("Asterisk did not provide a 'result' key-value pair", response)
+
+            with response.get('result') as result:
+                if result.value == '-1':
+                    raise AGIAppError("Error executing application or the channel was hung up", response)
+                if check_hangup and result.data == 'hangup':
+                    raise AGIResultHangup("User hung up during execution", response)
+                    
             return (response, raw)
         elif code == 510:
             raise AGIInvalidCommandError(response)
@@ -628,21 +750,7 @@ class _AGI(object):
         """
         self.execute('SEND TEXT', self._quote(text))['result'][0]
 
-    def receive_char(self, timeout=0):
-        """agi.receive_char(timeout=0) --> chr
-        Receives a character of text on a channel.  Specify timeout to be the
-        maximum time to wait for input in milliseconds, or 0 for infinite. Most channels
-        do not support the reception of text.
-        """
-        res = self.execute('RECEIVE CHAR', timeout)['result'][0]
-
-        if res == '0':
-            return ''
-        else:
-            try:
-                return chr(int(res))
-            except:
-                raise AGIError('Unable to convert result to char: %s' % res)
+    
 
     
     
@@ -806,20 +914,7 @@ class _AGI(object):
         self.set_extension(extension)
         self.set_priority(priority)
 
-    def record_file(self, filename, format='gsm', escape_digits='#', timeout=-1, offset=0, beep='beep'):
-        """agi.record_file(filename, format, escape_digits, timeout=-1, offset=0, beep='beep') --> None
-        Record to a file until a given dtmf digit in the sequence is received
-        The format will specify what kind of file will be recorded.  The timeout 
-        is the maximum record time in milliseconds, or -1 for no timeout. Offset 
-        samples is optional, and if provided will seek to the offset without 
-        exceeding the end of the file
-        """
-        escape_digits = self._process_digit_list(escape_digits)
-        res = self.execute('RECORD FILE', self._quote(filename), format, escape_digits, timeout, offset, beep)['result'][0]
-        try:
-            return chr(int(res))
-        except:
-            raise AGIError('Unable to convert result to digit: %s' % res)
+    
 
     def set_autohangup(self, secs):
         """agi.set_autohangup(secs) --> None
@@ -857,7 +952,12 @@ class AGIException(Exception):
     """
     The base exception from which all exceptions native to this module inherit.
     """
-    
+    items = None #Any items received from Asterisk, as a dictionary.
+
+    def __init__(self, message, items={}):
+        Exception.__init__(self, message)
+        self.items = items
+        
 class AGIError(AGIException):
     """
     The base error from which all errors native to this module inherit.
