@@ -63,6 +63,12 @@ FORMAT_ULAW = 'ulaw'
 FORMAT_VOX = 'vox'
 FORMAT_WAV = 'wav'
 
+LOG_DEBUG = 0
+LOG_INFO = 1
+LOG_WARN = 2
+LOG_ERROR = 3
+LOG_CRITICAL = 4
+
 TDD_ON = 'on'
 TDD_OFF = 'off'
 TDD_MATE = 'mate'
@@ -186,7 +192,7 @@ class _AGI(object):
             }, response.items)
         return response.raw[7:] #Everything after 'result='
         
-    def channel_status(self, channel=''):
+    def channel_status(self, channel=None):
         """
         Provides the current state of this channel or, if `channel` is set, that of the named
         channel.
@@ -210,7 +216,7 @@ class _AGI(object):
         `AGIAppError` is raised on failure, most commonly because the channel is
         in a hung-up state.
         """
-        response = self.execute('CHANNEL STATUS', True, (channel and self._quote(channel)) or '')
+        response = self.execute('CHANNEL STATUS', True, (channel and self._quote(channel)) or None)
         result = response.items.get(_RESULT_KEY)
         try:
             return int(result.value)
@@ -277,7 +283,7 @@ class _AGI(object):
              'key': key,
             }, response.items)
             
-    def database_deltree(self, family, keytree=''):
+    def database_deltree(self, family, keytree=None):
         """
         Deletes the specificed family (and optinally keytree) from Asterisk's database.
 
@@ -286,7 +292,9 @@ class _AGI(object):
         `AGIDBError` is raised if the family (or keytree) could not be removed, which usually
         indicates that it didn't exist in the first place.
         """
-        response = self.execute('DATABASE DELTREE', True, self._quote(family), self._quote(key))
+        response = self.execute(
+         'DATABASE DELTREE', True, self._quote(family), (keytree and self._quote(keytree) or None)
+        )
         result = response.items.get(_RESULT_KEY)
         if result.value == '0':
             raise AGIDBError("Unable to delete family from database: family=%(family)r, keytree=%(keytree)r" % {
@@ -362,7 +370,7 @@ class _AGI(object):
         result = response.items.get(_RESULT_KEY)
         return (result.value, result.data == 'timeout')
         
-    def get_full_variable(self, variable, channel=''):
+    def get_full_variable(self, variable, channel=None):
         """
         Returns a `variable` associated with this channel or, if `channel` is set, that
         of the named channel, with full expression-processing.
@@ -372,7 +380,10 @@ class _AGI(object):
 
         `AGIAppError` is raised on failure.
         """
-        response = self.execute('GET FULL VARIABLE', False, self._quote(variable), (channel and self._quote(channel)) or '')
+        response = self.execute(
+         'GET FULL VARIABLE', False, self._quote(variable),
+         (channel and self._quote(channel) or None)
+        )
         result = response.items.get(_RESULT_KEY)
         if result.value == '1':
             return result.data
@@ -421,7 +432,7 @@ class _AGI(object):
                 }, response.items)
         return None
         
-    def get_variable(self, name):
+    def get_variable(self, name, channel=None):
         """
         Returns a `variable` associated with this channel or, if `channel` is set, that
         of the named channel.
@@ -431,19 +442,21 @@ class _AGI(object):
 
         `AGIAppError` is raised on failure.
         """
-        response = self.execute('GET VARIABLE', False, self._quote(variable), (channel and self._quote(channel)) or '')
+        response = self.execute(
+         'GET VARIABLE', False, self._quote(variable), (channel and self._quote(channel) or None)
+        )
         result = response.items.get(_RESULT_KEY)
         if result.value == '1':
             return result.data
         return None
         
-    def hangup(self, channel=''):
+    def hangup(self, channel=None):
         """
         Hangs up this channel or, if `channel` is set, the named channel.
 
         `AGIAppError` is raised on failure.
         """
-        self.execute('HANGUP', True, self._quote(channel))
+        self.execute('HANGUP', True, (channel and self._quote(channel) or None))
         
     def noop(self):
         """
@@ -647,14 +660,18 @@ class _AGI(object):
         result = response.items.get(_RESULT_KEY)
         return result.value == '1'
         
-    def verbose(self, message, level=1):
+    def verbose(self, message, level=LOG_INFO):
         """
         Causes Asterisk to process `message`, logging it to console or disk,
         depending on whether `level` is greater-than-or-equal-to Asterisk's
         corresponding verbosity threshold.
         
-        `level` defaults to 1, which is nominally akin to 'INFO', with 0 being
-        'DEBUG', 2, being 'WARN', 3 being 'ERROR', and 4 being 'CRITICAL'.
+        `level` is one of the following, defaulting to LOG_INFO:
+        - LOG_DEBUG
+        - LOG_INFO
+        - LOG_WARN
+        - LOG_ERROR
+        - LOG_CRITICAL
         
         `AGIAppError` is raised on failure.
         """
