@@ -52,6 +52,10 @@ CHANNEL_REMOTE_ALERTING = 5 #The channel is remotely ringing
 CHANNEL_UP = 6 #The channel is connected
 CHANNEL_BUSY = 7 #The channel is in a busy, non-conductive state
 
+TDD_ON = 'on'
+TDD_OFF = 'off'
+TDD_MATE = 'mate'
+
 class _AGI(object):
     """
     This class encapsulates communication between Asterisk an a python script.
@@ -181,7 +185,7 @@ class _AGI(object):
              'value': result.value,
             })
             
-    def control_stream_file(self, filename, escape_digits='', skipms=0, forward='', rewind='', pause=''):
+    def control_stream_file(self, filename, escape_digits='', sample_offset=0, forward='', rewind='', pause=''):
         """
         See also `get_data`, `get_option`, `stream_file`.
         
@@ -193,7 +197,7 @@ class _AGI(object):
         `escape_digits` must be a list of DTMF digits, specified as a string or a sequence of
         possibly mixed ints and strings. Playback ends immediately when one is received.
 
-        `skipms` may be used to jump an arbitrary number of milliseconds into the audio data.
+        `sample_offset` may be used to jump an arbitrary number of milliseconds into the audio data.
 
         If specified, `forward`, `rewind`, and `pause` are DTMF characters that will seek forwards
         and backwards in the audio stream or pause it temporarily; by default, these features are
@@ -209,7 +213,7 @@ class _AGI(object):
         escape_digits = self._process_digit_list(escape_digits)
         response = self.execute(
          'CONTROL STREAM FILE', True, self._quote(filename),
-         self._quote(escape_digits), self._quote(skipms),
+         self._quote(escape_digits), self._quote(sample_offset),
          self._quote(forward), self._quote(rewind), self._quote(pause)
         )
         result = response.get('result')
@@ -339,23 +343,7 @@ class _AGI(object):
         if result.value == '1':
             return result.data
         return None
-        
-    def get_variable(self, name):
-        """
-        Returns a `variable` associated with this channel or, if `channel` is set, that
-        of the named channel.
-        
-        The value of the requested variable is returned as a string. If the variable is
-        undefined, `None` is returned.
 
-        `AGIAppError` is raised on failure.
-        """
-        response = self.execute('GET VARIABLE', False, self._quote(variable), (channel and self._quote(channel)) or '')
-        result = response.get('result')
-        if result.value == '1':
-            return result.data
-        return None
-        
     def get_option(self, filename, escape_digits='', timeout=2000):
         """
         See also `control_stream_file`, `get_data`, `stream_file`.
@@ -372,8 +360,9 @@ class _AGI(object):
         were pressed to interrupt playback prior to that point. It defaults to 2000.
         
         The value returned is a tuple consisting of (dtmf_key:str, offset:int), where the offset is
-        the number of milliseconds that elapsed since the start of playback. '#' is always
-        interpreted as an end-of-sequence character and will never be present in the output.
+        the number of milliseconds that elapsed since the start of playback, or None if playback
+        completed successfully or the sample could not be opened. '#' is always interpreted as an
+        end-of-sequence character and will never be present in the output.
         
         `AGIAppError` is raised on failure, most commonly because the channel was
         hung-up.
@@ -398,7 +387,23 @@ class _AGI(object):
                  'value': response.get('endpos').value,
                 })
         return None
+        
+    def get_variable(self, name):
+        """
+        Returns a `variable` associated with this channel or, if `channel` is set, that
+        of the named channel.
+        
+        The value of the requested variable is returned as a string. If the variable is
+        undefined, `None` is returned.
 
+        `AGIAppError` is raised on failure.
+        """
+        response = self.execute('GET VARIABLE', False, self._quote(variable), (channel and self._quote(channel)) or '')
+        result = response.get('result')
+        if result.value == '1':
+            return result.data
+        return None
+        
     def hangup(self, channel=''):
         """
         Hangs up this channel or, if `channel` is set, the named channel.
@@ -418,6 +423,64 @@ class _AGI(object):
         `AGIAppError` is raised on failure.
         """
         self.execute('NOOP', True)
+        
+    def stream_file(self, filename, escape_digits='', sample_offset=0):
+        """
+        See also `control_stream_file`, `get_data`, `get_option`.
+
+        Plays back the specified file, which is the `filename` of the file to be played, either in
+        an Asterisk-searched directory or as an absolute path, without extension. ('myfile.wav'
+        would be specified as 'myfile', to allow Asterisk to choose the most efficient encoding,
+        based on extension, for the channel)
+        
+        `escape_digits` must be a list of DTMF digits, specified as a string or a sequence of
+        possibly mixed ints and strings. Playback ends immediately when one is received.
+        
+        `sample_offset` may be used to jump an arbitrary number of milliseconds into the audio data.
+        
+        The value returned is a tuple consisting of (dtmf_key:str, offset:int), where the offset is
+        the number of milliseconds that elapsed since the start of playback, or None if playback
+        completed successfully or the sample could not be opened. '#' is always interpreted as an
+        end-of-sequence character and will never be present in the output.
+        
+        `AGIAppError` is raised on failure, most commonly because the channel was
+        hung-up.
+        """
+        escape_digits = self._process_digit_list(escape_digits)
+        response = self.execute(
+         'STREAM FILE', True, self._quote(filename),
+         self._quote(escape_digits), self._quote(sample_offset)
+        )
+        result = response.get('result')
+        if not result.value == '0':
+            try:
+                dtmf_character = chr(int(result.value))
+            except ValueError:
+                raise AGIAppError("Unable to convert Asterisk result to DTMF character: %(value)s" % {
+                 'value': result.value,
+                })
+            try:
+                return (dtmf_character, int(response.get('endpos').value))
+            except ValueError:
+                raise AGIAppError("Unable to convert Asterisk offset result to integer: %(value)s" % {
+                 'value': response.get('endpos').value,
+                })
+        return None
+        
+    def tdd_mode(self, mode):
+        """
+        Sets the TDD transmission `mode` on supporting channels, one of the following:
+        - TDD_ON
+        - TDD_OFF
+        - TDD_MATE
+        
+        `True` is returned if the mode is set, `False` if the channel isn't capable, and
+        `AGIAppError` is raised if a problem occurs. According to documentation from 2006,
+        all non-capable channels will cause an exception to occur.
+        """
+        response = self.execute('TDD MODE', mode)
+        result = response.get('result')
+        return result.value == '1'
         
     def verbose(self, message, level=1):
         """
@@ -567,35 +630,6 @@ class _AGI(object):
             except:
                 raise AGIError('Unable to convert result to char: %s' % res)
 
-    def tdd_mode(self, mode='off'):
-        """agi.tdd_mode(mode='on'|'off') --> None
-        Enable/Disable TDD transmission/reception on a channel. 
-        Throws AGIAppError if channel is not TDD-capable.
-        """
-        res = self.execute('TDD MODE', mode)['result'][0]
-        if res == '0':
-            raise AGIAppError('Channel is not TDD-capable')
-            
-    def stream_file(self, filename, escape_digits='', sample_offset=0):
-        """agi.stream_file(filename, escape_digits='', sample_offset=0) --> digit
-        Send the given file, allowing playback to be interrupted by the given
-        digits, if any.  escape_digits is a string '12345' or a list  of 
-        ints [1,2,3,4,5] or strings ['1','2','3'] or mixed [1,'2',3,'4']
-        If sample offset is provided then the audio will seek to sample
-        offset before play starts.  Returns  digit if one was pressed.
-        Throws AGIError if the channel was disconnected.  Remember, the file
-        extension must not be included in the filename.
-        """
-        escape_digits = self._process_digit_list(escape_digits)
-        response = self.execute('STREAM FILE', filename, escape_digits, sample_offset)
-        res = response['result'][0]
-        if res == '0':
-            return ''
-        else:
-            try:
-                return chr(int(res))
-            except:
-                raise AGIError('Unable to convert result to char: %s' % res)
     
     
 
