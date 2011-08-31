@@ -541,7 +541,6 @@ class _AGI(object):
         writable.
         """
         escape_digits = self._process_digit_list(escape_digits)
-        response = None
         response = self.execute(
          'RECORD FILE', self._quote(filename), self._quote(format),
          self._quote(escape_digits), self._quote(timeout), self._quote(sample_offset),
@@ -571,6 +570,25 @@ class _AGI(object):
                  'value': result.value,
                 }, response.items)
         return ('', offset, True) #Assume a timeout if any other result data is received.
+        
+    def send_image(self, filename):
+        """
+        Sends the specified image, which is the `filename` of the file to be presented, either in
+        an Asterisk-searched directory or as an absolute path, without extension. ('myfile.png'
+        would be specified as 'myfile', to allow Asterisk to choose the most efficient encoding,
+        based on extension, for the channel)
+
+        `AGIAppError` is raised on failure.
+        """
+        self.execute('SEND FILE', self._quote(filename))
+        
+    def send_text(self, text):
+        """
+        Sends the specified `text` on a supporting channel.
+
+        `AGIAppError` is raised on failure.
+        """
+        self.execute('SEND TEXT', self._quote(text))
         
     def stream_file(self, filename, escape_digits='', sample_offset=0):
         """
@@ -747,28 +765,7 @@ class _AGI(object):
         
         
         
-    def send_text(self, text=''):
-        """agi.send_text(text='') --> None
-        Sends the given text on a channel.  Most channels do not support the
-        transmission of text.
-        Throws AGIError on error/hangup
-        """
-        self.execute('SEND TEXT', self._quote(text))['result'][0]
-
     
-
-    
-    
-
-    def send_image(self, filename):
-        """agi.send_image(filename) --> None
-        Sends the given image on a channel.  Most channels do not support the
-        transmission of images.   Image names should not include extensions.
-        Throws AGIError on channel failure
-        """
-        res = self.execute('SEND IMAGE', filename)['result'][0]
-        if res != '0':
-            raise AGIAppError('Channel falure on channel %s' % self.env.get('agi_channel','UNKNOWN'))
 
     def say_digits(self, digits, escape_digits=''):
         """agi.say_digits(digits, escape_digits='') --> digit
