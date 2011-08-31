@@ -43,6 +43,8 @@ _ValueData = collections.namedtuple('ValueData', ('value', 'data'))
 _RE_CODE = re.compile(r'(^\d*)\s*(.*)') #Matches Asterisk's response-code lines
 _RE_KV = re.compile(r'(?P<key>\w+)=(?P<value>[^\s]+)(?:\s+\((?P<data>.*)\))?') #Matches Asterisk's key-value response-pairs
 
+_RESULT_KEY = 'result'
+
 CHANNEL_DOWN_AVAILABLE = 0 #Channel is down and available
 CHANNEL_DOWN_RESERVED = 1 #Channel is down and reserved
 CHANNEL_OFFHOOK = 2 #Channel is off-hook
@@ -177,7 +179,7 @@ class _AGI(object):
         """
         options = '|'.join(options)
         response = self.execute('EXEC', False, application, (options and self._quote(options)) or '')
-        result = response.items.get('result')
+        result = response.items.get(_RESULT_KEY)
         if result.value == '-2':
             raise AGIAppError("Unable to execute application '%(application)r'" % {
              'application': application,
@@ -209,11 +211,12 @@ class _AGI(object):
         in a hung-up state.
         """
         response = self.execute('CHANNEL STATUS', True, (channel and self._quote(channel)) or '')
-        result = response.items.get('result')
+        result = response.items.get(_RESULT_KEY)
         try:
             return int(result.value)
         except ValueError:
-            raise AGIAppError("'result' key-value pair received from Asterisk contained a non-numeric value: %(value)r" % {
+            raise AGIAppError("'%(result-key)s' key-value pair received from Asterisk contained a non-numeric value: %(value)r" % {
+             'result-key': _RESULT_KEY,
              'value': result.value,
             }, response.items)
             
@@ -247,7 +250,7 @@ class _AGI(object):
          self._quote(escape_digits), self._quote(sample_offset),
          self._quote(forward), self._quote(rewind), self._quote(pause)
         )
-        result = response.items.get('result')
+        result = response.items.get(_RESULT_KEY)
         if not result.value == '0':
             try:
                 return chr(int(result.value))
@@ -267,7 +270,7 @@ class _AGI(object):
         didn't exist in the first place.
         """
         response = self.execute('DATABASE DEL', True, self._quote(family), self._quote(key))
-        result = response.items.get('result')
+        result = response.items.get(_RESULT_KEY)
         if result.value == '0':
             raise AGIDBError("Unable to delete from database: family=%(family)r, key=%(key)r" % {
              'family': family,
@@ -284,7 +287,7 @@ class _AGI(object):
         indicates that it didn't exist in the first place.
         """
         response = self.execute('DATABASE DELTREE', True, self._quote(family), self._quote(key))
-        result = response.items.get('result')
+        result = response.items.get(_RESULT_KEY)
         if result.value == '0':
             raise AGIDBError("Unable to delete family from database: family=%(family)r, keytree=%(keytree)r" % {
              'family': family,
@@ -301,7 +304,7 @@ class _AGI(object):
         occurs.
         """
         response = self.execute('DATABASE GET', False, self._quote(family), self._quote(key))
-        result = response.items.get('result')
+        result = response.items.get(_RESULT_KEY)
         if result.value == '0':
             raise AGIDBError("Key not found in database: family=%(family)r, key=%(key)r" % {
              'family': family,
@@ -326,7 +329,7 @@ class _AGI(object):
         occurs.
         """
         response = self.execute('DATABASE PUT', True self._quote(family), self._quote(key), self._quote(value))
-        result = response.items.get('result')
+        result = response.items.get(_RESULT_KEY)
         if result.value == '0':
             raise AGIDBError("Unable to store value in database: family=%(family)r, key=%(key)r, value=%(value)r" % {
              'family': family,
@@ -356,7 +359,7 @@ class _AGI(object):
         hung-up.
         """
         response = self.execute('GET DATA', True, self._quote(filename), self._quote(timeout), self._quote(max_digits))
-        result = response.items.get('result')
+        result = response.items.get(_RESULT_KEY)
         return (result.value, result.data == 'timeout')
         
     def get_full_variable(self, variable, channel=''):
@@ -370,7 +373,7 @@ class _AGI(object):
         `AGIAppError` is raised on failure.
         """
         response = self.execute('GET FULL VARIABLE', False, self._quote(variable), (channel and self._quote(channel)) or '')
-        result = response.items.get('result')
+        result = response.items.get(_RESULT_KEY)
         if result.value == '1':
             return result.data
         return None
@@ -402,7 +405,7 @@ class _AGI(object):
          'GET OPTION', True, self._quote(filename),
          self._quote(escape_digits), self._quote(timeout)
         )
-        result = response.items.get('result')
+        result = response.items.get(_RESULT_KEY)
         if not result.value == '0':
             try:
                 dtmf_character = chr(int(result.value))
@@ -429,7 +432,7 @@ class _AGI(object):
         `AGIAppError` is raised on failure.
         """
         response = self.execute('GET VARIABLE', False, self._quote(variable), (channel and self._quote(channel)) or '')
-        result = response.items.get('result')
+        result = response.items.get(_RESULT_KEY)
         if result.value == '1':
             return result.data
         return None
@@ -469,7 +472,7 @@ class _AGI(object):
         `AGIAppError` is raised on failure.
         """
         response = self.execute('RECEIVE CHAR', True, self._quote(timeout))
-        result = response.items.get('result')
+        result = response.items.get(_RESULT_KEY)
         if not result.value == '0':
             try:
                 return (chr(int(result.value)), result.data == 'timeout')
@@ -491,7 +494,7 @@ class _AGI(object):
         `AGIAppError` is raised on failure.
         """
         response = self.execute('RECEIVE TEXT', True, self._quote(timeout))
-        result = response.items.get('result')
+        result = response.items.get(_RESULT_KEY)
         return result.value
         
     def record_file(self, filename, format=FORMAT_WAV, escape_digits='', timeout=-1, sample_offset=0, beep=True, silence=None):
@@ -545,7 +548,7 @@ class _AGI(object):
          (beep and self._quote('beep') or None),
          (silence and self._quote('s=' + str(silence)) or None)
         )
-        result = response.items.get('result')
+        result = response.items.get(_RESULT_KEY)
         
         offset = response.get('endpos')
         if offset and offset.data.isdigit():
@@ -595,7 +598,7 @@ class _AGI(object):
          'STREAM FILE', True, self._quote(filename),
          self._quote(escape_digits), self._quote(sample_offset)
         )
-        result = response.items.get('result')
+        result = response.items.get(_RESULT_KEY)
         if not result.value == '0':
             try:
                 dtmf_character = chr(int(result.value))
@@ -623,7 +626,7 @@ class _AGI(object):
         all non-capable channels will cause an exception to occur.
         """
         response = self.execute('TDD MODE', mode)
-        result = response.items.get('result')
+        result = response.items.get(_RESULT_KEY)
         return result.value == '1'
         
     def verbose(self, message, level=1):
@@ -650,7 +653,7 @@ class _AGI(object):
         hung-up.
         """
         response = self.execute('WAIT FOR DIGIT', True, self._quote(timeout))
-        result = response.items.get('result')
+        result = response.items.get(_RESULT_KEY)
         if not result.value == '0':
             try:
                 return chr(int(result.value))
@@ -694,10 +697,12 @@ class _AGI(object):
             for (key, value, data) in _RE_KV.findall(m.group(2)):
                 response[key] = _ValueData(value, data)
                 
-            if not 'result' in response:
-                raise AGIError("Asterisk did not provide a 'result' key-value pair", response)
+            if not _RESULT_KEY in response:
+                raise AGIError("Asterisk did not provide a '%(result-key)s' key-value pair" % {
+                 'result-key': _RESULT_KEY,
+                }, response)
 
-            with response.get('result') as result:
+            with response.get(_RESULT_KEY) as result:
                 if result.value == '-1':
                     raise AGIAppError("Error executing application or the channel was hung up", response)
                 if check_hangup and result.data == 'hangup':
