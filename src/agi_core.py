@@ -88,7 +88,15 @@ class _AGI(object):
                 data = data.strip()
                 if key:
                     self._environment[key] = data
-                    
+
+    def _process_digit_list(self, digits):
+        """
+        Ensures that digit-lists are processed uniformly.
+        """
+        if type(digits) in (list, tuple, set, frozenset):
+            digits = ''.join([str(d) for d in digits])
+        return self._quote(digits)
+        
     def _quote(self, value):
         """
         Encapsulates `value` in double-quotes and coerces it into a string, if
@@ -116,7 +124,22 @@ class _AGI(object):
         dissecting it there.
         """
         return self._environment.copy()
+
+    def execute(self, command, check_hangup, *args):
+        """
+        Sends a request to Asterisk and waits for a response before returning control to the caller.
+
+        The state of the channel is verified with each call to this function, to ensure that it is
+        still connected.
+        """
+        self._test_hangup()
         
+        self._send_command(command, *args)
+        return self._get_result(check_hangup)
+
+
+    #Core Asterisk functions
+    ###########################################################################
     def answer(self):
         """
         Answers the call on the channel.
@@ -520,11 +543,6 @@ class _AGI(object):
         
         
         
-    def execute(self, command, check_hangup, *args):
-        self._test_hangup()
-        
-        self._send_command(command, *args)
-        return self._get_result(check_hangup)
         
     def _send_command(self, command, *args):
         """Send a command to Asterisk"""
@@ -597,15 +615,11 @@ class _AGI(object):
              'error': str(e),
             })
             
-    def _process_digit_list(self, digits):
-        if type(digits) in (list, tuple):
-            digits = ''.join(map(str, digits))
-        return self._quote(digits)
-
-    
-    
         
-    
+        
+        
+        
+        
     def send_text(self, text=''):
         """agi.send_text(text='') --> None
         Sends the given text on a channel.  Most channels do not support the
