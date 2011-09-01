@@ -412,20 +412,16 @@ class _AGI(object):
         result = response.items.get(_RESULT_KEY)
         return (result.value, result.data == 'timeout')
         
-    def get_full_variable(self, variable, channel=None):
+    def get_full_variable(self, variable):
         """
-        Returns a `variable` associated with this channel or, if `channel` is set, that
-        of the named channel, with full expression-processing.
+        Returns a `variable` associated with this channel, with full expression-processing.
         
         The value of the requested variable is returned as a string. If the variable is
         undefined, `None` is returned.
 
         `AGIAppError` is raised on failure.
         """
-        response = self.execute(
-         'GET FULL VARIABLE', False, self._quote(variable),
-         (channel and self._quote(channel) or None)
-        )
+        response = self.execute('GET FULL VARIABLE', False, self._quote(variable))
         result = response.items.get(_RESULT_KEY)
         if result.value == '1':
             return result.data
@@ -465,10 +461,9 @@ class _AGI(object):
             return (dtmf_character, offset)
         return None
         
-    def get_variable(self, name, channel=None):
+    def get_variable(self, name):
         """
-        Returns a `variable` associated with this channel or, if `channel` is set, that
-        of the named channel.
+        Returns a `variable` associated with this channel.
         
         The value of the requested variable is returned as a string. If the variable is
         undefined, `None` is returned.
@@ -476,7 +471,7 @@ class _AGI(object):
         `AGIAppError` is raised on failure.
         """
         response = self.execute(
-         'GET VARIABLE', False, self._quote(variable), (channel and self._quote(channel) or None)
+         'GET VARIABLE', False, self._quote(variable))
         )
         result = response.items.get(_RESULT_KEY)
         if result.value == '1':
@@ -749,6 +744,88 @@ class _AGI(object):
         `AGIAppError` is raised on failure.
         """
         self.execute('SEND TEXT', self._quote(text))
+
+    def set_autohangup(self, seconds=0):
+        """
+        Instructs Asterisk to hang up the channel after the given number of `seconds` have elapsed.
+
+        Calling this function with `seconds` set to 0, the default, will disable auto-hangup.
+
+        `AGIAppError` is raised on failure.
+        """
+        self.execute('SET AUTOHANGUP', self._quote(seconds))
+        
+    def set_callerid(self, number, name=None):
+        """
+        Sets the called ID (`number` and, optionally, `name`) of Asterisk on this channel.
+
+        `AGIAppError` is raised on failure.
+        """
+        if name:
+            name = '\\"%(name)s\\"' % {
+             'name': name,
+            }
+        else:
+            name = ''
+        number = '%(name)s<%(number)s>" % {
+         'name': name,
+         'number': number,
+        }
+        self.execute('SET CALLERID', self._quote(number))
+        
+    def set_context(self, context):
+        """
+        Sets the context for Asterisk to use upon completion of this AGI instance.
+        
+        No context-validation is performed; specifying an invalid context will cause the call to
+        terminate unexpectedly.
+        
+        `AGIAppError` is raised on failure.
+        """
+        self.execute('SET CONTEXT', self._quote(context))
+
+    def set_extension(self, extension):
+        """
+        Sets the extension for Asterisk to use upon completion of this AGI instance.
+        
+        No extension-validation is performed; specifying an invalid extension will cause the call to
+        terminate unexpectedly.
+        
+        `AGIAppError` is raised on failure.
+        """
+        self.execute('SET EXTENSION', self._quote(extension))
+        
+    def set_music_on_hold(self, on, moh_class=None):
+        """
+        Enables or disables music-on-hold for this channel, per the state of the `on` argument.
+
+        If specified, `moh_class` identifies the music-on-hold class to be used.
+        
+        `AGIAppError` is raised on failure.
+        """
+        self.execute(
+         'SET MUSIC', self._quote(on and 'on' or 'off'),
+         (moh_class and self._quote(moh_class) or None)
+        )
+        
+    def set_priority(self, priority):
+        """
+        Sets the priority for Asterisk to use upon completion of this AGI instance.
+        
+        No priority-validation is performed; specifying an invalid priority will cause the call to
+        terminate unexpectedly.
+        
+        `AGIAppError` is raised on failure.
+        """
+        self.execute('SET PRIORITY', self._quote(priority))
+        
+    def set_variable(self, name, value):
+        """
+        Sets the variable identified by `name` to `value` on the current channel.
+
+        `AGIAppError` is raised on failure.
+        """
+        self.execute('SET VARIABLE', self._quote(name), self._quote(value))
         
     def stream_file(self, filename, escape_digits='', sample_offset=0):
         """
@@ -921,64 +998,11 @@ class _AGI(object):
 
 
 
-    def set_context(self, context):
-        """agi.set_context(context)
-        Sets the context for continuation upon exiting the application.
-        No error appears to be produced.  Does not set exten or priority
-        Use at your own risk.  Ensure that you specify a valid context.
-        """
-        self.execute('SET CONTEXT', context)
-
-    def set_extension(self, extension):
-        """agi.set_extension(extension)
-        Sets the extension for continuation upon exiting the application.
-        No error appears to be produced.  Does not set context or priority
-        Use at your own risk.  Ensure that you specify a valid extension.
-        """
-        self.execute('SET EXTENSION', extension)
-
-    def set_priority(self, priority):
-        """agi.set_priority(priority)
-        Sets the priority for continuation upon exiting the application.
-        No error appears to be produced.  Does not set exten or context
-        Use at your own risk.  Ensure that you specify a valid priority.
-        """
-        self.execute('set priority', priority)
-
-    def goto_on_exit(self, context='', extension='', priority=''):
-        context = context or self.env['agi_context']
-        extension = extension or self.env['agi_extension']
-        priority = priority or self.env['agi_priority']
-        self.set_context(context)
-        self.set_extension(extension)
-        self.set_priority(priority)
-
-    
-
-    def set_autohangup(self, secs):
-        """agi.set_autohangup(secs) --> None
-        Cause the channel to automatically hangup at <secs> seconds in the
-        future.  Of course it can be hungup before then as well.   Setting to
-        0 will cause the autohangup feature to be disabled on this channel.
-        """
-        self.execute('SET AUTOHANGUP', secs)
-
     
 
     
 
-    def set_callerid(self, number):
-        """agi.set_callerid(number) --> None
-        Changes the callerid of the current channel.
-        """
-        self.execute('SET CALLERID', number)
-
     
-
-    def set_variable(self, name, value):
-        """Set a channel variable.
-        """
-        self.execute('SET VARIABLE', self._quote(name), self._quote(value))
 
     
 
