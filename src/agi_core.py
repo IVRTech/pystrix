@@ -885,7 +885,7 @@ class _AGI(object):
             }
         else:
             name = ''
-        number = '%(name)s<%(number)s>" % {
+        number = "%(name)s<%(number)s>" % {
          'name': name,
          'number': number,
         }
