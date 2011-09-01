@@ -147,9 +147,10 @@ class _AGI(object):
          'string': str(string),
         }
         
-    def _say(self, say_type, argument, escape_digits):
+    def _say(self, say_type, argument, escape_digits, *args):
         """
-        Synthesises speech on a channel.
+        Synthesises speech on a channel. This abstracts the commonalities between the "SAY ?"
+        functions.
 
         `say_type` is the type of command to be issued.
 
@@ -162,7 +163,7 @@ class _AGI(object):
         hung-up.
         """
         escape_digits = self._process_digit_list(escape_digits)
-        response = self.execute('SAY ' + say_type, self._quote(argument), self._quote(escape_digits))
+        response = self.execute('SAY ' + say_type, self._quote(argument), self._quote(escape_digits), *args)
         result = response.get(_RESULT_KEY)
 
         if not result.value == '0':
@@ -601,15 +602,6 @@ class _AGI(object):
         elif result.data == 'dtmf':
             return (self._convert_to_char(result.value, response.items), offset, False)
         return ('', offset, True) #Assume a timeout if any other result data is received.
-
-    def _say(self, say_type, string, escape_digits, *args):
-        escape_digits = self._process_digit_list(escape_digits)
-        response = self.execute('SAY ' + say_type, self._quote(string), self._quote(escape_digits), *args)
-        result = response.get(_RESULT_KEY)
-
-        if not result.value == '0':
-            return self._convert_to_char(result.value, response.items)
-        return None
         
     def say_alpha(self, characters, escape_digits=''):
         """
