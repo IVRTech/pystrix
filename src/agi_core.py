@@ -38,7 +38,7 @@ import collections
 import re
 import time
 
-_Response = collections.namedtuple('Response', ('items', 'raw'))
+_Response = collections.namedtuple('Response', ('items', 'code', 'raw'))
 _ValueData = collections.namedtuple('ValueData', ('value', 'data'))
 
 _RE_CODE = re.compile(r'(^\d*)\s*(.*)') #Matches Asterisk's response-code lines
@@ -91,6 +91,36 @@ class _AGI(object):
         self._environment = {}
         self._parse_agi_environment()
 
+    def agi_get_environment(self):
+        """
+        Returns Asterisk's initial environment values.
+        
+        Note that this function returns a copy of the values, so repeated calls
+        are less favourable than storing the returned value locally and
+        dissecting it there.
+        """
+        return self._environment.copy()
+
+    def execute(self, command, check_hangup, *args):
+        """
+        Sends a request to Asterisk and waits for a response before returning control to the caller.
+
+        The request type is specified in `command`, `check_hangup` indicates whether the response
+        should be parsed to look for patterns associated with hangups (must be optional, since the
+        patterns can be legal responses for some instant-returning requests), and `*args` contains
+        every argument associated with the request.
+        
+        The state of the channel is verified with each call to this function, to ensure that it is
+        still connected. An instance of `AGIHangup` is raised if it is not.
+
+        This function is intended for internal use only, but is exposed for purposes of
+        extendability. For details on how it works, see `_send_command()` and `_get_result()`.
+        """
+        self._test_hangup()
+        
+        self._send_command(command, *args)
+        return self._get_result(check_hangup)
+        
     def _convert_to_char(self, value, items):
         """
         Converts the given value into an ASCII character or raises `AGIAppError` with `items` as the
@@ -113,6 +143,73 @@ class _AGI(object):
             return int(offset.data)
         else:
             return -1
+
+    def _get_result(self, check_hangup=True):
+        """
+        Waits for a response from Asterisk, parses it, validates its contents, and returns it as a
+        named tuple with 'items', 'code', and 'raw' attributes, where 'items' is a dictionary of
+        Asterisk response-keys and value/data pairs, themselves in named tupled with 'value' and
+        'data' attributes, 'code' is the numeric code received from Asterisk, and 'raw' is the line
+        received, excluding the code.
+
+        `check_hangup`, if `True`, the default, will cause `AGIResultHangup` to be raised if the
+        'data' attribute of the 'result' key is 'hangup'.
+
+        If the result indicates failure, `AGIAppError` is raised.
+
+        If no 'result' key is provided, `AGIError` is raised.
+
+        `AGIInvalidCommandError` is raised if the given command is unrecognised, either because the
+        requested function isn't implemented in the current version of Asterisk or because the
+        `execute()` function was invoked incorrectly.
+        
+        `AGIUsageError` is emitted if the arguments provided for a command are invalid.
+        
+        `AGIDeadChannelError` occurs if a command is attempted on a dead channel.
+
+        `AGIUnknownError` covers any unrecognised Asterisk response code.
+        """
+        code = 0
+        response = {}
+        
+        line = self._read_line()
+        m = _RE_CODE.search(line)
+        if m:
+            code = int(m.group(1))
+            
+        if code == 200:
+            raw = m.group(2) #The entire line, excluding the code
+            for (key, value, data) in _RE_KV.findall(m.group(2)):
+                response[key] = _ValueData(value, data)
+                
+            if not _RESULT_KEY in response: #Must always be present.
+                raise AGIError("Asterisk did not provide a '%(result-key)s' key-value pair" % {
+                 'result-key': _RESULT_KEY,
+                }, response)
+
+            with response.get(_RESULT_KEY) as result:
+                if result.value == '-1': #A result of -1 always indicates failure
+                    raise AGIAppError("Error executing application or the channel was hung up", response)
+                if check_hangup and result.data == 'hangup': #A 'hangup' response usually indicates that the channel was hungup, but it is a legal variable value
+                    raise AGIResultHangup("User hung up during execution", response)
+                    
+            return _Response(response, code, raw)
+        elif code == 510:
+            raise AGIInvalidCommandError(response)
+        elif code == 511:
+            raise AGIDeadChannelError(response)
+        elif code == 520:
+            usage = [line]
+            while True:
+                line = self._read_line()
+                usage.append(line)
+                if line.startswith('520'):
+                    break
+            raise AGIUsageError('\n'.join(usage + ['']))
+        else:
+            raise AGIUnknownError("Unhandled code or undefined response: %(code)i" % {
+             'code': code,
+            })
             
     def _parse_agi_environment(self):
         """
@@ -146,7 +243,30 @@ class _AGI(object):
         return '"%(string)s"' % {
          'string': str(string),
         }
+
+    def _read_line(self):
+        """
+        Reads and returns a line from the Asterisk pipe, blocking until a complete line is
+        assembled.
         
+        If the pipe is closed before this happens, `AGISIGPIPEHangup` is raised.
+        """
+        try:
+            line = self._rfile.readline()
+            if not line: #EOF encountered
+                raise AGISIGPIPEHangup("Process input pipe closed: %(error)s" % {
+                 'error': str(e),
+                })
+            elif not line.endswith('\n'): #Fragment encountered
+                #Recursively append to the current fragment until the line is
+                #complete or the socket dies.
+                line += self._read_line()
+            return line.strip()
+        except IOError as e:
+            raise AGISIGPIPEHangup("Process input pipe broken: %(error)s" % {
+             'error': str(e),
+            })
+            
     def _say(self, say_type, argument, escape_digits, *args):
         """
         Synthesises speech on a channel. This abstracts the commonalities between the "SAY ?"
@@ -170,6 +290,27 @@ class _AGI(object):
             return self._convert_to_char(result.value, response.items)
         return None
         
+    def _send_command(self, command, *args):
+        """
+        Formats a `command` and sends it to Asterisk.
+
+        The formatted command is constructed by joining the action verb component with every
+        following argument, discarding those that are `None`.
+
+        If the connection to Asterisk is broken, `AGISIGPIPEHangup` is raised.
+        """
+        command = ' '.join([command.strip()] + [str(arg) for arg in args if not arg is None]))).strip()
+        if not command.endswith('\n'):
+            command += '\n'
+            
+        try:
+            self._wfile.write(command)
+            self._wfile.flush()
+        except Exception as e:
+            raise AGISIGPIPEHangup("Socket link broken: %(error)s" % {
+             'error': str(e),
+            })
+            
     def _test_hangup(self):
         """
         Tests to see if the channel has been hung up.
@@ -179,29 +320,6 @@ class _AGI(object):
         """
         return
         
-    def agi_get_environment(self):
-        """
-        Returns Asterisk's initial environment values.
-        
-        Note that this function returns a copy of the values, so repeated calls
-        are less favourable than storing the returned value locally and
-        dissecting it there.
-        """
-        return self._environment.copy()
-
-    def execute(self, command, check_hangup, *args):
-        """
-        Sends a request to Asterisk and waits for a response before returning control to the caller.
-
-        The state of the channel is verified with each call to this function, to ensure that it is
-        still connected.
-        """
-        self._test_hangup()
-        
-        self._send_command(command, *args)
-        return self._get_result(check_hangup)
-
-
     #Core Asterisk functions
     ###########################################################################
     def answer(self):
@@ -578,7 +696,7 @@ class _AGI(object):
         """
         escape_digits = self._process_digit_list(escape_digits)
         response = self.execute(
-         'RECORD FILE', self._quote(filename), self._quote(format),
+         'RECORD FILE', True, self._quote(filename), self._quote(format),
          self._quote(escape_digits), self._quote(timeout), self._quote(sample_offset),
          (beep and self._quote('beep') or None),
          (silence and self._quote('s=' + str(silence)) or None)
@@ -735,7 +853,7 @@ class _AGI(object):
 
         `AGIAppError` is raised on failure.
         """
-        self.execute('SEND FILE', self._quote(filename))
+        self.execute('SEND FILE', True, self._quote(filename))
         
     def send_text(self, text):
         """
@@ -743,7 +861,7 @@ class _AGI(object):
 
         `AGIAppError` is raised on failure.
         """
-        self.execute('SEND TEXT', self._quote(text))
+        self.execute('SEND TEXT', True, self._quote(text))
 
     def set_autohangup(self, seconds=0):
         """
@@ -753,7 +871,7 @@ class _AGI(object):
 
         `AGIAppError` is raised on failure.
         """
-        self.execute('SET AUTOHANGUP', self._quote(seconds))
+        self.execute('SET AUTOHANGUP', True, self._quote(seconds))
         
     def set_callerid(self, number, name=None):
         """
@@ -771,7 +889,7 @@ class _AGI(object):
          'name': name,
          'number': number,
         }
-        self.execute('SET CALLERID', self._quote(number))
+        self.execute('SET CALLERID', True, self._quote(number))
         
     def set_context(self, context):
         """
@@ -782,7 +900,7 @@ class _AGI(object):
         
         `AGIAppError` is raised on failure.
         """
-        self.execute('SET CONTEXT', self._quote(context))
+        self.execute('SET CONTEXT', True, self._quote(context))
 
     def set_extension(self, extension):
         """
@@ -793,7 +911,7 @@ class _AGI(object):
         
         `AGIAppError` is raised on failure.
         """
-        self.execute('SET EXTENSION', self._quote(extension))
+        self.execute('SET EXTENSION', True, self._quote(extension))
         
     def set_music_on_hold(self, on, moh_class=None):
         """
@@ -804,7 +922,7 @@ class _AGI(object):
         `AGIAppError` is raised on failure.
         """
         self.execute(
-         'SET MUSIC', self._quote(on and 'on' or 'off'),
+         'SET MUSIC', True, self._quote(on and 'on' or 'off'),
          (moh_class and self._quote(moh_class) or None)
         )
         
@@ -817,7 +935,7 @@ class _AGI(object):
         
         `AGIAppError` is raised on failure.
         """
-        self.execute('SET PRIORITY', self._quote(priority))
+        self.execute('SET PRIORITY', True, self._quote(priority))
         
     def set_variable(self, name, value):
         """
@@ -825,7 +943,7 @@ class _AGI(object):
 
         `AGIAppError` is raised on failure.
         """
-        self.execute('SET VARIABLE', self._quote(name), self._quote(value))
+        self.execute('SET VARIABLE', True, self._quote(name), self._quote(value))
         
     def stream_file(self, filename, escape_digits='', sample_offset=0):
         """
@@ -871,7 +989,7 @@ class _AGI(object):
         `AGIAppError` is raised if a problem occurs. According to documentation from 2006,
         all non-capable channels will cause an exception to occur.
         """
-        response = self.execute('TDD MODE', mode)
+        response = self.execute('TDD MODE', True, mode)
         result = response.items.get(_RESULT_KEY)
         return result.value == '1'
         
@@ -908,109 +1026,9 @@ class _AGI(object):
             return self._convert_to_char(result.value, response.items)
         return None
         
-        
-        
-        
-        
-        
-        
-    def _send_command(self, command, *args):
-        """Send a command to Asterisk"""
-        command = ('%s %s' % (command.strip(), ' '.join([str(arg) for arg in args if not arg is None]))).strip()
-        if command[-1] != '\n':
-            command += '\n'
-            
-        try:
-            self._wfile.write(command)
-            self._wfile.flush()
-        except Exception as e:
-            raise AGISIGPIPEHangup("Socket link broken: %(error)s" % {
-             'error': str(e),
-            })
-            
-    def _get_result(self, check_hangup=True):
-        """Read the result of a command from Asterisk"""
-        code = 0
-        response = {}
-        line = self._read_line()
-        m = _RE_CODE.search(line)
-        if m:
-            code = int(m.group(1))
-            
-        if code == 200:
-            raw = m.group(2)
-            for (key, value, data) in _RE_KV.findall(m.group(2)):
-                response[key] = _ValueData(value, data)
-                
-            if not _RESULT_KEY in response:
-                raise AGIError("Asterisk did not provide a '%(result-key)s' key-value pair" % {
-                 'result-key': _RESULT_KEY,
-                }, response)
 
-            with response.get(_RESULT_KEY) as result:
-                if result.value == '-1':
-                    raise AGIAppError("Error executing application or the channel was hung up", response)
-                if check_hangup and result.data == 'hangup':
-                    raise AGIResultHangup("User hung up during execution", response)
-                    
-            return (response, raw)
-        elif code == 510:
-            raise AGIInvalidCommandError(response)
-        elif code == 511:
-            raise AGIDeadChannelError(response)
-        elif code == 520:
-            usage = [line]
-            line = self._read_line()
-            while line[:3] != '520':
-                usage.append(line)
-                line = self._read_line()
-            usage.append(line)
-            usage = '%s\n' % '\n'.join(usage)
-            raise AGIUsageError(usage)
-        else:
-            raise AGIUnknownError(code, 'Unhandled code or undefined response')
-
-    def _read_line(self):
-        try:
-            line = self._rfile.readline()
-            if not line: #EOF encountered
-                raise AGISIGPIPEHangup("Process input pipe closed: %(error)s" % {
-                 'error': str(e),
-                })
-            elif not line.endswith('\n'): #Fragment encountered
-                #Recursively append to the current fragment until the line is
-                #complete or the socket dies.
-                line += self._read_line()
-            return line.strip()
-        except IOError as e:
-            raise AGISIGPIPEHangup("Process input pipe broken: %(error)s" % {
-             'error': str(e),
-            })
-            
-        
-        
-        
-        
-        
-    
-
-    
-
-
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-        
-        
+#Exceptions
+###############################################################################
 class AGIException(Exception):
     """
     The base exception from which all exceptions native to this module inherit.
