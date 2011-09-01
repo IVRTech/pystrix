@@ -12,11 +12,11 @@ Purpose
  
 Usage
 =====
- Asterisk's type-namespace is pretty easy to keep separate from most program
- logic, so importing this package is recommended over importing its modules.
+ Importing this package, or the 'agi' or 'ami' sub-packages is recommended over
+ importing individual modules.
  
- For more complete information, please see the examples directory distributed
- with the source code.
+ For complete information, please see the 'examples' directory distributed with
+ the source code.
  
 Legal
 =====
@@ -39,27 +39,6 @@ Legal
  Authors:
  - Neil Tallim <n.tallim@ivrnet.com>
 """
-from agi_core import (
- CHANNEL_DOWN_AVAILABLE, CHANNEL_DOWN_RESERVED, CHANNEL_OFFHOOK, CHANNEL_DIALED, CHANNEL_ALERTING,
- CHANNEL_REMOTE_ALERTING, CHANNEL_UP, CHANNEL_BUSY,
- FORMAT_SLN, FORMAT_G723, FORMAT_G729, FORMAT_GSM, FORMAT_ALAW, FORMAT_ULAW, FORMAT_VOX, FORMAT_WAV,
- LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR, LOG_CRITICAL,
- TDD_ON, TDD_OFF, TDD_MATE,
- AGIException, AGIError, AGIUnknownError, AGIAppError, AGIHangup, AGISIGPIPEHangup, AGIResultHangup,
- AGIDBError, AGIDeadChannelError, AGIUsageError, AGIInvalidCommandError,
-)
-
-from agi import (
- AGI,
- AGISIGHUPHangup,
-)
-
-from fagi import (
- FastAGIServer, FastAGI,
-)
-
-from manager import (
- ManagerMsg, Event, Manager,
- ManagerException, ManagerSocketException, ManagerAuthException,
-)
+import agi
+import ami
 

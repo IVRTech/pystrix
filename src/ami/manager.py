@@ -407,7 +407,7 @@ class Manager(object):
             # if we got None as an event, we are finished
             if not ev:
                 break
-            
+                
             # dispatch our events
 
             # first build a list of the functions to execute

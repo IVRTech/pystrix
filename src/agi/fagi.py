@@ -1,5 +1,5 @@
 """
-pystrix.agi
+pystrix.fagi
 
 Purpose
 =======
