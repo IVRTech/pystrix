@@ -36,6 +36,7 @@ Legal
 """
 import collections
 import re
+import time
 
 _Response = collections.namedtuple('Response', ('items', 'raw'))
 _ValueData = collections.namedtuple('ValueData', ('value', 'data'))
@@ -80,8 +81,8 @@ class _AGI(object):
     Asterisk. 
     """
     _environment = None #The environment variables received from Asterisk for this channel
-    _rfile = None #The input file-object
-    _wfile = None #The output file-object
+    _rfile = None #The input file-like-object
+    _wfile = None #The output file-like-object
     
     def __init__(self):
         """
@@ -89,7 +90,30 @@ class _AGI(object):
         """
         self._environment = {}
         self._parse_agi_environment()
-        
+
+    def _convert_to_char(self, value, items):
+        """
+        Converts the given value into an ASCII character or raises `AGIAppError` with `items` as the
+        payload.
+        """
+        try:
+            return chr(int(value))
+        except ValueError:
+            raise AGIAppError("Unable to convert Asterisk result to DTMF character: %(value)r" % {
+             'value': value,
+            }, items)
+
+    def _convert_to_int(self, items):
+        """
+        Extracts the offset-value from Asterisk's response, `items`, or returns -1 if the value
+        can't be parsed.
+        """
+        offset = items.get('endpos')
+        if offset and offset.data.isdigit():
+            return int(offset.data)
+        else:
+            return -1
+            
     def _parse_agi_environment(self):
         """
         Reads all of Asterisk's environment variables and stores them in memory.
@@ -122,6 +146,28 @@ class _AGI(object):
         return '"%(string)s"' % {
          'string': str(string),
         }
+        
+    def _say(self, say_type, argument, escape_digits):
+        """
+        Synthesises speech on a channel.
+
+        `say_type` is the type of command to be issued.
+
+        `argument` is the argument to be synthesised.
+
+        `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
+        of possibly mixed ints and strings. Playback ends immediately when one is received.
+
+        `AGIAppError` is raised on failure, most commonly because the channel was
+        hung-up.
+        """
+        escape_digits = self._process_digit_list(escape_digits)
+        response = self.execute('SAY ' + say_type, self._quote(argument), self._quote(escape_digits))
+        result = response.get(_RESULT_KEY)
+
+        if not result.value == '0':
+            return self._convert_to_char(result.value, response.items)
+        return None
         
     def _test_hangup(self):
         """
@@ -258,12 +304,7 @@ class _AGI(object):
         )
         result = response.items.get(_RESULT_KEY)
         if not result.value == '0':
-            try:
-                return chr(int(result.value))
-            except ValueError:
-                raise AGIAppError("Unable to convert Asterisk result to DTMF character: %(value)r" % {
-                 'value': result.value,
-                }, response.items)
+            return self._convert_to_char(result.value, response.items)
         return None
         
     def database_del(self, family, key):
@@ -418,18 +459,9 @@ class _AGI(object):
         )
         result = response.items.get(_RESULT_KEY)
         if not result.value == '0':
-            try:
-                dtmf_character = chr(int(result.value))
-            except ValueError:
-                raise AGIAppError("Unable to convert Asterisk result to DTMF character: %(value)r" % {
-                 'value': result.value,
-                }, response.items)
-            try:
-                return (dtmf_character, int(response.get('endpos').value))
-            except ValueError:
-                raise AGIAppError("Unable to convert Asterisk offset result to integer: %(value)r" % {
-                 'value': response.items.get('endpos').value,
-                }, response.items)
+            dtmf_character = self._convert_to_char(result.value, response.items)
+            offset = self._convert_to_int(response.items)
+            return (dtmf_character, offset)
         return None
         
     def get_variable(self, name, channel=None):
@@ -487,12 +519,7 @@ class _AGI(object):
         response = self.execute('RECEIVE CHAR', True, self._quote(timeout))
         result = response.items.get(_RESULT_KEY)
         if not result.value == '0':
-            try:
-                return (chr(int(result.value)), result.data == 'timeout')
-            except:
-                raise AGIAppError("Unable to convert Asterisk result to character: %(value)r" % {
-                 'value': result.value,
-                }, response.items)
+            return (self._convert_to_char(result.value, response.items), result.data == 'timeout')
         return None
 
     def receive_text(self, timeout=0):
@@ -561,13 +588,9 @@ class _AGI(object):
          (silence and self._quote('s=' + str(silence)) or None)
         )
         result = response.items.get(_RESULT_KEY)
+
+        offset = self._convert_to_int(response.items)
         
-        offset = response.get('endpos')
-        if offset and offset.data.isdigit():
-            offset = int(offset.data)
-        else:
-            offset = -1
-            
         if result.data == 'randomerror':
             raise AGIAppError("Unknown error occurred %(ms)i into recording: %(error)s" % {
              'ms': offset,
@@ -576,13 +599,145 @@ class _AGI(object):
         elif result.data == 'timeout':
             return ('', offset, True)
         elif result.data == 'dtmf':
-            try:
-                return (chr(int(result.value)), offset, False)
-            except ValueError:
-                raise AGIAppError("Unable to convert Asterisk result to DTMF character: %(value)r" % {
-                 'value': result.value,
-                }, response.items)
+            return (self._convert_to_char(result.value, response.items), offset, False)
         return ('', offset, True) #Assume a timeout if any other result data is received.
+
+    def _say(self, say_type, string, escape_digits, *args):
+        escape_digits = self._process_digit_list(escape_digits)
+        response = self.execute('SAY ' + say_type, self._quote(string), self._quote(escape_digits), *args)
+        result = response.get(_RESULT_KEY)
+
+        if not result.value == '0':
+            return self._convert_to_char(result.value, response.items)
+        return None
+        
+    def say_alpha(self, characters, escape_digits=''):
+        """
+        Reads an alphabetic string of `characters`.
+
+        `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
+        of possibly mixed ints and strings. Playback ends immediately when one is received and it is
+        returned. If nothing is recieved, `None` is returned.
+
+        `AGIAppError` is raised on failure, most commonly because the channel was
+        hung-up.
+        """
+        characters = self._process_digit_list(characters)
+        return self._say('ALPHA', characters, escape_digits)
+        
+    def say_date(self, seconds=None, escape_digits=''):
+        """
+        Reads the date associated with `seconds` since the UNIX Epoch. If not given, the local time
+        is used.
+        
+        `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
+        of possibly mixed ints and strings. Playback ends immediately when one is received and it is
+        returned. If nothing is recieved, `None` is returned.
+
+        `AGIAppError` is raised on failure, most commonly because the channel was
+        hung-up.
+        """
+        if seconds is None:
+            seconds = int(time.time())
+        return self._say('DATE', seconds, escape_digits)
+
+    def say_datetime(self, seconds=None, escape_digits='', format=None, timezone=None):
+        """
+        Reads the datetime associated with `seconds` since the UNIX Epoch. If not given, the local
+        time is used.
+        
+        `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
+        of possibly mixed ints and strings. Playback ends immediately when one is received and it is
+        returned. If nothing is recieved, `None` is returned.
+
+        `format` defaults to "ABdY 'digits/at' IMp", but may be a string with any of the following
+        meta-characters:
+        - A : Day of the week
+        - B : Month (Full Text)
+        - m : Month (Numeric)
+        - d : Day of the month
+        - Y : Year
+        - I : Hour (12-hour format)
+        - H : Hour (24-hour format)
+        - M : Minutes
+        - P : AM/PM
+        - Q : Shorthand for Today, Yesterday or ABdY
+        - R : Shorthand for HM
+        - S : Seconds
+        - T : Timezone
+
+        `timezone` may be a string in standard UNIX form, like 'America/Edmonton'. If `format` is
+        undefined, `timezone` is ignored and left to default to the system's local value.
+        
+        `AGIAppError` is raised on failure, most commonly because the channel was
+        hung-up.
+        """
+        if seconds is None:
+            seconds = int(time.time())
+        if not format:
+            timezone = None
+        return self._say(
+         'DATETIME', seconds, escape_digits,
+         (format and self._quote(format) or None), (timezone and self._quote(timezone) or None)
+        )
+        
+    def say_digits(self, digits, escape_digits=''):
+        """
+        Reads a numeric string of `digits`.
+
+        `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
+        of possibly mixed ints and strings. Playback ends immediately when one is received and it is
+        returned. If nothing is recieved, `None` is returned.
+
+        `AGIAppError` is raised on failure, most commonly because the channel was
+        hung-up.
+        """
+        digits = self._process_digit_list(digits)
+        return self._say('DIGITS', digits, escape_digits)
+        
+    def say_number(self, number, escape_digits=''):
+        """
+        Reads a `number` naturally.
+
+        `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
+        of possibly mixed ints and strings. Playback ends immediately when one is received and it is
+        returned. If nothing is recieved, `None` is returned.
+
+        `AGIAppError` is raised on failure, most commonly because the channel was
+        hung-up.
+        """
+        number = self._process_digit_list(number)
+        return self._say('DIGITS', number, escape_digits)
+        
+    def say_phonetic(self, characters, escape_digits=''):
+        """
+        Reads a phonetic string of `characters`.
+
+        `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
+        of possibly mixed ints and strings. Playback ends immediately when one is received and it is
+        returned. If nothing is recieved, `None` is returned.
+
+        `AGIAppError` is raised on failure, most commonly because the channel was
+        hung-up.
+        """
+        characters = self._process_digit_list(characters)
+        return self._say('ALPHA', characters, escape_digits)
+        
+    def say_time(self, seconds=None, escape_digits=''):
+        """
+        Reads the datetime associated with `seconds` since the UNIX Epoch. If not given, the local
+        time is used.
+        
+        `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
+        of possibly mixed ints and strings. Playback ends immediately when one is received and it is
+        returned. If nothing is recieved, `None` is returned.
+
+        `AGIAppError` is raised on failure, most commonly because the channel was
+        hung-up.
+        """
+        if seconds is None:
+            seconds = int(time.time())
+        return self._say('TIME', seconds, escape_digits)
         
     def send_image(self, filename):
         """
@@ -631,18 +786,9 @@ class _AGI(object):
         )
         result = response.items.get(_RESULT_KEY)
         if not result.value == '0':
-            try:
-                dtmf_character = chr(int(result.value))
-            except ValueError:
-                raise AGIAppError("Unable to convert Asterisk result to DTMF character: %(value)r" % {
-                 'value': result.value,
-                }, response.items)
-            try:
-                return (dtmf_character, int(response.get('endpos').value))
-            except ValueError:
-                raise AGIAppError("Unable to convert Asterisk offset result to integer: %(value)r" % {
-                 'value': response.items.get('endpos').value,
-                }, response.items)
+            dtmf_character = self._convert_to_char(result.value, response.items)
+            offset = self._convert_to_int(response.items)
+            return (dtmf_character, offset)
         return None
         
     def tdd_mode(self, mode):
@@ -690,12 +836,7 @@ class _AGI(object):
         response = self.execute('WAIT FOR DIGIT', True, self._quote(timeout))
         result = response.items.get(_RESULT_KEY)
         if not result.value == '0':
-            try:
-                return chr(int(result.value))
-            except ValueError:
-                raise AGIAppError("Unable to convert Asterisk result to DTMF character: %(value)r" % {
-                 'value': result.value,
-                }, response.items)
+            return self._convert_to_char(result.value, response.items)
         return None
         
         
@@ -784,120 +925,7 @@ class _AGI(object):
         
     
 
-    def say_digits(self, digits, escape_digits=''):
-        """agi.say_digits(digits, escape_digits='') --> digit
-        Say a given digit string, returning early if any of the given DTMF digits
-        are received on the channel.  
-        Throws AGIError on channel failure
-        """
-        digits = self._process_digit_list(digits)
-        escape_digits = self._process_digit_list(escape_digits)
-        res = self.execute('SAY DIGITS', digits, escape_digits)['result'][0]
-        if res == '0':
-            return ''
-        else:
-            try:
-                return chr(int(res))
-            except:
-                raise AGIError('Unable to convert result to char: %s' % res)
-
-    def say_number(self, number, escape_digits=''):
-        """agi.say_number(number, escape_digits='') --> digit
-        Say a given digit string, returning early if any of the given DTMF digits
-        are received on the channel.  
-        Throws AGIError on channel failure
-        """
-        number = self._process_digit_list(number)
-        escape_digits = self._process_digit_list(escape_digits)
-        res = self.execute('SAY NUMBER', number, escape_digits)['result'][0]
-        if res == '0':
-            return ''
-        else:
-            try:
-                return chr(int(res))
-            except:
-                raise AGIError('Unable to convert result to char: %s' % res)
-
-    def say_alpha(self, characters, escape_digits=''):
-        """agi.say_alpha(string, escape_digits='') --> digit
-        Say a given character string, returning early if any of the given DTMF
-        digits are received on the channel.  
-        Throws AGIError on channel failure
-        """
-        characters = self._process_digit_list(characters)
-        escape_digits = self._process_digit_list(escape_digits)
-        res = self.execute('SAY ALPHA', characters, escape_digits)['result'][0]
-        if res == '0':
-            return ''
-        else:
-            try:
-                return chr(int(res))
-            except:
-                raise AGIError('Unable to convert result to char: %s' % res)
-
-    def say_phonetic(self, characters, escape_digits=''):
-        """agi.say_phonetic(string, escape_digits='') --> digit
-        Phonetically say a given character string, returning early if any of
-        the given DTMF digits are received on the channel.  
-        Throws AGIError on channel failure
-        """
-        characters = self._process_digit_list(characters)
-        escape_digits = self._process_digit_list(escape_digits)
-        res = self.execute('SAY PHONETIC', characters, escape_digits)['result'][0]
-        if res == '0':
-            return ''
-        else:
-            try:
-                return chr(int(res))
-            except:
-                raise AGIError('Unable to convert result to char: %s' % res)
-
-    def say_date(self, seconds, escape_digits=''):
-        """agi.say_date(seconds, escape_digits='') --> digit
-        Say a given date, returning early if any of the given DTMF digits are
-        pressed.  The date should be in seconds since the UNIX Epoch (Jan 1, 1970 00:00:00)
-        """
-        escape_digits = self._process_digit_list(escape_digits)
-        res = self.execute('SAY DATE', seconds, escape_digits)['result'][0]
-        if res == '0':
-            return ''
-        else:
-            try:
-                return chr(int(res))
-            except:
-                raise AGIError('Unable to convert result to char: %s' % res)
-
-    def say_time(self, seconds, escape_digits=''):
-        """agi.say_time(seconds, escape_digits='') --> digit
-        Say a given time, returning early if any of the given DTMF digits are
-        pressed.  The time should be in seconds since the UNIX Epoch (Jan 1, 1970 00:00:00)
-        """
-        escape_digits = self._process_digit_list(escape_digits)
-        res = self.execute('SAY TIME', seconds, escape_digits)['result'][0]
-        if res == '0':
-            return ''
-        else:
-            try:
-                return chr(int(res))
-            except:
-                raise AGIError('Unable to convert result to char: %s' % res)
     
-    def say_datetime(self, seconds, escape_digits='', format='', zone=''):
-        """agi.say_datetime(seconds, escape_digits='', format='', zone='') --> digit
-        Say a given date in the format specfied (see voicemail.conf), returning
-        early if any of the given DTMF digits are pressed.  The date should be
-        in seconds since the UNIX Epoch (Jan 1, 1970 00:00:00).
-        """
-        escape_digits = self._process_digit_list(escape_digits)
-        if format: format = self._quote(format)
-        res = self.execute('SAY DATETIME', seconds, escape_digits, format, zone)['result'][0]
-        if res == '0':
-            return ''
-        else:
-            try:
-                return chr(int(res))
-            except:
-                raise AGIError('Unable to convert result to char: %s' % res)
 
 
 
