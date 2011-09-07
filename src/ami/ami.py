@@ -3,24 +3,45 @@ import re
 import socket
 import threading
 import time
+import types
 
+_EOC = '--END COMMAND--' #A string used by Asterisk to mark the end of some of its responses.
 _EOL = '\r\n' #Asterisk uses CRLF linebreaks to mark the ends of its lines.
+_EOL_FAKE = ('\n\r\n', '\r\r\n') #End-of-line patterns that indicate data, not headers.
+
+_EOC_INDICATOR = re.compile(r'Response:\s*Follows\s*$') #A regular expression that matches response headers that indicate the payload is attached
+
+RESPONSE_GENERIC = 'Generic Response' #A header-value provided as a surrogate for unidentifiable responses
+EVENT_GENERIC = 'Generic Event' #A header-value provided as a surrogate for unidentifiable unsolicited events
+
+KEY_ACTIONID = 'ActionID' #The key used to hold the ActionID of a request, for matching with responses
 
 
 import sys,os
 from cStringIO import StringIO
 from types import *
 
-
 class Manager(object):
+    _action_id = None #The ActionID last sent to Asterisk
+    _action_id_lock = None #A lock used to prevent race conditions on ActionIDs
+    _connection = None #A connection to the Asterisk manager, realised as a `_SynchronisedSocket`
+    _connection_lock = None #A means of preventing race conditions on the connection
+    _hostname = socket.gethostname() #The hostname of this system, used to prevent repeated calls through the C layer
+    _outstanding_requests = None #A set of ActionIDs sent to Asterisk, currently awaiting responses
+    _served_requests = None #A dictionary of responses from Asterisk, keyed by ActionID
+    
     def __init__(self):
-        self._sock = None     # our socket
-        self.title = None     # set by received greeting
-        self._connected = threading.Event()
+        self._action_id = 0
+        self._action_id_lock = threading.Lock()
+
+        self._connection_lock = threading.Lock()
+
+        self._outstanding_requests = set()
+        self._served_requests = {}
+
+
+
         self._running = threading.Event()
-        
-        # our hostname
-        self.hostname = socket.gethostname()
 
         # our queues
         self._message_queue = Queue.Queue()
@@ -45,153 +66,104 @@ class Manager(object):
 
 
     def __del__(self):
+        """
+        Ensure that all resources are freed quickly upon garbage-collection.
+        """
         self.close()
+        
+    def _get_action_id(self):
+        """
+        Produces a session-unique int, suitable for passing to Asterisk as an ActionID.
+        """
+        with self._action_id_lock as lock:
+            self._action_id += 1
+            if self._action_id > 0xFFFFFFFF:
+                self._action_id = 1
+            return self._action_id
 
-    def connected(self):
+    def _get_host_action_id(self):
         """
-        Check if we are connected or not.
-        """
-        return self._connected.isSet()
-
-    def next_seq(self):
-        """Return the next number in the sequence, this is used for ActionID"""
-        self._seqlock.acquire()
-        try:
-            return self._seq
-        finally:
-            self._seq += 1
-            self._seqlock.release()
-            
-    def _generate_id(self):
-        """
-        For passing to request objects.
+        Generates a host-qualified ActionID as a string, for greater resolution.
         """
         return '%(hostname)s-%(id)08x' % {
-         'hostname': socket.gethostname(),
-         'id': self.next_seq(),
+         'hostname': self._hostname,
+         'id': self._get_action_id(),
         }
-        
-    def send_action(self, cdict={}, **kwargs):
+
+    def connect(self, host, port=5038):
         """
-        Send a command to the manager
+        Establishes a connection to the specified Asterisk manager.
         
-        If a list is passed to the cdict argument, each item in the list will
-        be sent to asterisk under the same header in the following manner:
-
-        cdict = {"Action": "Originate",
-                 "Variable": ["var1=value", "var2=value"]}
-        send_action(cdict)
-
-        ...
-
-        Action: Originate
-        Variable: var1=value
-        Variable: var2=value
+        If the connection fails, `ManagerSocketException` is raised.
         """
+        self.disconnect()
+        with self._connection_lock as lock:
+            self._connection = _SynchronisedSocket(host, port)
+            
+    def disconnect(self):
+        """
+        Gracefully closes a connection to the Asterisk manager.
+        """
+        with self._connection_lock as lock:
+            if self._connection: #Close the old connection, if any.
+                self._connection.close()
+                self._connection = None
+            self._outstanding_requests.clear()
+            self._served_requests.clear()
+            
+    def get_asterisk_info(self):
+        """
+        Provides the name and version of Asterisk as a tuple of strings.
 
-        if not self._connected.isSet():
-            raise ManagerException("Not connected")
+        If not connected, `None` is returned.
+        """
+        with self._connection_lock as lock:
+            return (self.is_connected and self._connection.get_asterisk_info()) or None
+            
+    def is_connected(self):
+        """
+        Indicates whether the manager is connected.
+        """
+        with self._connection_lock as lock:
+            return bool(self._connection and self._connection.is_connected())
+            
+    def send_action(self, request, **kwargs):
+        """
+        Sends a command, contained in `request`, a `_Request`, to the Asterisk manager. Any
+        additional keyword arguments are added directly into the request message as though they
+        were native headers.
         
-        # fill in our args
-        cdict.update(kwargs)
-
-        # set the action id
-        if not cdict.has_key('ActionID'): cdict['ActionID'] = '%s-%08x' % (self.hostname, self.next_seq())
-        clist = []
-
-        # generate the command
-        for key, value in cdict.items():
-            if isinstance(value, list):
-               for item in value:
-                  item = tuple([key, item])
-                  clist.append('%s: %s' % item)
-            else:
-               item = tuple([key, value])
-               clist.append('%s: %s' % item)
-        clist.append(EOL)
-        command = EOL.join(clist)
-
-        # lock the socket and send our command
-        try:
-            self._sock.write(command)
-            self._sock.flush()
-        except socket.error, (errno, reason):
-            raise ManagerSocketException(errno, reason)
+        Asterisk's response is returned as a tuple of a `_Message` object, the original request, and
+        the time-delta in seconds, or `None` if the request timed out.
         
-        self._reswaiting.insert(0,1)
-        response = self._response_queue.get()
-        self._reswaiting.pop(0)
+        Raises `ManagerException` if the manager is not connected.
 
-        if not response:
-            raise ManagerSocketException(0, 'Connection Terminated')
+        Raises `ManagerSocketException` if the socket is broken during transmission.
 
-        return response
-
-    def _receive_data(self):
+        This function is thread-safe.
         """
-        Read the response from a command.
-        """
-        multiline = False
-        wait_for_marker = False
-        eolcount = 0
-        # loop while we are sill running and connected
-        while self._running.isSet() and self._connected.isSet():
-            try:
-                lines = []
-                for line in self._sock :
-                    # check to see if this is the greeting line    
-                    if not self.title and '/' in line and not ':' in line:
-                        # store the title of the manager we are connecting to:
-                        self.title = line.split('/')[0].strip()
-                        # store the version of the manager we are connecting to:
-                        self.version = line.split('/')[1].strip()
-                        # fake message header
-                        lines.append ('Response: Generated Header\r\n')
-                        lines.append (line)
-                        break
-                    # If the line is EOL marker we have a complete message.
-                    # Some commands are broken and contain a \n\r\n
-                    # sequence, in the case wait_for_marker is set, we
-                    # have such a command where the data ends with the
-                    # marker --END COMMAND--, so we ignore embedded
-                    # newlines until we see that marker
-                    if line == EOL and not wait_for_marker :
-                        multiline = False
-                        if lines or not self._connected.isSet():
-                            break
-                        # ignore empty lines at start
-                        continue
-                    lines.append(line)
-                    # line not ending in \r\n or without ':' isn't a
-                    # valid header and starts multiline response
-                    if not line.endswith('\r\n') or ':' not in line:
-                        multiline = True
-                    # Response: Follows indicates we should wait for end
-                    # marker --END COMMAND--
-                    if not multiline and line.startswith('Response') and \
-                        line.split(':', 1)[1].strip() == 'Follows':
-                        wait_for_marker = True
-                    # same when seeing end of multiline response
-                    if multiline and line.startswith('--END COMMAND--'):
-                        wait_for_marker = False
-                        multiline = False
-                    if not self._connected.isSet():
-                        break
-                else:
-                    # EOF during reading
-                    self._sock.close()
-                    self._connected.clear()
-                # if we have a message append it to our queue
-                if lines and self._connected.isSet():
-                    self._message_queue.put(lines)
-                else:
-                    self._message_queue.put(None)
-            except socket.error:
-                self._sock.close()
-                self._connected.clear()
-                self._message_queue.put(None)
+        with self._connection_lock as lock:
+            if not self.is_connected():
+                raise ManagerException("Not connected to an Asterisk manager")
+                
+            (command, action_id) = request.build_request(self._get_host_action_id, kwargs)
+            self._connection.send_message(command)
 
-    
+            self._outstanding_requests[action_id] = request
+
+        start_time = time.time()
+        timeout = start_time + request.get_timeout()
+        while time.time() < timeout:
+            with self._connection_lock as lock:
+                response = self._served_requests.get(action_id)
+                if response:
+                    del self._served_requests[action_id]
+                    return (response, request, time.time() - start_time)
+            time.sleep(0.05)
+        return None
+
+        
+        
     def register_event(self, event, function):
         """
         Register a callback for the specfied event.
@@ -278,46 +250,13 @@ class Manager(object):
                if callback(ev, self):
                   break
 
-    def connect(self, host, port=5038):
-        """Connect to the manager interface"""
-
-        if self._connected.isSet():
-            raise ManagerException('Already connected to manager')
-
-        # make sure host is a string
-        assert type(host) in StringTypes
-
-        port = int(port)  # make sure port is an int
-
-        # create our socket and connect
-        try:
-            _sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            _sock.connect((host,port))
-            self._sock = _sock.makefile ()
-            _sock.close ()
-        except socket.error, (errno, reason):
-            raise ManagerSocketException(errno, reason)
-
-        # we are connected and running
-        self._connected.set()
-        self._running.set()
-
-        # start the event thread
-        self.message_thread.start()
-
-        # start the event dispatching thread
-        self.event_dispatch_thread.start()
-
-        # get our initial connection response
-        return self._response_queue.get()
-
     def close(self):
-        """Shutdown the connection to the manager"""
-        
-        # if we are still running, logout
-        if self._running.isSet() and self._connected.isSet():
-            self.logoff()
-         
+        """
+        Release all resources associated with this manager and ensure that all threads have stopped.
+        """
+        self.disconnect()
+
+        """ 
         if self._running.isSet():
             # put None in the message_queue to kill our threads
             self._message_queue.put(None)
@@ -331,127 +270,65 @@ class Manager(object):
                 self.event_dispatch_thread.join()
             
         self._running.clear()
-        
-    def login(self, username, secret):
-        """Login to the manager, throws ManagerAuthException when login falis"""
-           
-        cdict = {'Action':'Login'}
-        cdict['Username'] = username
-        cdict['Secret'] = secret
-        response = self.send_action(cdict)
-        
-        if response.get_header('Response') == 'Error':
-           raise ManagerAuthException(response.get_header('Message'))
-        
-        return response
-        
-        
-class ManagerMsg(object):
-    """A manager interface message"""
+        """
+
+    
+class _Message(dict):
+    """
+    An event received from Asterisk.
+
+    All message headers are exposed as dictionary items on this object directly, for simplicity's
+    sake. For purposes of being explicit, the 'headers' property is a recursive reference to its
+    parent `_Event`.
+    """
+    data = None #The payload received from Asterisk
+    headers = None #A reference to this object, which is a dictionary with header responses from Asterisk
+    raw = None #The raw response received from Asterisk
+    
     def __init__(self, response):
-        # the raw response, straight from the horse's mouth:
-        self.response = response
-        self.data = ''
-        self.headers = {}
-        
-        # parse the response
-        self.parse(response)
+        """
+        Parses the `response` received from Asterisk and assembles a structured event object
+        suitable for processing by application logic.
+        """
+        self.data = []
+        self.headers = self
+        self.raw = response
+        self._parse(response)
 
-        # This is an unknown message, may happen if a command (notably
-        # 'dialplan show something') contains a \n\r\n sequence in the
-        # middle of output. We hope this happens only *once* during a
-        # misbehaved command *and* the command ends with --END COMMAND--
-        # in that case we return an Event.  Otherwise we asume it is
-        # from a misbehaving command not returning a proper header (e.g.
-        # IAXnetstats in Asterisk 1.4.X)
-        # A better solution is probably to retain some knowledge of
-        # commands sent and their expected return syntax. In that case
-        # we could wait for --END COMMAND-- for 'command'.
-        # B0rken in asterisk. This should be parseable without context.
-        if 'Event' not in self.headers and 'Response' not in self.headers:
-            # there are commands that return the ActionID but not
-            # 'Response', e.g., IAXpeers in Asterisk 1.4.X
-            if self.has_header('ActionID'):
-                self.headers['Response'] = 'Generated Header'
-            elif '--END COMMAND--' in self.data:
-                self.headers['Event'] = 'NoClue'
-            else:
-                self.headers['Response'] = 'Generated Header'
-        
-    def parse(self, response):
-        """Parse a manager message"""
+        #Apply some tests to see if Asterisk sent back a malformed response and try to make it
+        #salvagable. This typically only happens with specific events, so applications can deal
+        #with it more effectively than the processing core.
+        if 'Event' not in self and 'Response' not in self:
+            if self.has_header(KEY_ACTIONID): #If 'ActionID' is present, it's a response to an action.
+                self.headers['Response'] = RESPONSE_GENERIC
+            elif '--END COMMAND--' in self.data: #It's an unsolicited event
+                self.headers['Event'] = EVENT_GENERIC
+            self.headers['Event'] = EVENT_GENERIC #If neither case holds, assume it's an unsolicited event.
+            
+    def _parse(self, response):
+        """
+        Parses the response from Asterisk.
 
-        data = []
-        for n, line in enumerate (response):
-            # all valid header lines end in \r\n
-            if not line.endswith ('\r\n'):
-                data.extend(response[n:])
+        All headers are added to the core dictionary and all data is exposed as a list of lines.
+        """
+        while response:
+            line = response[0]
+            if line.endswith(_EOL_FAKE) or not line.endswith(_EOL) or not ':' in line: #All lines from this point forth are data
+                self.data.extend((l.strip() for l in response))
                 break
-            try:
-                k, v = (x.strip() for x in line.split(':',1))
-                self.headers[k] = v
-            except ValueError:
-                # invalid header, start of multi-line data response
-                data.extend(response[n:])
-                break
-        self.data = ''.join(data)
-
-    def has_header(self, hname):
-        """Check for a header"""
-        return self.headers.has_key(hname)
-
-    def get_header(self, hname, defval = None):
-        """Return the specfied header"""
-        return self.headers.get(hname, defval)
-
-    def __getitem__(self, hname):
-        """Return the specfied header"""
-        return self.headers[hname]
-    def __repr__(self):
-        return self.headers['Response']
+            (key, value) = response.pop(0).split(':', 1)
+            self[key.strip()] = value.strip()
+            
+    def __eq__(self, o):
+        """
+        A convenience qualifier for decision-blocks to allow the event to be compared to strings for
+        readability purposes.
+        """
+        if isinstance(o, types.StringType):
+            return self['Event'] == o
+        return dict.__eq__(self, o)
         
-        
-class Event(object):
-    """Manager interface Events, __init__ expects and 'Event' message"""
-    def __init__(self, message):
-
-        # store all of the event data
-        self.message = message
-        self.data = message.data
-        self.headers = message.headers
-
-        # if this is not an event message we have a problem
-        if not message.has_header('Event'):
-            raise ManagerException('Trying to create event from non event message')
-
-        # get the event name
-        self.name = message.get_header('Event')
-    
-    def has_header(self, hname):
-        """Check for a header"""
-        return self.headers.has_key(hname)
-
-    def get_header(self, hname, defval = None):
-        """Return the specfied header"""
-        return self.headers.get(hname, defval)
-    
-    def __getitem__(self, hname):
-        """Return the specfied header"""
-        return self.headers[hname]
-    
-    def __repr__(self):
-        return self.headers['Event']
-
-    def get_action_id(self):
-        return self.headers.get('ActionID',0000)
-        
-
-
-
-
-
-
-class _ManagerRequest(dict):
+class _Request(dict):
     """
     Provides a generic container for assembling AMI requests.
     
@@ -459,6 +336,8 @@ class _ManagerRequest(dict):
     as override `process_response()` to specially format the data to be returned after a request
     has been served.
     """
+    _timeout = 0
+    
     def __init__(self, action):
         """
         `action` is the type of action being requested of the Asterisk server.
@@ -467,7 +346,8 @@ class _ManagerRequest(dict):
         
     def build_request(self, id_generator, **kwargs):
         """
-        Returns a string formatted for transmission to Asterisk to place a request.
+        Returns a string formatted for transmission to Asterisk to place a request and the action ID
+        associated with the request.
         
         `id_generator` is a function that generates an Asterisk ActionID.
         
@@ -477,16 +357,32 @@ class _ManagerRequest(dict):
         The 'Action' line is always first.
         """
         items = [('Action', self['Action'])]
-        items += [(key, value) for (key, value) in self.items() if not key == 'Action']
-        items += [(key, value) for (key, value) in kwargs.items()]
-        
-        if not 'ActionID' in self: #Add an ActionID if not already defined
-            items += [('ActionID', id_generator())]
+        for (key, value) in [(k, v) for (k, v) in self.items() if not k == 'Action'] + kwargs.items():
+            key = str(key)
+            if type(value) in (tuple, list, set, frozenset):
+                for val in value:
+                    items.append((key, str(val)))
+            else:
+                items.append((key, str(value)))
+
+        action_id = self.get(KEY_ACTIONID)
+        if action_id is None: #Add an ActionID if not already defined
+            action_id = str(id_generator())
+            items.append((KEY_ACTIONID, action_id))
             
-        return _EOL.join(['%(key)s: %(value)s' % {
-         'key': key,
-         'value': value,
-        } for (key, value) in items] + [_EOL])
+        return (
+         _EOL.join(['%(key)s: %(value)s' % {
+          'key': key,
+          'value': value,
+         } for (key, value) in items] + [_EOL]),
+         action_id,
+        )
+
+    def get_timeout(self):
+        """
+        Gets the number of seconds to wait for a response from Asterisk for this request.
+        """
+        return self._timeout
         
     def process_response(self, response):
         """
@@ -495,16 +391,169 @@ class _ManagerRequest(dict):
         This implementation just passes the response back to the caller as received.
         """
         return response
+
+    def set_timeout(self, timeout):
+        """
+        Sets the `timeout` of this request to the specified number of seconds, with the default
+        being 5. Indefinite waiting is not supported, but arbitrarily large values may be provided.
+
+        Seconds may be specified in fractions. A request that has timed out may still be serviced by
+        Asterisk, but no notification will be given. Changing the timeout value of the request
+        object has no effect on issued requests.
+        """
+        self._timeout = timeout
         
+class _SynchronisedSocket(object):
+    """
+    Provides a threadsafe conduit for communication with an Asterisk manager interface.
+    """
+    _asterisk_name = '<unknown>' #The name of the Asterisk server to which the socket is connected
+    _asterisk_version = '<unknown>' # The version of the Asterisk server to which the socket is connected
+    _connected = False #True while a connection is active
+    _socket = None #The socket used to communicate with the Asterisk server
+    _socket_file = None #The socket exposed as a file-like object
+    _socket_lock = None #A lock used to prevent race conditions from affecting the Asterisk link
+    
+    def __init__(self, host, port=5038):
+        """
+        Establishes a connection to the specified Asterisk manager, setting session variables as
+        needed.
         
+        If the connection fails, `ManagerSocketException` is raised.
+        """
+        self._connect(host, port)
+        self._socket_lock = threading.RLock()
+        
+    def __del__(self):
+        """
+        Ensure the resources are freed.
+        """
+        self.close()
+        
+    def close(self):
+        """
+        Release resources associated with this connection.
+        """
+        with self._socket_lock as lock:
+            self._connected = False
+            for closable in (self._socket_file, self._socket):
+                try:
+                    closable.close()
+                except Exception:
+                    pass #Can't do anything about it
+
+    def get_asterisk_info(self):
+        """
+        Provides the name and version of Asterisk as a tuple of strings.
+        """
+        return (self._asterisk_name, self._asterisk_version)
+        
+    def is_connected(self):
+        """
+        Indicates whether the socket is connected.
+        """
+        with self._socket_lock as lock:
+            return self._connected
+
+    def read_message(self):
+        """
+        Reads a full message from Asterisk.
+
+        The message read is returned as a `_Message` after being parsed. `None` is returned if
+        the server didn't send a response, which nominally means that something is wrong.
+        
+        `ManagerSocketException` is raised if the connection is broken.
+        """
+        if not self.is_connected():
+            return None
+            
+        #Bring some often-referenced values into the local namespace
+        global _EOC
+        global _EOC_INDICATOR
+        global _EOL
+        
+        wait_for_marker = False #When true, the special string '--END COMMAND--' is used to end a message, rather than a CRLF
+        while True: #Keep reading lines until a full message has been collected
+            line = None
+            with self._socket_lock as lock:
+                try:
+                    line = self._socket_file.readline()
+                except socket.error as (errno, message):
+                    self.close()
+                    raise ManagerSocketException("Connection to Asterisk manager broken while reading data: [%(errno)i] %(error)s" % {
+                     'errno': errno,
+                     'error': message,
+                    })
+
+            response_lines = [] #Lines collected from Asterisk
+            if line == _EOL and not wait_for_marker:
+                if response_lines: #A full response has been collected
+                    return response_lines
+                continue #Asterisk is allowed to send empty lines before and after real data, so ignore them
+
+            response_lines.append(line) #Add the line to the response
+
+            #Test to see if this line implies that there needs to be an explicit end to the message
+            if wait_for_marker:
+                if line.startswith(_EOC): #The message is complete
+                    return response_lines
+            elif _EOC_INDICATOR.match(line): #Data that may contain the _EOL pattern is now legal
+                wait_for_marker = True
+
+    def send_message(self, message):
+        """
+        Locks the socket and writes the entire `message` into the stream.
+
+        `ManagerSocketException` is raised if the connection is broken.
+        """
+        with self._socket_lock as lock:
+            try:
+                self._socket.write(message)
+                self._socket.flush()
+            except socket.error as (errno, reason):
+                self.close()
+                raise ManagerSocketException("Connection to Asterisk manager broken while writing data: [%(errno)i] %(error)s" % {
+                 'errno': errno,
+                 'error': message,
+                })
+                
+    def _connect(self, host, port):
+        """
+        Establishes a connection to the specified Asterisk manager, then dissects its greeting.
+
+        If the connection fails, `ManagerSocketException` is raised.
+        """
+        try:
+            self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self._socket.connect((host, port))
+            self._socket_file = self._socket.makefile()
+        except socket.error as (errno, reason):
+            raise ManagerSocketException("Connection to Asterisk manager could not be established: [%(errno)i] %(reason)s" % {
+             'errno': errno,
+             'reason': reason,
+            })
+        self._connected = True
+
+        #Pop the greeting off the head of the pipe and set the version information
+        try:
+            line = self._socket_file.readline()
+        except socket.error as (errno, reason):
+            raise ManagerSocketException("Connection to Asterisk manager broken while reading greeting: [%(errno)i] %(reason)s" % {
+             'errno': errno,
+             'reason': reason,
+            })
+        else:
+            if '/' in line:
+                (self._asterisk_name, self._asterisk_version) = (token.strip() for token in line.split('/', 1))
+                
+                
 class ManagerException(Exception):
     pass
     
 class ManagerError(ManagerException):
     pass
     
-"""
 class ManagerSocketException(ManagerException):
     pass
-"""
+
 

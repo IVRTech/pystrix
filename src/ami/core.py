@@ -1,8 +1,8 @@
 import time
 
-from ami import _ManagerRequest
+from ami import _Request
 
-class Hangup(_ManagerRequest):
+class Hangup(_Request):
     """
     Hangs up a channel.
     """
@@ -13,7 +13,7 @@ class Hangup(_ManagerRequest):
         _ManagerRequest.__init__('Hangup')
         self['Channel'] = channel
         
-class Login(_ManagerRequest):
+class Login(_Request):
     """
     Authenticates to the AMI server.
     """
@@ -33,7 +33,7 @@ class Login(_ManagerRequest):
             raise ManagerAuthException(response.get_header('Message'))
         return response
         
-class Ping(_ManagerRequest):
+class Ping(_Request):
     """
     Pings the AMI server.
     """
