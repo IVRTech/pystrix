@@ -81,7 +81,7 @@ class Manager(object):
         Sets up an environment for interacting with an Asterisk Management Interface.
 
         To proceed, register any necessary callbacks, then call `connect()`, then pass the core
-        `Login` request to `send_action()`.
+        `Login` or `Challenge` request to `send_action()`.
         """
         self._action_id = 0
         self._action_id_lock = threading.Lock()
@@ -316,7 +316,7 @@ class Manager(object):
             self._outstanding_requests[action_id] = request
 
         start_time = time.time()
-        timeout = start_time + request.get_timeout()
+        timeout = start_time + request.timeout
         while time.time() < timeout:
             with self._connection_lock as lock:
                 response = self._message_reader.get_response(action_id)
@@ -389,10 +389,9 @@ class _Message(dict):
         if KEY_EVENT not in self and KEY_RESPONSE not in self:
             if self.has_header(KEY_ACTIONID): #If 'ActionID' is present, it's a response to an action.
                 self.headers[KEY_RESPONSE] = RESPONSE_GENERIC
-            elif _EOC in self.data: #It's an unsolicited event
+            else: #It's an unsolicited event
                 self.headers[KEY_EVENT] = EVENT_GENERIC
-            self.headers[KEY_EVENT] = EVENT_GENERIC #If neither case holds, assume it's an unsolicited event.
-            
+                
     def _parse(self, response):
         """
         Parses the response from Asterisk.
@@ -484,7 +483,10 @@ class _Request(dict):
     as override `process_response()` to specially format the data to be returned after a request
     has been served.
     """
-    _timeout = 0
+    timeout = 5 #The number of seconds to wait before considering this request timed out, may be a float
+    #Indefinite waiting is not supported, but arbitrarily large values may be provided
+    #A request that has timed out may still be serviced by Asterisk, with the notification being treated as orphaned
+    #Changing the timeout value of the request object has no effect on set requests
     
     def __init__(self, action):
         """
@@ -526,30 +528,15 @@ class _Request(dict):
          action_id,
         )
 
-    def get_timeout(self):
-        """
-        Gets the number of seconds to wait for a response from Asterisk for this request.
-        """
-        return self._timeout
-        
     def process_response(self, response):
         """
         Provides an opportunity to parse, filter, or react to a response from Asterisk.
         
-        This implementation just passes the response back to the caller as received.
+        This implementation just passes the response back to the caller as received, adding a new
+        'success' attribute on the response object with a boolean value.
         """
+        response.success = response.get('Response') in ('Success', 'Follows')
         return response
-
-    def set_timeout(self, timeout):
-        """
-        Sets the `timeout` of this request to the specified number of seconds, with the default
-        being 5. Indefinite waiting is not supported, but arbitrarily large values may be provided.
-
-        Seconds may be specified in fractions. A request that has timed out may still be serviced by
-        Asterisk, but no notification will be given. Changing the timeout value of the request
-        object has no effect on issued requests.
-        """
-        self._timeout = timeout
         
 class _SynchronisedSocket(object):
     """
@@ -646,15 +633,15 @@ class _SynchronisedSocket(object):
                     return _Message(response_lines)
                 continue #Asterisk is allowed to send empty lines before and after real data, so ignore them
 
-            response_lines.append(line) #Add the line to the response
-
-            #Test to see if this line implies that there needs to be an explicit end to the message
+            #Test to see if this line is related to the requirements for an explicit end to the message
             if wait_for_marker:
                 if line.startswith(_EOC): #The message is complete
                     return _Message(response_lines)
             elif _EOC_INDICATOR.match(line): #Data that may contain the _EOL pattern is now legal
                 wait_for_marker = True
-
+                
+            response_lines.append(line) #Add the line to the response
+            
     def send_message(self, message):
         """
         Locks the socket and writes the entire `message` into the stream.
