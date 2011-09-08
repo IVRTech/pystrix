@@ -1,6 +1,6 @@
 import time
 
-from ami import _Request
+from ami import (_Request, ManagerError)
 
 class Hangup(_Request):
     """
@@ -27,10 +27,10 @@ class Login(_Request):
         
     def process_response(self, response):
         """
-        Raises `ManagerAuthException` if an error is received while attempting to authenticate.
+        Raises `ManagerAuthError` if an error is received while attempting to authenticate.
         """
         if response.get_header('Response') == 'Error':
-            raise ManagerAuthException(response.get_header('Message'))
+            raise ManagerAuthError(response.get_header('Message'))
         return response
         
 class Ping(_Request):
@@ -182,6 +182,6 @@ class Ping(_Request):
         return response
         
         
-class ManagerAuthException(ManagerException):
+class ManagerAuthError(ManagerError):
     pass
     
