@@ -225,7 +225,7 @@ class Manager(object):
                 self._connection = None
             self._outstanding_requests.clear()
             
-            if self._message_reader:
+            if self._message_reader: #Kill, but don't drop, the reader, since it may have unprocessed data
                 self._message_reader.kill()
 
     def get_asterisk_info(self):
