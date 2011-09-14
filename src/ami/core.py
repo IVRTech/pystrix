@@ -1,3 +1,95 @@
+"""
+
+The requests and events implemented by this module follow the definitions provided by
+http://www.asteriskdocs.org/
+
+Event information
+=================
+ DBGetResponse
+ -------------
+ Provides the value requested from the database.
+ - 'Family' : The family of the value being provided
+ - 'Key' : The key of the value being provided
+ - 'Val' : The value being provided, represented as a string
+ 
+ Hangup
+ ------
+ Indicates that a channel has been hung up.
+ - 'Cause' : One of the following numeric values, as a string:
+  - 0 : Channel cleared normally
+ - 'Cause-txt' : Additional information related to the hangup
+ - 'Channel' : The channel hung up
+ - 'Uniqueid' : An Asterisk unique value (approximately the UNIX timestamp of the event)
+
+ ParkedCall
+ ----------
+ Describes a parked call.
+ - 'ActionID' : The ID associated with the original request
+ - 'CallerID' : The ID of the caller, ".+?" <.+?>
+ - 'CallerIDName' (optional) : The name of the caller, on supporting channels
+ - 'Channel' : The channel of the parked call
+ - 'Exten' : The extension associated with the parked call
+ - 'From' : The callback channel associated with the call
+ - 'Timeout' (optional) : The time remaining before the call is reconnected with the callback
+                          channel
+
+ ParkedCallsComplete
+ -------------------
+ Indicates that all parked calls have been listed.
+ - 'ActionID' : The ID associated with the original request
+
+ PeerEntry
+ ---------
+ Describes a peer.
+ - 'ActionID' : The ID associated with the original request
+ - 'ChannelType' : The type of channel being described.
+  - 'SIP'
+ - 'ObjectName' : The internal name by which this peer is known
+ - 'ChanObjectType': The type of object
+  - 'peer'
+ - 'IPaddress' (optional) : The IP of the peer
+ - 'IPport' (optional) : The port of the peer
+ - 'Dynamic' : 'yes' or 'no', depending on whether the peer is resolved by IP or authentication
+ - 'Natsupport' : 'yes' or 'no', depending on whether the peer's messages' content should be trusted
+                  for routing purposes. If not, packets are sent back to the last hop
+ - 'VideoSupport' : 'yes' or 'no'
+ - 'ACL' : 'yes' or 'no'
+ - 'Status' : 'Unmonitored', 'OK (\d+ ms)'
+ - 'RealtimeDevice' : 'yes' or 'no'
+
+ PeerlistComplete
+ -------------------
+ Indicates that all peers have been listed.
+ - 'ActionID' : The ID associated with the original request
+
+ Status
+ ------
+ Describes the current status of a channel.
+ - 'Account' : The billing account associated with the channel; may be empty
+ - 'ActionID' : The ID associated with the original request
+ - 'Channel' : The channel being described
+ - 'CallerID' : The ID of the caller, ".+?" <.+?>
+ - 'CallerIDNum' : The (often) numeric component of the CallerID
+ - 'CallerIDName' (optional) : The, on suporting channels, name of the caller, enclosed in quotes
+ - 'Context' : The context of the directive the channel is executing
+ - 'Extension' : The extension of the directive the channel is executing
+ - 'Link' : ?
+ - 'Priority' : The priority of the directive the channel is executing
+ - 'Seconds' : The number of seconds the channel has been active
+ - 'State' : "Up"
+ - 'Uniqueid' : An Asterisk unique value (approximately the UNIX timestamp of the event)
+
+ StatusComplete
+ --------------
+ Indicates that all requested channel information has been provided.
+ - 'ActionID' : The ID associated with the original request
+
+ UserEvent
+ ---------
+ Generated in response to the UserEvent request.
+ - 'ActionID' : The ID associated with the original request
+ - * : Any keys supplied with the request
+"""
 import hashlib
 import time
 import types
@@ -12,6 +104,15 @@ EVENTMASK_NONE = 'off'
 EVENTMASK_CALL = 'call'
 EVENTMASK_LOG = 'log'
 EVENTMASK_SYSTEM = 'system'
+
+FORMAT_SLN = 'sln'
+FORMAT_G723 = 'g723'
+FORMAT_G729 = 'g729'
+FORMAT_GSM = 'gsm'
+FORMAT_ALAW = 'alaw'
+FORMAT_ULAW = 'ulaw'
+FORMAT_VOX = 'vox'
+FORMAT_WAV = 'wav'
 
 class AbsoluteTimeout(_Request):
     """
@@ -77,9 +178,7 @@ class DBGet(_Request):
     """
     Requests a database value from Asterisk.
     
-    An unsolicited 'DBGetResponse' event will be generated upon success, with 'Family', 'Key', and
-    'Val' headers; 'Family' and 'Key' correspond to the parameters requested, and 'Val' is the
-    result.
+    A 'DBGetResponse' event will be generated upon success.
     
     Requires system
     """
@@ -170,7 +269,7 @@ class GetConfig(_Request):
     The result is recturned as a series of 'Line-XXXXXX-XXXXXX' keys that increment from 0
     sequentially, starting with 'Line-000000-000000'.
     
-    A sequential generator is provided in the 'lines' attribute.
+    A sequential generator is provided by the 'get_lines()' function on the response.
     
     Requires config
     """
@@ -186,7 +285,7 @@ class GetConfig(_Request):
         Adds a 'lines' attribute as a generator that produces every line in order.
         """
         response = _Request.process_response(self, response)
-        response.lines = (value for (key, value) in sorted(response.items()) if key.startswith('Line-'))
+        response.get_lines = lambda : (value for (key, value) in sorted(response.items()) if key.startswith('Line-'))
         return response
         
 def GetVar(_Request):
@@ -210,12 +309,7 @@ class Hangup(_Request):
     """
     Hangs up a channel.
     
-    This function will produce an unsolicited 'Hangup' event, which has the following keys:
-    - 'Cause' : One of the following numeric values, as a string:
-                -  0 : Channel cleared normally
-    - 'Cause-txt' : Additional information related to the hangup
-    - 'Channel' : The channel hung up
-    - 'Uniqueid' : An Asterisk unique value (approximately the UNIX timestamp of the event)
+    On success, a 'Hangup' event is generated.
     
     Requires call
     """
@@ -317,8 +411,217 @@ class MailboxStatus(_Request):
         """
         _Request.__init__(self, 'MailboxStatus')
         self['Mailbox'] = mailbox
+
+    def process_response(self, response):
+        """
+        Converts the waiting-message-count into an integer.
+        """
+        response = _Request.process_response(self, response)
+        messages = self.get('Waiting')
+        if messages is not None and messages.isdigit():
+            self['Waiting'] = int(messages)
+        else:
+            self['Waiting'] = -1
+        return response
         
+class Monitor(_Request):
+    """
+    Starts monitoring (recording) a channel.
+    
+    Requires call
+    """
+    def __init__(self, channel, filename, format='wav', mix=True):
+        """
+        `channel` is the channel to be affected and `filename` is the new target filename, without
+        extension, as either an auto-resolved or absolute path.
+
+        `format` may be any format Asterisk understands, defaulting to FORMAT_WAV:
+        - FORMAT_SLN
+        - FORMAT_G723
+        - FORMAT_G729
+        - FORMAT_GSM
+        - FORMAT_ALAW
+        - FORMAT_ULAW
+        - FORMAT_VOX
+        - FORMAT_WAV : PCM16
+
+        `mix`, defaulting to `True`, muxes both audio streams associated with the channel, with the
+        alternative recording only audio produced by the channel.
+        """
+        _Request.__init__(self, 'Monitor')
+        self['Channel'] = channel
+        self['File'] = filename
+        self['Format'] = format
+        self['Mix'] = mix and 'true' or 'false'
+
+class _Originate(_Request):
+    """
+    Provides the common base for originated calls.
+    
+    Requires call
+    """
+    def __init__(self, channel, timeout=None, callerid=None, variables={}, account=None, async=True):
+        """
+        Sets common parameters for originated calls.
+
+        `channel` is the destination to be called, expressed as a fully qualified Asterisk channel,
+        like "SIP/test-account@example.org".
+
+        `timeout`, if given, is the number of milliseconds to wait before dropping an unanwsered
+        call. If set, the request's timeout value will be set to this number + 2 seconds, removing
+        the need to set both variables. If not set, the request's timeout value will be set to ten
+        minutes.
+
+        `callerid` is an optinal string of the form "name"<number>, where 'name' is the name to be
+        displayed (on supporting channels) and 'number' is the source identifier, typically a string
+        of digits on most channels that may interact with the PSTN.
+
+        `variables` is an oprional dictionary of key-value variable pairs to be set as part of the
+        channel's namespace.
+
+        `account` is an optional account code to be associated with the channel, useful for tracking
+        billing information.
+
+        `async` should always be `True`. If not, only one unanswered call can be active at a time.
+        """
+        self.__init__(self, "Originate")
+        self['Channel'] = channel
+        self['Async'] = async and 'true' or 'false'
         
+        if timeout and timeout > 0:
+            self['Timeout'] = str(timeout)
+            self.timeout = timeout + 2000 #Timeout + 2s
+        else:
+            self.timeout = 10 * 60 * 1000 #Ten minutes
+
+        if callerid:
+            self['CallerID'] = callerid
+
+        if variables:
+            self['Variable'] = tuple(['%(key)s=%(value)s' % {'key': key, 'value': value,} for (key, value) in variables.items()])
+
+        if account:
+            self['Account'] = account
+
+class Originate_Application(_Originate):
+    """
+    Initiates a call that answers, executes an arbitrary dialplan application, and hangs up.
+
+    The application could be an AGI directive to allow for fully dynamic logic.
+    
+    Requires call
+    """
+    def __init__(self, channel, application, data=(), timeout=None, callerid=None, variables={}, account=None, async=True):
+        """
+        `channel` is the destination to be called, expressed as a fully qualified Asterisk channel,
+        like "SIP/test-account@example.org".
+
+        `application` is the name of the application to be executed, and `data` is optionally any
+        parameters to pass to the application, as an ordered sequence (list or tuple) of strings,
+        escaped as necessary (the '|' character is special).
+
+        `timeout`, if given, is the number of milliseconds to wait before dropping an unanwsered
+        call. If set, the request's timeout value will be set to this number + 2 seconds, removing
+        the need to set both variables. If not set, the request's timeout value will be set to ten
+        minutes.
+
+        `callerid` is an optinal string of the form "name"<number>, where 'name' is the name to be
+        displayed (on supporting channels) and 'number' is the source identifier, typically a string
+        of digits on most channels that may interact with the PSTN.
+
+        `variables` is an oprional dictionary of key-value variable pairs to be set as part of the
+        channel's namespace.
+
+        `account` is an optional account code to be associated with the channel, useful for tracking
+        billing information.
+
+        `async` should always be `True`. If not, only one unanswered call can be active at a time.
+        """
+        _Originate.__init__(self, channel, timeout, callerid, variables, account, async)
+        self['Application'] = application
+        if data:
+            self['Data'] = '|'.join((str(d) for d in data))
+            
+class Originate_Context(_Originate):
+    """
+    Initiates a call with instructions derived from an arbitrary context/extension/priority.
+    
+    Requires call
+    """
+    def __init__(self, channel, context, extension, priority, timeout=None, callerid=None, variables={}, account=None, async=True):
+        """
+        `channel` is the destination to be called, expressed as a fully qualified Asterisk channel,
+        like "SIP/test-account@example.org".
+
+        `context`, `extension`, and `priority`, must match a triple known to Asterisk internally. No
+        validation is performed, so specifying an invalid target will terminate the call
+        immediately.
+
+        `timeout`, if given, is the number of milliseconds to wait before dropping an unanwsered
+        call. If set, the request's timeout value will be set to this number + 2 seconds, removing
+        the need to set both variables. If not set, the request's timeout value will be set to ten
+        minutes.
+
+        `callerid` is an optinal string of the form "name"<number>, where 'name' is the name to be
+        displayed (on supporting channels) and 'number' is the source identifier, typically a string
+        of digits on most channels that may interact with the PSTN.
+
+        `variables` is an oprional dictionary of key-value variable pairs to be set as part of the
+        channel's namespace.
+
+        `account` is an optional account code to be associated with the channel, useful for tracking
+        billing information.
+
+        `async` should always be `True`. If not, only one unanswered call can be active at a time.
+        """
+        _Originate.__init__(self, channel, timeout, callerid, variables, account, async)
+        self['Context'] = context
+        self['Exten'] = extension
+        self['Priority'] = priority
+        
+class Park(_Request):
+    """
+    Parks a call for later retrieval.
+
+    Requires call
+    """
+    def __init__(self, channel, channel_callback, timeout=None):
+        """
+        `channel` is the channel to be parked and `channel_callback` is the channel to which parking
+        information is announced.
+
+        If `timeout`, a number of milliseconds, is given, then `channel_callback` is given `channel`
+        if the call was not previously retrieved.
+        """
+        _Request.__init__(self, "Park")
+        self['Channel'] = channel
+        self['Channel2'] = channel_callback
+        if timeout:
+            self['Timeout'] = str(timeout)
+
+class ParkedCalls(_Request):
+    """
+    Lists all parked calls.
+
+    Any number of 'ParkedCall' events may be generated in response to this request, followed by one
+    'ParkedCallsComplete'.
+    """
+    def __init__(self):
+        _Request.__init__(self, "ParkedCalls")
+
+class PauseMonitor(_Request):
+    """
+    Pauses the recording of a monitored channel. The channel must have previously been selected by
+    the `Monitor` action.
+    
+    Requires call
+    """
+    def __init__(self, channel):
+        """
+        `channel` is the channel to be affected.
+        """
+        _Request.__init__(self, 'PauseMonitor')
+        self['Channel'] = channel
         
 class Ping(_Request):
     """
@@ -347,117 +650,249 @@ class Ping(_Request):
             return time.time() - self._start_time
         return -1
         
-
-#Cleared up to MeetMe, which probably belongs in its own modle
-#http://www.asteriskdocs.org/html/re270.html
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+class PlayDTMF(_Request):
+    """
+    Plays a DTMF tone on a channel.
     
+    Requires call
+    """
+    def __init__(self, channel, digit):
+        """
+        `channel` is the channel to be affected, and `digit` is the tone to play.
+        """
+        _Request.__init__(self, 'PlayDTMF')
+        self['Channel'] = channel
+        self['Digit'] = str(digit)
 
+class Redirect(_Request):
+    """
+    Redirects a call with to an arbitrary context/extension/priority.
     
+    Requires call
+    """
+    def __init__(self, channel, context, extension, priority):
+        """
+        `channel` is the destination to be redirected.
 
-    def status(self, channel = ''):
-        """Get a status message from asterisk"""
+        `context`, `extension`, and `priority`, must match a triple known to Asterisk internally. No
+        validation is performed, so specifying an invalid target will terminate the call
+        immediately.
+        """
+        _Request.__init__(self, "Redirect")
+        self['Channel'] = channel
+        self['Context'] = context
+        self['Exten'] = extension
+        self['Priority'] = priority
 
-        cdict = {'Action':'Status'}
-        cdict['Channel'] = channel
-        response = self.send_action(cdict)
+class SetCDRUserField(_Request):
+    """
+    Sets the user-field attribute for the CDR associated with a channel.
+    
+    Requires call
+    """
+    def __init__(self, channel, user_field):
+        """
+        `channel` is the channel to be affected, and `user_field` is the value to set.
+        """
+        _Request.__init__(self, 'SetCDRUserField')
+        self['Channel'] = channel
+        self['UserField'] = user_field
         
-        return response
-
-    def redirect(self, channel, exten, priority='1', extra_channel='', context=''):
-        """Redirect a channel"""
+class SetVar(_Request):
+    """
+    Sets a channel-level or global variable.
     
-        cdict = {'Action':'Redirect'}
-        cdict['Channel'] = channel
-        cdict['Exten'] = exten
-        cdict['Priority'] = priority
-        if context:   cdict['Context']  = context
-        if extra_channel: cdict['ExtraChannel'] = extra_channel
-        response = self.send_action(cdict)
+    Requires call
+    """
+    def __init__(self, variable, value, channel=None):
+        """
+        `value` is the value to be set under `variable`.
         
-        return response
+        `channel` is the channel to be affected, or `None`, the default, if the variable is global.
+        """
+        _Request.__init__(self, 'SetVar')
+        if channel:
+            self['Channel'] = channel
+        self['Variable'] = variable
+        self['Value'] = value
 
-    def originate(self, channel, exten, context='', priority='', timeout='', caller_id='', async=False, account='', variables={}):
-        """Originate a call"""
+class SIPPeers(_Request):
+    """
+    Lists all SIP peers.
 
-        cdict = {'Action':'Originate'}
-        cdict['Channel'] = channel
-        cdict['Exten'] = exten
-        if context:   cdict['Context']  = context
-        if priority:  cdict['Priority'] = priority
-        if timeout:   cdict['Timeout']  = timeout
-        if caller_id: cdict['CallerID'] = caller_id
-        if async:     cdict['Async']    = 'yes'
-        if account:   cdict['Account']  = account
-        # join dict of vairables together in a string in the form of 'key=val|key=val'
-        # with the latest CVS HEAD this is no longer necessary
-        # if variables: cdict['Variable'] = '|'.join(['='.join((str(key), str(value))) for key, value in variables.items()])
-        if variables: cdict['Variable'] = ['='.join((str(key), str(value))) for key, value in variables.items()]
-              
-        response = self.send_action(cdict)
+    Any number of 'PeerEntry' events may be generated in response to this request, followed by one
+    'PeerlistComplete'.
+
+    Requires system
+    """
+    def __init__(self):
+        _Request.__init__(self, "SIPPeers")
+
+class SIPShowPeer(_Request):
+    """
+    Provides detailed information about a SIP peer.
+
+    The response has the following key-value pairs:
+    - 'ACL' : 'Y' or 'N'
+    - 'Address-IP' : The IP of the peer
+    - 'Address-Port' : The port of the peer
+    - 'AMAflags' : "Unknown"
+    - 'Callgroup' : ?
+    - 'Callerid' : "Linksys #2" <555>
+    - 'Call-limit' : ?
+    - 'Channeltype' : "SIP"
+    - 'ChanObjectType' : "peer"
+    - 'CID-CallingPres' : ?
+    - 'Context' : The context associated with the peer
+       - 'CodecOrder' : The order in which codecs are tried
+       - 'Codecs': A list of supported codecs
+       - 'Default-addr-IP' : ?
+    - 'Default-addr-port' : ?
+    - 'Default-Username' : ?
+    - 'Dynamic' : 'Y' or 'N', depending on whether the peer is resolved by static IP or
+                  authentication
+    - 'Language' : The language preference (may be empty) of this peer
+    - 'LastMsgsSent' : ?
+    - 'MaxCallBR' : The maximum bitrate supported by the peer, "\d+ kbps"
+    - 'MD5SecretExist' : 'Y' or 'N', depending on whether an MD5 secret is defined
+    - 'ObjectName' : The internal name of the peer
+    - 'Pickupgroup' : ?
+    - 'Reg-Contact' : The registration contact address for this peer
+    - 'RegExpire': Time until SIP registration expires, "\d+ seconds?"
+    - 'RegExtension' : ?
+    - 'SecretExist' : 'Y' or 'N', depending on whether a secret is defined.
+    - 'SIP-AuthInsecure' : 'yes' or 'no'
+    - 'SIP-CanReinvite' : 'Y' or 'N', depending on whether the peer supports REINVITE
+    - 'SIP-DTMFmode' : The DTMF transport mode to use with this peer, "rfc2833" or ?
+    - 'SIP-NatSupport' : The NATting workarounds supported by this peer, "RFC3581" or ?
+    - 'SIP-PromiscRedir' : 'Y' or 'N', depending on whether this peer is allowed to arbitrarily
+                           redirect calls
+    - 'SIP-Useragent' : The User-Agent of the peer
+    - 'SIP-UserPhone' : 'Y' or 'N', (presumably) depending on whether this peer is a terminal device
+    - 'SIP-VideoSupport' : 'Y' or 'N'
+    - 'SIPLastMsg' : ?
+    - 'Status' : 'Unmonitored', 'OK (\d+ ms)'
+    - 'ToHost' : ?
+    - 'TransferMode' : "open"
+    - 'VoiceMailbox' : The mailbox associated with the peer
+    
+    Requires system
+    """
+    def __init__(self, peer):
+        """
+        `peer` is the identifier of the peer for which information is to be retrieved.
+        """
+        _Request.__init__(self, "SIPShowPeer)
+        self['Peer'] = peer
         
-        return response
+class Status(_Request):
+    """
+    Lists the status of an active channel.
+
+    Zero or one 'Status' events are generated, followed by a 'StatusComplete' event.
+
+    Requires call
+    """
+    def __init__(self, channel):
+        """
+        `channel` is the channel for which status information is to be retrieved.
+        """
+        _Request.__init__(self, "Status")
+        self['channel'] = channel
+
+class StopMonitor(_Request):
+    """
+    Stops recording a monitored channel. The channel must have previously been selected by
+    the `Monitor` action.
     
+    Requires call
+    """
+    def __init__(self, channel):
+        """
+        `channel` is the channel to be affected.
+        """
+        _Request.__init__(self, 'StopMonitor')
+        self['Channel'] = channel
 
-    def playdtmf (self, channel, digit) :
-        """Plays a dtmf digit on the specified channel"""
-        cdict = {'Action':'PlayDTMF'}
-        cdict['Channel'] = channel
-        cdict['Digit'] = digit
-        response = self.send_action(cdict)
-
-        return response
-
+class UnpauseMonitor(_Request):
+    """
+    Unpauses recording on a monitored channel. The channel must have previously been selected by
+    the `Monitor` action.
     
-    def sippeers(self):
-        cdict = {'Action' : 'Sippeers'}
-        response = self.send_action(cdict)
-        return response
+    Requires call
+    """
+    def __init__(self, channel):
+        """
+        `channel` is the channel to be affected.
+        """
+        _Request.__init__(self, 'UnpauseMonitor')
+        self['Channel'] = channel
 
-    def sipshowpeer(self, peer):
-        cdict = {'Action' : 'SIPshowpeer'}
-        cdict['Peer'] = peer
-        response = self.send_action(cdict)
-        return response
+class UpdateConfig(_Request):
+    """
+    Updates any number of values in an Asterisk configuration file.
+
+    Requires config
+    """
+    def __init__(self, src_filename, dst_filename, changes, reload=True):
+        """
+        Reads from `src_filename`, performing all `changes`, and writing to `dst_filename`.
+
+        If `reload` is `True`, the changes take effect immediately. If `reload` is the name of a
+        module, that module is reloaded.
+
+        `changes` may be any iterable object countaining quintuples with the following items:
+        - One of the following:
+         - 'NewCat' : creates a new category
+         - 'RenameCat' : renames a category
+         - 'DelCat' : deletes a category
+         - 'Update' : changes a value
+         - 'Delete' : removes a value
+         - 'Append' : adds a value
+        - The name of the category to operate on
+        - `None` or the name of the variable to operate on
+        - `None` or the value to be set/added (has no effect with 'Delete')
+        - `None` or a string that needs to be matched in the line to serve as a qualifier
+        """
+        _Request.__init__(self, "UpdateConfig")
+        self['SrcFilename'] = src_filename
+        self['DstFilename'] = dst_filename
+        self['Reload'] = type(reload) == bool and (reload and 'true' or 'false') or reload
+
+        for (i, (action, category, variable, value, match)) in enumerate(changes):
+            index = '%(index)06i' % {
+             'index': i,
+            }
+            self['Action-' + index] = action
+            self['Cat-' + index] = category
+            if not variable is None:
+                self['Var-' + index] = variable
+            if not value is None:
+                self['Value-' + index] = value
+            if not match is None:
+                self['Match-' + index] = match
+
+class UserEvent(_Request):
+    class UnpauseMonitor(_Request):
+    """
+    Causes a 'UserEvent' event to be generated.
+    
+    Requires user
+    """
+    def __init__(self, **kwargs):
+        """
+        Any keyword-arguments passed will be present in the generated event, making this a crude
+        form of message-passing.
+        """
+        _Request.__init__(self, 'UserEvent')
+        for (key, value) in kwargs.items():
+            self[key] = value
+            
+#Add all of the queues stuff 
         
         
 class ManagerAuthError(ManagerError):
-    pass
+    """
+    Indicates that a problem occurred while authenticating 
+    """
     
