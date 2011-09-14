@@ -167,6 +167,14 @@ Event information
  Generated in response to the UserEvent request.
  - 'ActionID' : The ID associated with the original request
  - * : Any keys supplied with the request
+
+ VarSet
+ ------
+ Emitted when a variable is set, either globally or on a channel.
+ - 'Channel' (optional) : The channel on which the variable was set, if not global
+ - 'Uniqueid' : An Asterisk unique value (approximately the UNIX timestamp of the event)
+ - 'Value' : The value of the variable
+ - 'Variable' : The name of the variable that was set
 """
 import hashlib
 import time

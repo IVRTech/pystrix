@@ -4,6 +4,7 @@ Event information
 =================
  MeetmeJoin
  ----------
+ Indicates that a user has joined a Meetme bridge.
  - 'Channel' : The channel that was bridged
  - 'Meetme' : The ID of the Meetme bridge, typically a number formatted as a string
  - 'Uniqueid' : An Asterisk unique value (approximately the UNIX timestamp of the event)
