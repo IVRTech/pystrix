@@ -1,5 +1,8 @@
 """
 
+Support for Zaptel seems to have been deprecated in favour of DAHDI, so this module may disappear in
+the future.
+
 Event information
 =================
  ZapShowChannels
