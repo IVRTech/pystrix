@@ -301,7 +301,36 @@ class CreateConfig(_Request):
         """
         _Request.__init__(self, "CreateConfig")
         self['Filename'] = filename
-        
+
+class DBDel(_Request):
+    """
+    Deletes a database value from Asterisk.
+    
+    Requires system
+    """
+    def __init__(self, family, key):
+        """
+        `family` and `key` are specifiers to select the value to remove.
+        """
+        _Request.__init__(self, 'DBDel')
+        self['Family'] = family
+        self['Key'] = key
+
+class DBDelTree(_Request):
+    """
+    Deletes a database tree from Asterisk.
+    
+    Requires system
+    """
+    def __init__(self, family, key=None):
+        """
+        `family` and `key` (optional) are specifiers to select the values to remove.
+        """
+        _Request.__init__(self, 'DBDelTree')
+        self['Family'] = family
+        if not key is None:
+            self['Key'] = key
+            
 class DBGet(_Request):
     """
     Requests a database value from Asterisk.
@@ -455,6 +484,34 @@ class ListCommands(_Request):
     """
     def __init__(self):
         _Request.__init__(self, 'ListCommands')
+
+class ListCategories(_Request):
+    """
+    Provides a list of every category in an Asterisk configuration file, as a series of lines in the
+    response's 'data' attribute.
+
+    Requires config
+    """
+    def __init__(self, filename):
+        """
+        `filename` is the name of the file, with extension, to be read.
+        """
+        _Request.__init__(self, 'ListCategories')
+        self['Filename'] = filename
+
+class LocalOptimizeAway(_Request):
+    """
+    Allows a bridged channel to be optimised in Asterisk's processing logic. This function should
+    only be invoked after explicitly bridging.
+
+    Requires call
+    """
+    def __init__(self, channel):
+        """
+        `channel` is the channel to be optimised.
+        """
+        _Request.__init__(self, 'LocalOptimizeAway')
+        self['Channel'] = channel
         
 class Login(_Request):
     """
@@ -551,7 +608,70 @@ class MailboxStatus(_Request):
         else:
             self['Waiting'] = -1
         return response
+
+class MixMonitorMute(_Request):
+    """
+    Mutes or unmutes one or both channels being monitored (recorded).
+
+    Requires call
+    """
+    def __init__(self, channel, direction, mute):
+        """
+        `channel` is the channel to operate on.
+
+        `direction` is one of the following:
+        - 'read' : voice originating on the `channel`
+        - 'write' : voice delivered to the `channel`
+        - 'both' : all audio on the `channel`
+
+        `mute` is `True` to muste the audio.
+        """
+        _Request.__init__(self, 'MixMonitorMute')
+        self['Channel'] = channel
+        self['Direction'] = direction
+        self['State'] = mute and '1' or '0'
+
+class ModuleCheck(_Request):
+    """
+    Indicates whether a module has been loaded.
+
+    If the module was loaded, its version is present in the response.
+    """
+    def __init__(self, module):
+        """
+        `module` is the name of the module, without extension.
+        """
+        _Request.__init__(self, 'ModuleCheck')
+        self['Module'] = module
+
+class ModuleLoad(_Request):
+    """
+    Loads, unloads, or reloads modules.
+
+    Requires system
+    """
+    def __init__(self, load_type, module=None):
+        """
+        `load_type` is one of the following:
+        - 'load'
+        - 'unload'
+        - 'reload' : if `module` is undefined, all modules are reloaded
         
+        `module` is optionally the name of the module, with extension, or one of the following for
+        a built-in subsystem:
+        - 'cdr'
+        - 'dnsmgr'
+        - 'enum'
+        - 'extconfig'
+        - 'http'
+        - 'manager'
+        - 'rtp'
+        """
+        _Request.__init__(self, 'ModuleLoad')
+        self['LoadType'] = load_type
+        if not module is None:
+            self['Module'] = module
+            
 class Monitor(_Request):
     """
     Starts monitoring (recording) a channel.
@@ -816,6 +936,32 @@ class QueueAdd(_Request):
         if membername:
             self['MemberName'] = membername
 
+class QueueLog(_Request):
+    """
+    Adds an arbitrary record to the queue log.
+
+    Requires agent
+    """
+    def __init__(self, queue, event, interface=None, uniqueid=None, message=None):
+        """
+        `queue` is the queue to which the `event` is to be attached.
+
+        `interface` optionally allows the event to be associated with a specific queue member.
+
+        `uniqueid`'s purpose is presently unknown.
+
+        `message`'s purpose is presently unknown.
+        """
+        _Request.__init__(self, "QueueLog")
+        self['Queue'] = queue
+        self['Event'] = event
+        if not uniqueid is None:
+            self['Uniqueid'] = uniqueid
+        if not interface is None:
+            self['Interface'] = interface
+        if not message is None:
+            self['Message'] = message
+
 class QueuePause(_Request):
     """
     Pauses or unpauses a member in one or all queues.
@@ -835,6 +981,47 @@ class QueuePause(_Request):
         if not queue is None:
             self['Queue'] = queue
 
+class QueuePenalty(_Request):
+    """
+    Changes the penalty value associated with a queue member, in one or all queues.
+
+    Requires agent
+    """
+    def __init__(self, interface, penalty, queue=None):
+        """
+        Changes the `penalty` value associated with `interface` in all queues, unless `queue` is
+        defined, limiting it to one.
+        """
+        _Request.__init__(self, "QueuePenalty")
+        self['Interface'] = interface
+        self['Penalty'] = str(penalty)
+        if not queue is None:
+            self['Queue'] = queue
+
+class QueueReload(_Request):
+    """
+    Reloads properties from config files for one or all queues.
+
+    Requires agent
+    """
+    def __init__(self, queue=None, members='yes', rules='yes', parameters='yes'):
+        """
+        Reloads parameters for all queues, unless `queue` is defined, limiting it to one.
+
+        `members` is 'yes' (default) or 'no', indicating whether the member-list should be reloaded.
+        
+        `rules` is 'yes' (default) or 'no', indicating whether the rule-list should be reloaded.
+
+        `parameters` is 'yes' (default) or 'no', indicating whether the parameter-list should be
+        reloaded.
+        """
+        _Request.__init__(self, "QueueReload")
+        self['Members'] = members
+        self['Rules'] = rules
+        self['Parameters'] = parameters
+        if not queue is None:
+            self['Queue'] = queue
+            
 class QueueRemove(_Request):
     """
     Removes a member from a queue.
@@ -865,7 +1052,7 @@ class QueueStatus(_Request):
         _Request.__init__(self, "QueueStatus")
         if not queue is None:
             self['Queue'] = queue
-            
+
 class Redirect(_Request):
     """
     Redirects a call with to an arbitrary context/extension/priority.
@@ -886,6 +1073,35 @@ class Redirect(_Request):
         self['Exten'] = extension
         self['Priority'] = priority
 
+class Reload(_Request):
+    """
+    Reloads Asterisk's configuration globally or for a specific module.
+    
+    Requires call
+    """
+    def __init__(self, module=None):
+        """
+        If given, `module` limits the scope of the reload to a specific module, named without
+        extension.
+        """
+        _Request.__init__(self, "Reload")
+        if not module is None:
+            self['Module'] = module
+
+class SendText(_Request):
+    """
+    Sends text along a supporting channel.
+    
+    Requires call
+    """
+    def __init__(self, channel, message):
+        """
+        `channel` is the channel along which to send `message`.
+        """
+        _Request.__init__(self, "SendText")
+        self['Channel'] = channel
+        self['Message'] = message
+        
 class SetCDRUserField(_Request):
     """
     Sets the user-field attribute for the CDR associated with a channel.
@@ -918,7 +1134,24 @@ class SetVar(_Request):
         self['Variable'] = variable
         self['Value'] = value
 
-class SIPPeers(_Request):
+class SIPnotify(_Request):
+    """
+    Sends a SIP NOTIFY to the remote party on a channel.
+
+    Requires call
+    """
+    def __init__(self, channel, headers={}):
+        """
+        `channel` is the channel along which to send the NOTIFY.
+
+        `headers` is a dictionary of key-value pairs to be inserted as SIP headers.
+        """
+        _Request.__init__(self, "SIPnotify")
+        self['Channel'] = channel
+        if headers:
+            self['Variable'] = tuple(['%(key)s=%(value)s' % {'key': key, 'value': value,} for (key, value) in headers.items()])
+
+class SIPpeers(_Request):
     """
     Lists all SIP peers.
 
@@ -928,9 +1161,24 @@ class SIPPeers(_Request):
     Requires system
     """
     def __init__(self):
-        _Request.__init__(self, "SIPPeers")
+        _Request.__init__(self, "SIPpeers")
 
-class SIPShowPeer(_Request):
+class SIPqualify(_Request):
+    """
+    Sends a SIP OPTIONS to the specified peer, mostly to ensure its presence.
+
+    Some events are likely raised by this, but they're unknown at the moment.
+
+    Requires system
+    """
+    def __init__(self, peer):
+        """
+        `peer` is the peer to ping.
+        """
+        _Request.__init__(self, "SIPqualify")
+        self['Peer'] = peer
+
+class SIPshowpeer(_Request):
     """
     Provides detailed information about a SIP peer.
 
@@ -984,8 +1232,20 @@ class SIPShowPeer(_Request):
         """
         `peer` is the identifier of the peer for which information is to be retrieved.
         """
-        _Request.__init__(self, "SIPShowPeer)
+        _Request.__init__(self, "SIPshowpeer)
         self['Peer'] = peer
+
+class SIPshowregistry(_Request):
+    """
+    Lists all SIP registrations.
+
+    Any number of 'Registrations' events may be generated in response to this request, followed by
+    one 'RegistrationsComplete'.
+
+    Requires system
+    """
+    def __init__(self):
+        _Request.__init__(self, "SIPshowregistry")
         
 class Status(_Request):
     """
@@ -1075,7 +1335,6 @@ class UpdateConfig(_Request):
                 self['Match-' + index] = match
 
 class UserEvent(_Request):
-    class UnpauseMonitor(_Request):
     """
     Causes a 'UserEvent' event to be generated.
     
@@ -1089,7 +1348,16 @@ class UserEvent(_Request):
         _Request.__init__(self, 'UserEvent')
         for (key, value) in kwargs.items():
             self[key] = value
-            
+
+class VoicemailUsersList(_Request):
+    """
+    Lists all voicemail information.
+
+    This probably involves events, but the details are not yet known.
+    """
+    def __init__(self):
+        _Request.__init__(self, 'VoicemailUsersList')
+        
 class ManagerAuthError(ManagerError):
     """
     Indicates that a problem occurred while authenticating 

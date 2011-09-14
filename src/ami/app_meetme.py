@@ -21,6 +21,23 @@ Event information
 
 from ami import (_Request, ManagerError)
 
+class MeetmeList(_Request):
+    """
+    Lists all participants in all (or one) conferences.
+
+    A series of 'MeetmeList' events follow, with one 'MeetmeListComplete' event at the end.
+
+    Note that if no conferences are active, the response will indicate that it was not successful,
+    per https://issues.asterisk.org/jira/browse/ASTERISK-16812
+    """
+    def __init__(self, conference=None):
+        """
+        `conference` is the optional identifier of the bridge.
+        """
+        _Request.__init__(self, 'MeetmeList')
+        if not conference is None:
+            self['Conference'] = conference
+            
 class MeetmeMute(_Request):
     """
     Mutes a participant in a Meetme bridge.
