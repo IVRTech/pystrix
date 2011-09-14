@@ -1,7 +1,7 @@
 """
 
 The requests and events implemented by this module follow the definitions provided by
-http://www.asteriskdocs.org/
+http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
 
 Event information
 =================
@@ -206,6 +206,43 @@ class AbsoluteTimeout(_Request):
         _Request.__init__(self, 'AbsoluteTimeout')
         self['Channel'] = channel
         self['Timeout'] = str(int(seconds))
+
+class AGI(_Request):
+    """
+    Causes Asterisk to execute an arbitrary AGI application in a call.
+
+    Upon successful execution, an 'AsyncAGI' event is generated.
+    
+    Requires call
+    """
+    def __init__(self, channel, command, command_id=None):
+        """
+        `channel` is the call in which to execute `command`, the value passed to the AGI dialplan
+        application. `command_id` is an optional value that will be present in the resulting event,
+        and can reasonably be set to a sequential digit or UUID in your application for tracking
+        purposes.
+        """
+        _Request.__init__(self, 'AGI')
+        self['Channel'] = channel
+        self['Command'] = command
+        if not command_id is None:
+            self['CommandID'] = str(command_id)
+
+class Bridge(_Request):
+    """
+    Bridges two channels already connected to Asterisk.
+
+    Requires call
+    """
+    def __init__(self, channel_1, channel_2, tone=False):
+        """
+        `channel_1` is the channel to which `channel_2` will be connected. `tone`, if `True`, will
+        cause a sound to be played on `channel_2`.
+        """
+        _Request.__init__(self, "Bridge")
+        self['Channel1'] = channel_1
+        self['Channel2'] = channel_2
+        self['Tone'] = tone and 'yes' or 'no'
         
 class Challenge(_Request):
     """
@@ -251,6 +288,19 @@ class Command(_Request):
         """
         _Request.__init__(self, 'Command')
         self['Command'] = command
+
+class CreateConfig(_Request):
+    """
+    Creates an empty configuration file, intended for use before `UpdateConfig()`.
+
+    Requires config
+    """
+    def __init__(self, filename):
+        """
+        `filename` is the name of the file, with extension, to be created.
+        """
+        _Request.__init__(self, "CreateConfig")
+        self['Filename'] = filename
         
 class DBGet(_Request):
     """
