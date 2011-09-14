@@ -58,8 +58,86 @@ Event information
  - 'RealtimeDevice' : 'yes' or 'no'
 
  PeerlistComplete
- -------------------
+ ----------------
  Indicates that all peers have been listed.
+ - 'ActionID' : The ID associated with the original request
+
+ QueueEntry
+ ----------
+ Indicates that a call is waiting to be answered.
+ - 'ActionID' (optional) : The ID associated with the original request, if a response
+ - 'Channel' : The channel of the inbound call
+ - 'CallerID' : The (often) numeric ID of the caller
+ - 'CallerIDName' (optional) : The friendly name of the caller on supporting channels
+ - 'Position' : The numeric position of the caller in the queue
+ - 'Queue' : The queue in which the caller is waiting
+ - 'Wait' : The number of seconds the caller has been waiting
+
+ QueueMember
+ -----------
+ Describes a member of a queue.
+ - 'ActionID' (optional) : The ID associated with the original request, if a response
+ - 'CallsTaken' : The number of calls received by this member
+ - 'LastCall' : The UNIX timestamp of the last call taken, or 0 if none
+ - 'Location' : The interface in the queue
+ - 'MemberName' (optional) : The friendly name of the member
+ - 'Membership' : "dynamic" ("static", too?)
+ - 'Paused' : '1' or '0' for 'true' and 'false', respectively
+ - 'Penalty' : The selection penalty to apply to this member (higher numbers mean later selection)
+ - 'Queue' : The queue to which the member belongs
+ - 'Status' : One of the following:
+  - 0 : Idle
+  - 1 : In use
+  - 2 : Busy
+
+ QueueMemberAdded
+ ----------------
+ Indicates that a member was added to a queue.
+ - 'CallsTaken' : The number of calls received by this member
+ - 'LastCall' : The UNIX timestamp of the last call taken, or 0 if none
+ - 'Location' : The interface added to the queue
+ - 'MemberName' (optional) : The friendly name of the member
+ - 'Membership' : "dynamic" ("static", too?)
+ - 'Paused' : '1' or '0' for 'true' and 'false', respectively
+ - 'Penalty' : The selection penalty to apply to this member (higher numbers mean later selection)
+ - 'Queue' : The queue to which the member was added
+ - 'Status' : One of the following:
+  - 0 : Idle
+  - 1 : In use
+  - 2 : Busy
+
+ QueueMemberPaused
+ -----------------
+ Indicates that the pause-state of a queue member was changed
+ - 'Location' : The interface added to the queue
+ - 'MemberName' (optional) : The friendly name of the member
+ - 'Paused' : '1' or '0' for 'true' and 'false', respectively
+ - 'Queue' : The queue in which the member was paused
+
+ QueueMemberRemoved
+ ------------------
+ Indicates that a member was removed from a queue.
+ - 'Location' : The interface removed from the queue
+ - 'MemberName' (optional) : The friendly name of the member
+ - 'Queue' : The queue from which the member was removed
+
+ QueueParams
+ -----------
+ Describes the attributes of a queue.
+ - 'Abandoned' : The number of calls that have gone unanswered
+ - 'ActionID' (optional) : The ID associated with the original request, if a response
+ - 'Calls' : The number of current calls in the queue
+ - 'Completed' : The number of completed calls
+ - 'Holdtime' : ?
+ - 'Max' : ?
+ - 'Queue' : The queue being described
+ - 'ServiceLevel' : ?
+ - 'ServicelevelPerf' : ?
+ - 'Weight' : ?
+
+ QueueStatusComplete
+ -------------------
+ Indicates that a QueueStatus request has completed.
  - 'ActionID' : The ID associated with the original request
 
  Status
@@ -384,7 +462,7 @@ class MailboxCount(_Request):
         """
         `mailbox` is the mailbox to check.
         """
-        _Request.__init__(self, 'MailboxCount)
+        _Request.__init__(self, 'MailboxCount')
         self['Mailbox'] = mailbox
         
     def process_response(self, response):
@@ -664,6 +742,80 @@ class PlayDTMF(_Request):
         self['Channel'] = channel
         self['Digit'] = str(digit)
 
+class QueueAdd(_Request):
+    """
+    Adds a member to a queue.
+
+    Upon success, a 'QueueMemberAdded' event will be generated.
+
+    Requires agent
+    """
+    def __init__(self, interface, queue, membername=None, penalty=0, paused=False):
+        """
+        Adds the device identified by `interface` to the given `queue`.
+
+        `membername` optionally provides a friendly name for logging purposes, `penalty` establishes
+        a priority structure (lower priorities first, defaulintg to 0) for call escalation, and
+        `paused` optinally allows the interface to start in a disabled state.
+        """
+        _Request.__init__(self, "QueueAdd")
+        self['Queue'] = queue
+        self['Interface'] = interface
+        self['Penalty'] = str(penalty)
+        self['Paused'] = paused and 'yes' or 'no'
+        if membername:
+            self['MemberName'] = membername
+
+class QueuePause(_Request):
+    """
+    Pauses or unpauses a member in one or all queues.
+
+    Upon success, a 'QueueMemberPaused' event will be generated for all affected queues.
+
+    Requires agent
+    """
+    def __init__(self, interface, paused, queue=None):
+        """
+        `interface` is the device to be affected, and `queue` optionally limits the scope to a
+        single queue. `paused` must be `True` or `False`, to control the action being taken.
+        """
+        _Request.__init__(self, "QueuePause")
+        self['Interface'] = interface
+        self['Paused'] = paused and 'true' or 'false'
+        if not queue is None:
+            self['Queue'] = queue
+
+class QueueRemove(_Request):
+    """
+    Removes a member from a queue.
+
+    Upon success, a 'QueueMemberRemoved' event will be generated.
+
+    Requires agent
+    """
+    def __init__(self, interface, queue):
+        """
+        Removes the device identified by `interface` from the given `queue`.
+        """
+        _Request.__init__(self, "QueueRemove")
+        self['Queue'] = queue
+        self['Interface'] = interface
+
+class QueueStatus(_Request):
+    """
+    Describes the status of one (or all) queues.
+
+    Upon success, 'QueueParams', 'QueueMember', and 'QueueEntry' events will be generated, ending
+    with 'QueueStatusComplete'.
+    """
+    def __init__(self, queue=None):
+        """
+        Describes all queues in the system, unless `queue` is given, which limits the scope to one.
+        """
+        _Request.__init__(self, "QueueStatus")
+        if not queue is None:
+            self['Queue'] = queue
+            
 class Redirect(_Request):
     """
     Redirects a call with to an arbitrary context/extension/priority.
@@ -888,9 +1040,6 @@ class UserEvent(_Request):
         for (key, value) in kwargs.items():
             self[key] = value
             
-#Add all of the queues stuff 
-        
-        
 class ManagerAuthError(ManagerError):
     """
     Indicates that a problem occurred while authenticating 
