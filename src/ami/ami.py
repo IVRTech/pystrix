@@ -44,6 +44,8 @@ import time
 import types
 import warnings
 
+_EVENT_REGISTRY = {} #Meant to be internally managed only, this provides mappings from event-class-names to the classes, to enable type-mutation
+
 _EOC = '--END COMMAND--' #A string used by Asterisk to mark the end of some of its responses.
 _EOL = '\r\n' #Asterisk uses CRLF linebreaks to mark the ends of its lines.
 _EOL_FAKE = ('\n\r\n', '\r\r\n') #End-of-line patterns that indicate data, not headers.
@@ -392,6 +394,15 @@ class _Message(dict):
             else: #It's an unsolicited event
                 self.headers[KEY_EVENT] = EVENT_GENERIC
                 
+    def __eq__(self, o):
+        """
+        A convenience qualifier for decision-blocks to allow the message to be compared to strings for
+        readability purposes.
+        """
+        if isinstance(o, types.StringType):
+            return self.name == o
+        return dict.__eq__(self, o)
+        
     def _parse(self, response):
         """
         Parses the response from Asterisk.
@@ -405,16 +416,22 @@ class _Message(dict):
                 break
             (key, value) = response.pop(0).split(':', 1)
             self[key.strip()] = value.strip()
-            
-    def __eq__(self, o):
-        """
-        A convenience qualifier for decision-blocks to allow the message to be compared to strings for
-        readability purposes.
-        """
-        if isinstance(o, types.StringType):
-            return self.get(KEY_EVENT) == o or self.get(KEY_RESPONSE) == o
-        return dict.__eq__(self, o)
 
+    @property
+    def name(self):
+        """
+        Provides the name of the event or response.
+        """
+        return self.get(KEY_EVENT) or self.get(KEY_RESPONSE)
+        
+    def process(self):
+        """
+        Provides a tuple containing a copy of all headers as a dictionary and a copy of all response
+        lines. The value of this data is negligible, but subclasses may apply further processing,
+        replacing the values of headers with Python types or making the data easier to work with.
+        """
+        return (self.copy(), self.data[:])
+        
 class _MessageReader(threading.thread):
     event_queue = None #A queue containing unsolicited events received from Asterisk
     response_queue = None #A queue containing orphaned or unparented responses from Asterisk
@@ -471,6 +488,11 @@ class _MessageReader(threading.thread):
                         else:
                             self.response_queue.put(message)
                 elif KEY_EVENT in message:
+                    #See if the event has a corresponding subclass and mutate it if it does
+                    event_class = _EVENT_REGISTRY.get(message.name)
+                    if event_class:
+                        message.__class__ = event_class
+                        
                     self.event_queue.put(message)
                 else:
                     self.response_queue.put(message)
