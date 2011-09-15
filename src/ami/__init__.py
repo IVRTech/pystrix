@@ -48,6 +48,7 @@ import zaptel
 
 #Register events
 import core_events
+import dahdi_events
 import zaptel_events
 
 from ami import _EVENT_REGISTRY
