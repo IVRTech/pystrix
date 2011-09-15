@@ -3,10 +3,7 @@ pystrix.agi.agi_core
 
 Purpose
 =======
- The core logic needed for an AGI session, regardless of interface.
- 
- All AGI actions are exposed by the _AGI class in this module, targeting
- Asterisk version 1.10.
+ The core framework needed for an AGI session, regardless of interface.
  
 Usage
 =====
