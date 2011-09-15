@@ -5,6 +5,8 @@ Purpose
 =======
  Provides defnitions and filtering rules for events that may be raised by Asterisk's Zaptel module.
  
+ Zaptel seems to have been deprecated by DAHDI, so this module may disappear in the future.
+ 
 Usage
 =====
  This module should never be used directly by user code. Rather, it is a pre-processing resource to
@@ -54,7 +56,7 @@ class ZapShowChannels(_Message):
         headers['DND'] = headers.get('DND') == 'Enabled'
         return (headers, data)
  
- class ZapShowChannelsComplete(_Message):
+class ZapShowChannelsComplete(_Message):
     """
     Indicates that all Zaptel channels have been described.
     - 'ActionID' : The ID associated with the original request

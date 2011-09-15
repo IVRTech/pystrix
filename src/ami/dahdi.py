@@ -33,27 +33,9 @@ Legal
  Authors:
  - Neil Tallim <n.tallim@ivrnet.com>
 
-The requests and events implemented by this module follow the definitions provided by
+The requests implemented by this module follow the definitions provided by
 https://wiki.asterisk.org/
-
-Event information
-=================
- DAHDIShowChannels
- ---------------
- Describes the current state of a DAHDI channel.
- - 'ActionID' : The ID associated with the original request
- #- 'Alarm' : "No Alarm"
- - 'Channel' : The channel being described
- - 'Context' : The context associated with the channel
- - 'DND' : 'Disabled' or 'Enabled'
- #- 'Signalling' : "FXO Kewlstart", "FXS Kewlstart"
- 
- DAHDIShowChannelsComplete
- -----------------------
- Indicates that all DAHDI channels have been described.
- - 'ActionID' : The ID associated with the original request
 """
-
 from ami import (_Request, ManagerError)
 
 class DAHDIDNDoff(_Request):
