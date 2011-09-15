@@ -48,9 +48,10 @@ import zaptel
 
 #Register events
 import core_events
+import zaptel_events
 
 from ami import _EVENT_REGISTRY
-for module in (core_events,):
+for module in (core_events, zaptel_events,):
     for event in (e for e in dir(module) if not e.startswith('_')):
         _EVENT_REGISTRY[event] = getattr(module, event)
 del _EVENT_REGISTRY

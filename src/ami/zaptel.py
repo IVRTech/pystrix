@@ -37,27 +37,9 @@ Legal
  Authors:
  - Neil Tallim <n.tallim@ivrnet.com>
 
-The requests and events implemented by this module follow the definitions provided by
+The requests implemented by this module follow the definitions provided by
 http://www.asteriskdocs.org/
-
-Event information
-=================
- ZapShowChannels
- ---------------
- Describes the current state of a Zaptel channel.
- - 'ActionID' : The ID associated with the original request
- - 'Alarm' : "No Alarm"
- - 'Channel' : The channel being described
- - 'Context' : The context associated with the channel
- - 'DND' : 'Disabled' or 'Enabled'
- - 'Signalling' : "FXO Kewlstart", "FXS Kewlstart"
- 
- ZapShowChannelsComplete
- -----------------------
- Indicates that all Zaptel channels have been described.
- - 'ActionID' : The ID associated with the original request
 """
-
 from ami import (_Request, ManagerError)
 
 class ZapDNDoff(_Request):
