@@ -310,7 +310,7 @@ class Manager(object):
             if not self.is_connected():
                 raise ManagerError("Not connected to an Asterisk manager")
                 
-            (command, action_id) = request.build_request(self._get_host_action_id, kwargs)
+            (command, action_id) = request.build_request(self._get_host_action_id, **kwargs)
             self._connection.send_message(command)
 
             self._outstanding_requests[action_id] = request
