@@ -47,6 +47,8 @@ _RE_KV = re.compile(r'(?P<key>\w+)=(?P<value>[^\s]+)(?:\s+\((?P<data>.*)\))?') #
 _RESULT_KEY = 'result'
 
 
+#Functions
+###############################################################################
 def quote(value):
     """
     Encapsulates `value` in double-quotes and coerces it into a string, if
@@ -57,6 +59,8 @@ def quote(value):
     }
 
 
+#Classes
+###############################################################################
 class _AGI(object):
     """
     This class encapsulates communication between Asterisk an a python script.
@@ -253,6 +257,7 @@ class _Action(object):
         sophisticated processing.
         """
         return response
+
 
 #Exceptions
 ###############################################################################

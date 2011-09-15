@@ -1396,7 +1396,10 @@ class VoicemailUsersList(_Request):
     """
     def __init__(self):
         _Request.__init__(self, 'VoicemailUsersList')
-        
+
+
+#Exceptions
+###############################################################################
 class ManagerAuthError(ManagerError):
     """
     Indicates that a problem occurred while authenticating 

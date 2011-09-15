@@ -33,6 +33,8 @@ TDD_ON = 'on'
 TDD_OFF = 'off'
 TDD_MATE = 'mate'
 
+#Functions
+###############################################################################
 def _convert_to_char(value, items):
     """
     Converts the given value into an ASCII character or raises `AGIAppError` with `items` as the
@@ -65,6 +67,8 @@ def _process_digit_list(digits):
     return quote(digits)
 
 
+#Classes
+###############################################################################
 class Answer(_Action):
     """
     Answers the call on the channel.
@@ -874,6 +878,8 @@ class WaitForDigit(_Action):
         return None
 
 
+#Exceptions
+###############################################################################
 class AGIDBError(AGIAppError):
     """
     Indicates that Asterisk encountered an error while interactive with its

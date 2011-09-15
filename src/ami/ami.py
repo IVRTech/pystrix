@@ -690,6 +690,8 @@ class _SynchronisedSocket(object):
                 (self._asterisk_name, self._asterisk_version) = (token.strip() for token in line.split('/', 1))
                 
 
+#Exceptions
+###############################################################################
 class Error(Exception):
     """
     The base exception from which all errors native to this module inherit.
