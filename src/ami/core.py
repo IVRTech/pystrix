@@ -1055,9 +1055,9 @@ class SIPshowpeer(_Request):
     Provides detailed information about a SIP peer.
 
     The response has the following key-value pairs:
-    - 'ACL' : 'Y' or 'N'
+    - 'ACL' : True or False
     - 'Address-IP' : The IP of the peer
-    - 'Address-Port' : The port of the peer
+    - 'Address-Port' : The port of the peer, as an integer
     - 'AMAflags' : "Unknown"
     - 'Callgroup' : ?
     - 'Callerid' : "Linksys #2" <555>
@@ -1068,35 +1068,36 @@ class SIPshowpeer(_Request):
     - 'Context' : The context associated with the peer
        - 'CodecOrder' : The order in which codecs are tried
        - 'Codecs': A list of supported codecs
-       - 'Default-addr-IP' : ?
+    - 'Default-addr-IP' : ?
     - 'Default-addr-port' : ?
     - 'Default-Username' : ?
-    - 'Dynamic' : 'Y' or 'N', depending on whether the peer is resolved by static IP or
+    - 'Dynamic' : True or False, depending on whether the peer is resolved by static IP or
                   authentication
     - 'Language' : The language preference (may be empty) of this peer
     - 'LastMsgsSent' : ?
-    - 'MaxCallBR' : The maximum bitrate supported by the peer, "\d+ kbps"
-    - 'MD5SecretExist' : 'Y' or 'N', depending on whether an MD5 secret is defined
+    - 'MaxCallBR' : The maximum bitrate in kbps supported by the peer, as an integer
+    - 'MD5SecretExist' : True or False, depending on whether an MD5 secret is defined
     - 'ObjectName' : The internal name of the peer
     - 'Pickupgroup' : ?
     - 'Reg-Contact' : The registration contact address for this peer
-    - 'RegExpire': Time until SIP registration expires, "\d+ seconds?"
+    - 'RegExpire': Time in seconds until SIP registration expires, as an integer
     - 'RegExtension' : ?
-    - 'SecretExist' : 'Y' or 'N', depending on whether a secret is defined.
-    - 'SIP-AuthInsecure' : 'yes' or 'no'
-    - 'SIP-CanReinvite' : 'Y' or 'N', depending on whether the peer supports REINVITE
+    - 'SecretExist' : True or False, depending on whether a secret is defined.
+    - 'SIP-AuthInsecure' : True or False
+    - 'SIP-CanReinvite' : True or False, depending on whether the peer supports REINVITE
     - 'SIP-DTMFmode' : The DTMF transport mode to use with this peer, "rfc2833" or ?
     - 'SIP-NatSupport' : The NATting workarounds supported by this peer, "RFC3581" or ?
-    - 'SIP-PromiscRedir' : 'Y' or 'N', depending on whether this peer is allowed to arbitrarily
+    - 'SIP-PromiscRedir' : True or False, depending on whether this peer is allowed to arbitrarily
                            redirect calls
     - 'SIP-Useragent' : The User-Agent of the peer
-    - 'SIP-UserPhone' : 'Y' or 'N', (presumably) depending on whether this peer is a terminal device
-    - 'SIP-VideoSupport' : 'Y' or 'N'
+    - 'SIP-UserPhone' : True or False, (presumably) depending on whether this peer is a terminal
+                        device
+    - 'SIP-VideoSupport' : True or False
     - 'SIPLastMsg' : ?
     - 'Status' : 'Unmonitored', 'OK (\d+ ms)'
     - 'ToHost' : ?
     - 'TransferMode' : "open"
-    - 'VoiceMailbox' : The mailbox associated with the peer
+    - 'VoiceMailbox' : The mailbox associated with the peer; may be null
     
     Requires system
     """
@@ -1106,7 +1107,39 @@ class SIPshowpeer(_Request):
         """
         _Request.__init__(self, "SIPshowpeer")
         self['Peer'] = peer
-
+        
+    def process_response(self, response):
+        """
+        Sets the 'ACL', 'Dynamic', 'MD5SecretExist', 'SecretExist', 'SIP-CanReinvite',
+        'SIP-PromiscRedir', 'SIP-UserPhone', 'SIP-VideoSupport', and 'SIP-AuthInsecure' headers'
+        values to booleans.
+        
+        Sets the 'Address-Port', 'MaxCallBR', and 'RegExpire' headers' values to ints, with -1
+        indicating failure.
+        """
+        response = _Request.process_response(self, response):
+        
+        for header in (
+         'ACL', 'Dynamic', 'MD5SecretExist', 'SecretExist', 'SIP-CanReinvite', 'SIP-PromiscRedir',
+         'SIP-UserPhone', 'SIP-VideoSupport',
+        ):
+            response[header] = response.get(header) == 'Y'
+            
+        response['SIP-AuthInsecure'] = response.get('SIP-AuthInsecure') == 'yes'
+        
+        try:
+            response['Address-Port'] = int(response.get('Address-Port'))
+        except Exception:
+            response['Address-Port'] = -1
+        
+        for header in ('MaxCallBR', 'RegExpire'):
+            try:
+                response[header] = int(response.get(header).split()[0])
+            except Exception:
+                response[header] = -1
+                
+        return response
+        
 class SIPshowregistry(_Request):
     """
     Lists all SIP registrations.
