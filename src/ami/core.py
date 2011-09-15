@@ -912,8 +912,8 @@ class PauseMonitor(_Request):
         
 class Ping(_Request):
     """
-    Pings the AMI server. The response value is the number of seconds the trip took, or -1 in case
-    of failure.
+    Pings the AMI server. The response value has a 'RTT' attribute, which is the
+    number of seconds the trip took, or -1 in case of failure.
     """
     _start_time = None #The time at which the ping message was built
     
@@ -930,12 +930,14 @@ class Ping(_Request):
         
     def process_response(self, response):
         """
-        Responds with the number of seconds elapsed since the message was prepared for transmission
-        or -1 in case the server didn't respond as expected.
+        Adds the number of seconds elapsed since the message was prepared for transmission under
+        the 'RTT' key or sets it to -1 in case the server didn't respond as expected.
         """
         if response.get('Response') == 'Pong':
-            return time.time() - self._start_time
-        return -1
+            response['RTT'] = time.time() - self._start_time
+        else:
+            response['RTT'] = -1
+        return response
         
 class PlayDTMF(_Request):
     """
