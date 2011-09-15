@@ -58,23 +58,3 @@ class DAHDIShowChannelsComplete(_Message):
     - 'ActionID' : The ID associated with the original request
     """
 
-
-Event information
-=================
- MeetmeJoin
- ----------
- Indicates that a user has joined a Meetme bridge.
- - 'Channel' : The channel that was bridged
- - 'Meetme' : The ID of the Meetme bridge, typically a number formatted as a string
- - 'Uniqueid' : An Asterisk unique value (approximately the UNIX timestamp of the event)
- - 'Usernum' : The bridge-specific participant ID assigned to the channel
- 
- MeetmeMute
- ----------
- Indicates that a user has been muted in a Meetme bridge.
- - 'Channel' : The channel that was muted
- - 'Meetme' : The ID of the Meetme bridge, typically a number formatted as a string
- - 'Status' : 'on' or 'off', depending on whether the user was muted or unmuted
- - 'Uniqueid' : An Asterisk unique value (approximately the UNIX timestamp of the event)
- - 'Usernum' : The participant ID of the user that was affected
- 
