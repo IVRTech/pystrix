@@ -933,6 +933,7 @@ class Ping(_Request):
         Adds the number of seconds elapsed since the message was prepared for transmission under
         the 'RTT' key or sets it to -1 in case the server didn't respond as expected.
         """
+        response = _Request.process_response(self, response)
         if response.get('Response') == 'Pong':
             response['RTT'] = time.time() - self._start_time
         else:
