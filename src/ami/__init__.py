@@ -34,4 +34,15 @@ Legal
  Authors:
  - Neil Tallim <n.tallim@ivrnet.com>
 """
+from ami import (
+ RESPONSE_GENERIC, EVENT_GENERIC,
+ KEY_ACTION, KEY_ACTIONID, KEY_EVENT, KEY_RESPONSE,
+ Manager,
+ Error, ManagerError, ManagerSocketError,
+)
+import core
+import app_confbridge
+import app_meetme
+import dahdi
+import zaptel
 
