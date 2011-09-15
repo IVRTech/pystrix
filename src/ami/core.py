@@ -5,6 +5,11 @@ Purpose
 =======
  Provides classes meant to be fed to a `Manager` instance's `send_action()` function.
  
+Notes
+=====
+ pystrix.ami.core_events contains event-definitions and processing rules for events raised by
+ actions in this module (and some others, since extensions can use built-in features).
+ 
 Usage
 =====
  Usage of this module is provided in the examples directory of the source
@@ -31,181 +36,8 @@ Legal
  Authors:
  - Neil Tallim <n.tallim@ivrnet.com>
 
-The requests and events implemented by this module follow the definitions provided by
+The requests implemented by this module follow the definitions provided by
 http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
-
-Event information
-=================
- DBGetResponse
- -------------
- Provides the value requested from the database.
- - 'Family' : The family of the value being provided
- - 'Key' : The key of the value being provided
- - 'Val' : The value being provided, represented as a string
- 
- Hangup
- ------
- Indicates that a channel has been hung up.
- - 'Cause' : One of the following numeric values, as a string:
-  - 0 : Channel cleared normally
- - 'Cause-txt' : Additional information related to the hangup
- - 'Channel' : The channel hung up
- - 'Uniqueid' : An Asterisk unique value (approximately the UNIX timestamp of the event)
-
- ParkedCall
- ----------
- Describes a parked call.
- - 'ActionID' : The ID associated with the original request
- - 'CallerID' : The ID of the caller, ".+?" <.+?>
- - 'CallerIDName' (optional) : The name of the caller, on supporting channels
- - 'Channel' : The channel of the parked call
- - 'Exten' : The extension associated with the parked call
- - 'From' : The callback channel associated with the call
- - 'Timeout' (optional) : The time remaining before the call is reconnected with the callback
-                          channel
-
- ParkedCallsComplete
- -------------------
- Indicates that all parked calls have been listed.
- - 'ActionID' : The ID associated with the original request
-
- PeerEntry
- ---------
- Describes a peer.
- - 'ActionID' : The ID associated with the original request
- - 'ChannelType' : The type of channel being described.
-  - 'SIP'
- - 'ObjectName' : The internal name by which this peer is known
- - 'ChanObjectType': The type of object
-  - 'peer'
- - 'IPaddress' (optional) : The IP of the peer
- - 'IPport' (optional) : The port of the peer
- - 'Dynamic' : 'yes' or 'no', depending on whether the peer is resolved by IP or authentication
- - 'Natsupport' : 'yes' or 'no', depending on whether the peer's messages' content should be trusted
-                  for routing purposes. If not, packets are sent back to the last hop
- - 'VideoSupport' : 'yes' or 'no'
- - 'ACL' : 'yes' or 'no'
- - 'Status' : 'Unmonitored', 'OK (\d+ ms)'
- - 'RealtimeDevice' : 'yes' or 'no'
-
- PeerlistComplete
- ----------------
- Indicates that all peers have been listed.
- - 'ActionID' : The ID associated with the original request
-
- QueueEntry
- ----------
- Indicates that a call is waiting to be answered.
- - 'ActionID' (optional) : The ID associated with the original request, if a response
- - 'Channel' : The channel of the inbound call
- - 'CallerID' : The (often) numeric ID of the caller
- - 'CallerIDName' (optional) : The friendly name of the caller on supporting channels
- - 'Position' : The numeric position of the caller in the queue
- - 'Queue' : The queue in which the caller is waiting
- - 'Wait' : The number of seconds the caller has been waiting
-
- QueueMember
- -----------
- Describes a member of a queue.
- - 'ActionID' (optional) : The ID associated with the original request, if a response
- - 'CallsTaken' : The number of calls received by this member
- - 'LastCall' : The UNIX timestamp of the last call taken, or 0 if none
- - 'Location' : The interface in the queue
- - 'MemberName' (optional) : The friendly name of the member
- - 'Membership' : "dynamic" ("static", too?)
- - 'Paused' : '1' or '0' for 'true' and 'false', respectively
- - 'Penalty' : The selection penalty to apply to this member (higher numbers mean later selection)
- - 'Queue' : The queue to which the member belongs
- - 'Status' : One of the following:
-  - 0 : Idle
-  - 1 : In use
-  - 2 : Busy
-
- QueueMemberAdded
- ----------------
- Indicates that a member was added to a queue.
- - 'CallsTaken' : The number of calls received by this member
- - 'LastCall' : The UNIX timestamp of the last call taken, or 0 if none
- - 'Location' : The interface added to the queue
- - 'MemberName' (optional) : The friendly name of the member
- - 'Membership' : "dynamic" ("static", too?)
- - 'Paused' : '1' or '0' for 'true' and 'false', respectively
- - 'Penalty' : The selection penalty to apply to this member (higher numbers mean later selection)
- - 'Queue' : The queue to which the member was added
- - 'Status' : One of the following:
-  - 0 : Idle
-  - 1 : In use
-  - 2 : Busy
-
- QueueMemberPaused
- -----------------
- Indicates that the pause-state of a queue member was changed
- - 'Location' : The interface added to the queue
- - 'MemberName' (optional) : The friendly name of the member
- - 'Paused' : '1' or '0' for 'true' and 'false', respectively
- - 'Queue' : The queue in which the member was paused
-
- QueueMemberRemoved
- ------------------
- Indicates that a member was removed from a queue.
- - 'Location' : The interface removed from the queue
- - 'MemberName' (optional) : The friendly name of the member
- - 'Queue' : The queue from which the member was removed
-
- QueueParams
- -----------
- Describes the attributes of a queue.
- - 'Abandoned' : The number of calls that have gone unanswered
- - 'ActionID' (optional) : The ID associated with the original request, if a response
- - 'Calls' : The number of current calls in the queue
- - 'Completed' : The number of completed calls
- - 'Holdtime' : ?
- - 'Max' : ?
- - 'Queue' : The queue being described
- - 'ServiceLevel' : ?
- - 'ServicelevelPerf' : ?
- - 'Weight' : ?
-
- QueueStatusComplete
- -------------------
- Indicates that a QueueStatus request has completed.
- - 'ActionID' : The ID associated with the original request
-
- Status
- ------
- Describes the current status of a channel.
- - 'Account' : The billing account associated with the channel; may be empty
- - 'ActionID' : The ID associated with the original request
- - 'Channel' : The channel being described
- - 'CallerID' : The ID of the caller, ".+?" <.+?>
- - 'CallerIDNum' : The (often) numeric component of the CallerID
- - 'CallerIDName' (optional) : The, on suporting channels, name of the caller, enclosed in quotes
- - 'Context' : The context of the directive the channel is executing
- - 'Extension' : The extension of the directive the channel is executing
- - 'Link' : ?
- - 'Priority' : The priority of the directive the channel is executing
- - 'Seconds' : The number of seconds the channel has been active
- - 'State' : "Up"
- - 'Uniqueid' : An Asterisk unique value (approximately the UNIX timestamp of the event)
-
- StatusComplete
- --------------
- Indicates that all requested channel information has been provided.
- - 'ActionID' : The ID associated with the original request
-
- UserEvent
- ---------
- Generated in response to the UserEvent request.
- - 'ActionID' : The ID associated with the original request
- - * : Any keys supplied with the request
-
- VarSet
- ------
- Emitted when a variable is set, either globally or on a channel.
- - 'Channel' (optional) : The channel on which the variable was set, if not global
- - 'Uniqueid' : An Asterisk unique value (approximately the UNIX timestamp of the event)
- - 'Value' : The value of the variable
- - 'Variable' : The name of the variable that was set
 """
 import hashlib
 import time
@@ -438,7 +270,7 @@ class ExtensionState(_Request):
     """
     Provides the state of an extension.
     
-    If successful, a 'Status' key will be present, with one of the following values:
+    If successful, a 'Status' key will be present, with one of the following values as a string:
     - -2 : Extension removed
     - -1 : Extension hint not found
     -  0 : Idle

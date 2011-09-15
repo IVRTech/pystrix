@@ -71,6 +71,7 @@ class Manager(object):
     _connection = None #A connection to the Asterisk manager, realised as a `_SynchronisedSocket`
     _connection_lock = None #A means of preventing race conditions on the connection
     _event_callbacks = None #A dictionary of sets of event callbacks keyed by the string to match
+    _event_callbacks_cls = None #A dictionary of tuples of classes and sets of event callbacks
     _event_callbacks_re = None #A dictionary of tuples of expressions and sets of event callbacks
     _event_callbacks_lock = None #A lock used to prevent race conditions on event callbacks
     _event_callbacks_thread = None #A thread used to process event callbacks
@@ -93,6 +94,7 @@ class Manager(object):
         self._outstanding_requests = set()
 
         self._event_callbacks = {}
+        self._event_callbacks_cls = {}
         self._event_callbacks_re = {}
         self._event_callbacks_lock = threading.Lock()
         self._event_callbacks_thread = threading.Thread(target=self._event_dispatcher)
@@ -137,6 +139,9 @@ class Manager(object):
                     callbacks.update(self._event_callbacks.get('') or ()) #Add the universal handlers, if any
                     for (pattern, functions) in self._event_callbacks_re.items(): #Add all regular expression matches
                         if pattern.match(event_name):
+                            callbacks.update(functions)
+                    for (cls, functions) in self._event_callbacks_cls.items(): #Add all class matches
+                        if type(event) == cls:
                             callbacks.update(functions)
 
                 for callback in callbacks:
@@ -255,8 +260,9 @@ class Manager(object):
 
     def register_callback(self, event, function):
         """
-        Registers an Asterisk event with the name `event`, which may be a string for exact matches
-        or a compiled regular expression to be matched with the 'match' function against the name.
+        Registers an Asterisk event with the name `event`, which may be a string for exact matches,
+        a compiled regular expression to be matched with the 'match' function against the name, or
+        a reference to the specific event class.
 
         `function` is the callable to be invoked with the event `_Message` and a reference to the
         manager object as two positional arguments.
@@ -276,8 +282,11 @@ class Manager(object):
         """
         with self._event_lock as lock:
             callbacks_dict = self._event_callbacks
-            if not event is None and not isinstance(event, types.StringType): #Regular expression
-                callbacks_dict = self._event_callbacks_re
+            if not event is None and not isinstance(event, types.StringType): #Regular expression or class
+                if isinstance(event, types.ClassType):
+                    callbacks_dict = self._event_callbacks_cls
+                else:
+                    callbacks_dict = self._event_callbacks_re
             callbacks = callbacks_dict.get(event, set())
             callbacks.add(function)
             callbacks_dict[event] = callbacks
@@ -346,9 +355,10 @@ class Manager(object):
             
     def unregister_callback(self, event, function):
         """
-        Unregisters an Asterisk event with the name `event`, which may be a string for exact matches
-        or a compiled regular expression to be matched with the 'match' function against the name.
-        If a regular expression, it must be the same object passed in to register the event.
+        Unregisters an Asterisk event with the name `event`, which may be a string for exact
+        matches, a compiled regular expression to be matched with the 'match' function against the
+        name, or a reference to the event's class. If a regular expression, it must be the same
+        object passed in to register the event.
         
         `function` is the callable previously associated with the event. It must be the same object.
 
@@ -357,8 +367,11 @@ class Manager(object):
         """
         with self._event_lock:
             callbacks_dict = self._event_callbacks
-            if not event is None and not isinstance(event, types.StringType): #Regular expression
-                callbacks_dict = self._event_callbacks_re
+            if not event is None and not isinstance(event, types.StringType): #Regular expression or class
+                if isinstance(event, types.ClassType):
+                    callbacks_dict = self._event_callbacks_cls
+                else:
+                    callbacks_dict = self._event_callbacks_re
             callbacks = callbacks_dict.get(event)
             if callbacks:
                 callbacks.discard(function)
