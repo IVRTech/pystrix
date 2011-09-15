@@ -1271,7 +1271,7 @@ class SIPshowpeer(_Request):
         """
         `peer` is the identifier of the peer for which information is to be retrieved.
         """
-        _Request.__init__(self, "SIPshowpeer)
+        _Request.__init__(self, "SIPshowpeer")
         self['Peer'] = peer
 
 class SIPshowregistry(_Request):
