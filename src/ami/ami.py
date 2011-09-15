@@ -483,6 +483,8 @@ class _MessageReader(threading.thread):
 
         Stops running when the connection dies or when explicitly told to stop.
         """
+        global _EVENT_REGISTRY
+        global KEY_ACTIONID
         socket = self._manager.get_connection()
         
         while self._alive:

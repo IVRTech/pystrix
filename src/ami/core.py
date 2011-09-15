@@ -625,8 +625,6 @@ class _Originate(_Request):
 class Originate_Application(_Originate):
     """
     Initiates a call that answers, executes an arbitrary dialplan application, and hangs up.
-
-    The application could be an AGI directive to allow for fully dynamic logic.
     
     Requires call
     """
