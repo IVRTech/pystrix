@@ -58,3 +58,5 @@ from manager import (
  ManagerException, ManagerSocketException, ManagerAuthException,
 )
 
+import core
+
