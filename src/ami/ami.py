@@ -129,7 +129,7 @@ class Manager(object):
             try:
                 event = message_reader.event_queue.get_nowait()
                 sleep = False
-            except queue.Empty:
+            except Queue.Empty:
                 pass
             else:
                 event_name = event[KEY_EVENT]
@@ -158,7 +158,7 @@ class Manager(object):
             try:
                 response = message_reader.response_queue.get_nowait()
                 sleep = False
-            except queue.Empty:
+            except Queue.Empty:
                 pass
             else:
                 callbacks = None
@@ -323,8 +323,7 @@ class Manager(object):
         with self._connection_lock as lock:
             (command, action_id) = request.build_request(self._get_host_action_id, **kwargs)
             self._connection.send_message(command)
-
-            self._outstanding_requests[action_id] = request
+            self._outstanding_requests.add(action_id)
 
         start_time = time.time()
         timeout = start_time + request.timeout
@@ -650,6 +649,7 @@ class _SynchronisedSocket(object):
         global _EOL
         
         wait_for_marker = False #When true, the special string '--END COMMAND--' is used to end a message, rather than a CRLF
+        response_lines = [] #Lines collected from Asterisk
         while True: #Keep reading lines until a full message has been collected
             line = None
             with self._socket_lock as lock:
@@ -664,7 +664,6 @@ class _SynchronisedSocket(object):
                      'error': message,
                     })
 
-            response_lines = [] #Lines collected from Asterisk
             if line == _EOL and not wait_for_marker:
                 if response_lines: #A full response has been collected
                     return _Message(response_lines)
@@ -687,8 +686,7 @@ class _SynchronisedSocket(object):
         """
         with self._socket_lock as lock:
             try:
-                self._socket.write(message)
-                self._socket.flush()
+                self._socket.sendall(message)
             except socket.error as (errno, reason):
                 self.close()
                 raise ManagerSocketError("Connection to Asterisk manager broken while writing data: [%(errno)i] %(error)s" % {
