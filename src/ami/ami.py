@@ -53,7 +53,7 @@ _EOL_FAKE = ('\n\r\n', '\r\r\n') #End-of-line patterns that indicate data, not h
 _EOC_INDICATOR = re.compile(r'Response:\s*Follows\s*$') #A regular expression that matches response headers that indicate the payload is attached
 
 _Response = collections.namedtuple('Response', [
- 'result', 'response', 'request', 'time',
+ 'result', 'response', 'request', 'success', 'time',
 ]) #A container for responses to requests.
 
 RESPONSE_GENERIC = 'Generic Response' #A header-value provided as a surrogate for unidentifiable responses
@@ -303,6 +303,7 @@ class Manager(object):
         - response : The formatted, but unprocessed, response from Asterisk
         - request : The `_Request` object supplied when the request was placed; not a copy of the
                     original
+        - success : A boolean value indicating whether the request was met with success
         - time : The number of seconds, as a float, that the request took to be serviced
         For forward-compatibility reasons, elements of the tuple should be accessed by name, rather
         than by index.
@@ -331,10 +332,12 @@ class Manager(object):
             with self._connection_lock as lock:
                 response = self._message_reader.get_response(action_id)
                 if response:
+                    processed_response = request.process_response(response)
                     return _Response(
-                     request.process_response(response),
+                     processed_response,
                      response,
                      request,
+                     hasattr(processed_response, 'success') and processed_response.success,
                      time.time() - start_time
                     )
             time.sleep(0.05)
