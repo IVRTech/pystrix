@@ -185,7 +185,7 @@ class ControlStreamFile(_Action):
          quote(forward), quote(rewind), quote(pause)
         )
 
-    def process_response(self, response)
+    def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
         if not result.value == '0':
             return _convert_to_char(result.value, response.items)
@@ -350,7 +350,7 @@ class GetFullVariable(_Action):
     check_hangup = False
     
     def __init__(self, variable):
-        _Action.__init__(selfm 'GET FULL VARIABLE', quote(variable))
+        _Action.__init__(self, 'GET FULL VARIABLE', quote(variable))
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
@@ -407,9 +407,7 @@ class GetVariable(_Action):
     check_hangup = False
     
     def __init__(self, variable):
-        _Action.__init__(self,
-         'GET VARIABLE', quote(variable))
-        )
+        _Action.__init__(self, 'GET VARIABLE', quote(variable))
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)

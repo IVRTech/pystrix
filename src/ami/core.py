@@ -1117,7 +1117,7 @@ class SIPshowpeer(_Request):
         Sets the 'Address-Port', 'MaxCallBR', and 'RegExpire' headers' values to ints, with -1
         indicating failure.
         """
-        response = _Request.process_response(self, response):
+        response = _Request.process_response(self, response)
         
         for header in (
          'ACL', 'Dynamic', 'MD5SecretExist', 'SecretExist', 'SIP-CanReinvite', 'SIP-PromiscRedir',

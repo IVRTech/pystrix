@@ -445,7 +445,7 @@ class _Message(dict):
         """
         return (self.copy(), self.data[:])
         
-class _MessageReader(threading.thread):
+class _MessageReader(threading.Thread):
     event_queue = None #A queue containing unsolicited events received from Asterisk
     response_queue = None #A queue containing orphaned or unparented responses from Asterisk
     _alive = True #False when this thread has been killed

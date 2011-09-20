@@ -215,7 +215,7 @@ class _AGI(object):
 
         If the connection to Asterisk is broken, `AGISIGPIPEHangup` is raised.
         """
-        command = ' '.join([command.strip()] + [str(arg) for arg in args if not arg is None]))).strip()
+        command = ' '.join([command.strip()] + [str(arg) for arg in args if not arg is None]).strip()
         if not command.endswith('\n'):
             command += '\n'
             

@@ -35,13 +35,8 @@ Legal
  - Neil Tallim <n.tallim@ivrnet.com>
 """
 from agi_core import (
- CHANNEL_DOWN_AVAILABLE, CHANNEL_DOWN_RESERVED, CHANNEL_OFFHOOK, CHANNEL_DIALED, CHANNEL_ALERTING,
- CHANNEL_REMOTE_ALERTING, CHANNEL_UP, CHANNEL_BUSY,
- FORMAT_SLN, FORMAT_G723, FORMAT_G729, FORMAT_GSM, FORMAT_ALAW, FORMAT_ULAW, FORMAT_VOX, FORMAT_WAV,
- LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR, LOG_CRITICAL,
- TDD_ON, TDD_OFF, TDD_MATE,
  AGIException, AGIError, AGIUnknownError, AGIAppError, AGIHangup, AGISIGPIPEHangup, AGIResultHangup,
- AGIDBError, AGIDeadChannelError, AGIUsageError, AGIInvalidCommandError,
+ AGIDeadChannelError, AGIUsageError, AGIInvalidCommandError,
 )
 
 from agi import (
@@ -53,9 +48,13 @@ from fagi import (
  FastAGIServer, FastAGI,
 )
 
-from manager import (
- ManagerMsg, Event, Manager,
- ManagerException, ManagerSocketException, ManagerAuthException,
+from core import (
+ CHANNEL_DOWN_AVAILABLE, CHANNEL_DOWN_RESERVED, CHANNEL_OFFHOOK, CHANNEL_DIALED, CHANNEL_ALERTING,
+ CHANNEL_REMOTE_ALERTING, CHANNEL_UP, CHANNEL_BUSY,
+ FORMAT_SLN, FORMAT_G723, FORMAT_G729, FORMAT_GSM, FORMAT_ALAW, FORMAT_ULAW, FORMAT_VOX, FORMAT_WAV,
+ LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR, LOG_CRITICAL,
+ TDD_ON, TDD_OFF, TDD_MATE,
+ AGIDBError,
 )
 
 import core
