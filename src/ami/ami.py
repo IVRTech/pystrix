@@ -120,7 +120,7 @@ class Manager(object):
             with self._connection_lock as lock:
                 message_reader = self._message_reader
             if not message_reader:
-                time.sleep(0.01)
+                time.sleep(0.05)
                 continue
                 
             sleep = True #If False, the next cycle begins without delay
