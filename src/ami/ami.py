@@ -280,10 +280,10 @@ class Manager(object):
 
         Callbacks are not guaranteed to be executed in any particular order.
         """
-        with self._event_lock as lock:
+        with self._event_callbacks_lock as lock:
             callbacks_dict = self._event_callbacks
             if not event is None and not isinstance(event, types.StringType): #Regular expression or class
-                if isinstance(event, types.ClassType):
+                if isinstance(event, (types.ClassType, types.TypeType)):
                     callbacks_dict = self._event_callbacks_cls
                 else:
                     callbacks_dict = self._event_callbacks_re
@@ -367,10 +367,10 @@ class Manager(object):
         If the same function was registered under two different event qualifiers, only the one being
         deregistered will be removed.
         """
-        with self._event_lock:
+        with self._event_callbacks_lock as lock:
             callbacks_dict = self._event_callbacks
             if not event is None and not isinstance(event, types.StringType): #Regular expression or class
-                if isinstance(event, types.ClassType):
+                if isinstance(event, (types.ClassType, types.TypeType)):
                     callbacks_dict = self._event_callbacks_cls
                 else:
                     callbacks_dict = self._event_callbacks_re
@@ -660,8 +660,6 @@ class _SynchronisedSocket(object):
             with self._socket_read_lock as lock:
                 try:
                     line = self._socket_file.readline()
-                    ##Debug
-                    print("Receiving " + repr(line))
                 except socket.timeout:
                     return None
                 except socket.error as (errno, message):
@@ -696,8 +694,6 @@ class _SynchronisedSocket(object):
             
         with self._socket_write_lock as lock:
             try:
-                ##Debug
-                print("Sending " + repr(message))
                 self._socket.sendall(message)
             except socket.error as (errno, reason):
                 self.close()
