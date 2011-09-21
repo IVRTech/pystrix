@@ -120,7 +120,7 @@ class Manager(object):
             with self._connection_lock as lock:
                 message_reader = self._message_reader
             if not message_reader:
-                time.sleep(0.05)
+                time.sleep(0.01)
                 continue
                 
             sleep = True #If False, the next cycle begins without delay
@@ -586,7 +586,8 @@ class _SynchronisedSocket(object):
     _connected = False #True while a connection is active
     _socket = None #The socket used to communicate with the Asterisk server
     _socket_file = None #The socket exposed as a file-like object
-    _socket_lock = None #A lock used to prevent race conditions from affecting the Asterisk link
+    _socket_read_lock = None #A lock used to prevent race conditions from affecting the Asterisk link
+    _socket_write_lock = None #A lock used to prevent race conditions from affecting the Asterisk link
     _timeout = None #The number of seconds to wait before considering communications with the Asterisk server timed out
     
     def __init__(self, host, port=5038, timeout=5):
@@ -601,7 +602,8 @@ class _SynchronisedSocket(object):
         """
         self._timeout = timeout
         self._connect(host, port)
-        self._socket_lock = threading.RLock()
+        self._socket_read_lock = threading.Lock()
+        self._socket_write_lock = threading.Lock()
         
     def __del__(self):
         """
@@ -613,14 +615,15 @@ class _SynchronisedSocket(object):
         """
         Release resources associated with this connection.
         """
-        with self._socket_lock as lock:
-            self._connected = False
-            for closable in (self._socket_file, self._socket):
-                try:
-                    closable.close()
-                except Exception:
-                    pass #Can't do anything about it
-
+        with self._socket_write_lock as write_lock:
+            with self._socket_read_lock as read_lock:
+                self._connected = False
+                for closable in (self._socket_file, self._socket):
+                    try:
+                        closable.close()
+                    except Exception:
+                        pass #Can't do anything about it
+                        
     def get_asterisk_info(self):
         """
         Provides the name and version of Asterisk as a tuple of strings.
@@ -631,7 +634,7 @@ class _SynchronisedSocket(object):
         """
         Indicates whether the socket is connected.
         """
-        with self._socket_lock as lock:
+        with self._socket_write_lock as lock:
             return self._connected
 
     def read_message(self):
@@ -655,9 +658,11 @@ class _SynchronisedSocket(object):
         response_lines = [] #Lines collected from Asterisk
         while True: #Keep reading lines until a full message has been collected
             line = None
-            with self._socket_lock as lock:
+            with self._socket_read_lock as lock:
                 try:
                     line = self._socket_file.readline()
+                    ##Debug
+                    print("Receiving " + repr(line))
                 except socket.timeout:
                     return None
                 except socket.error as (errno, message):
@@ -687,8 +692,13 @@ class _SynchronisedSocket(object):
 
         `ManagerSocketError` is raised if the connection is broken.
         """
-        with self._socket_lock as lock:
+        if not self.is_connected():
+            raise ManagerSocketError("Not connected to Asterisk server")
+            
+        with self._socket_write_lock as lock:
             try:
+                ##Debug
+                print("Sending " + repr(message))
                 self._socket.sendall(message)
             except socket.error as (errno, reason):
                 self.close()
