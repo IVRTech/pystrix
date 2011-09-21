@@ -75,16 +75,6 @@ class _AGI(object):
         self._environment = {}
         self._parse_agi_environment()
 
-    def agi_get_environment(self):
-        """
-        Returns Asterisk's initial environment values.
-        
-        Note that this function returns a copy of the values, so repeated calls
-        are less favourable than storing the returned value locally and
-        dissecting it there.
-        """
-        return self._environment.copy()
-
     def execute(self, action):
         """
         Sends a request to Asterisk and waits for a response before returning control to the caller.
@@ -99,7 +89,17 @@ class _AGI(object):
         
         self._send_command(action.command, *action.arguments)
         return action.process_result(self._get_result(action.check_hangup))
+
+    def get_environment(self):
+        """
+        Returns Asterisk's initial environment values.
         
+        Note that this function returns a copy of the values, so repeated calls
+        are less favourable than storing the returned value locally and
+        dissecting it there.
+        """
+        return self._environment.copy()
+
     def _get_result(self, check_hangup=True):
         """
         Waits for a response from Asterisk, parses it, validates its contents, and returns it as a
