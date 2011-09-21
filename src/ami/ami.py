@@ -616,14 +616,13 @@ class _SynchronisedSocket(object):
         Release resources associated with this connection.
         """
         with self._socket_write_lock as write_lock:
-            with self._socket_read_lock as read_lock:
-                self._connected = False
-                for closable in (self._socket_file, self._socket):
-                    try:
-                        closable.close()
-                    except Exception:
-                        pass #Can't do anything about it
-                        
+            self._connected = False
+            for closable in (self._socket_file, self._socket):
+                try:
+                    closable.close()
+                except Exception:
+                    pass #Can't do anything about it
+                    
     def get_asterisk_info(self):
         """
         Provides the name and version of Asterisk as a tuple of strings.
