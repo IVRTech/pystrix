@@ -43,6 +43,12 @@ class DBGetResponse(_Message):
     - 'Key' : The key of the value being provided
     - 'Val' : The value being provided, represented as a string
     """
+
+class FullyBooted(_Message):
+    """
+    Indicates that Asterisk is online.
+    - 'Status' : "Fully Booted"
+    """
     
 class Hangup(_Message):
     """
