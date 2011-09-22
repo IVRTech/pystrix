@@ -6,6 +6,7 @@ Asterisk. This documentation exists to prevent you from needing to go trawling t
 when all you really need to do is see a class's constructor and read about what it does.
 
 .. toctree::
+    :maxdepth: 2
 
     examples/index.rst
     ami/index.rst

@@ -116,7 +116,8 @@ class Challenge(_Request):
     Asks the AMI server for a challenge token to be used to hash the login secret.
     
     The value provided under the returned response's 'Challenge' key must be passed as the
-    'challenge' parameter of the `Login` object's constructor:
+    'challenge' parameter of the `Login` object's constructor::
+
         login = Login(username='me', secret='password', challenge=response.get('Challenge'))
     """
     def __init__(self, authtype=AUTHTYPE_MD5):

@@ -9,11 +9,6 @@ Purpose
  For internal use, action superclasses and event/response generic classes are
  also defined.
  
-Usage
-=====
- Usage of this module is provided in the examples directory of the source
- distribution.
- 
 Legal
 =====
  This file is part of pystrix.
@@ -199,6 +194,8 @@ class Manager(object):
     def close(self):
         """
         Release all resources associated with this manager and ensure that all threads have stopped.
+        
+        This function is automatically invoked when garbage-collected.
         """
         self.disconnect()
         
@@ -225,6 +222,8 @@ class Manager(object):
     def disconnect(self):
         """
         Gracefully closes a connection to the Asterisk manager.
+        
+        If not connected, this is a no-op.
         """
         with self._connection_lock as lock:
             if self._connection: #Close the old connection, if any.
@@ -248,6 +247,9 @@ class Manager(object):
         """
         Returns the current `_SynchronisedSocket` in use by the active connection, or `None` if no
         manager is attached.
+        
+        This function is exposed for debugging purposes and should not be used by normal
+        applications that do not have very special reasons for interacting with Asterisk directly.
         """
         return self._connection
         
@@ -293,18 +295,22 @@ class Manager(object):
             
     def send_action(self, request, **kwargs):
         """
-        Sends a command, contained in `request`, a `_Request`, to the Asterisk manager. Any
-        additional keyword arguments are added directly into the request message as though they
-        were native headers.
+        Sends a command, contained in `request`, a `_Request`, to the Asterisk manager, referred to
+        interchangeably as "actions". Any additional keyword arguments are added directly into the
+        request command as though they were native headers, though the original object is
+        unaffected.
         
         Asterisk's response is returned as a named tuple of the following form:
-        - result : The processed respopnse from Asterisk, nominally the same as `response`; see the
-                   specific `_Request` subclass for details in case it is overridden
+        
+        - result : The processed response from Asterisk, nominally the same as `response`; see the
+                   specific `_Request` subclass for details in case it provides additional
+                   processing
         - response : The formatted, but unprocessed, response from Asterisk
         - request : The `_Request` object supplied when the request was placed; not a copy of the
                     original
         - success : A boolean value indicating whether the request was met with success
         - time : The number of seconds, as a float, that the request took to be serviced
+        
         For forward-compatibility reasons, elements of the tuple should be accessed by name, rather
         than by index.
 
@@ -341,10 +347,10 @@ class Manager(object):
                      time.time() - start_time
                     )
             time.sleep(0.05)
-        self.serve_outstanding_request(action_id) #Get the ActionID out of circulation
+        self._serve_outstanding_request(action_id) #Get the ActionID out of circulation
         return None
 
-    def serve_outstanding_request(self, action_id):
+    def _serve_outstanding_request(self, action_id):
         """
         Returns `True` if the given `action_id` is waiting to be served and removes it from the
         local set as a side-effect.
@@ -380,11 +386,10 @@ class Manager(object):
                 
 class _Message(dict):
     """
-    An event received from Asterisk.
+    The common base-class for both methods and events, this is any structured response received
+    from Asterisk.
 
-    All message headers are exposed as dictionary items on this object directly, for simplicity's
-    sake. For purposes of being explicit, the 'headers' property is a recursive reference to its
-    parent `_Event`.
+    All message headers are exposed as dictionary items on this object directly.
     """
     data = None #The payload received from Asterisk
     headers = None #A reference to this object, which is a dictionary with header responses from Asterisk
@@ -396,7 +401,7 @@ class _Message(dict):
         suitable for processing by application logic.
         """
         self.data = []
-        self.headers = self
+        self.headers = self #For simplicity's sake, the 'headers' property is a recursive reference to this object
         self.raw = response
         self._parse(response)
 
@@ -498,7 +503,7 @@ class _MessageReader(threading.Thread):
                 break #Nothing can be reported, but the socket died, so there's no point in running
             else:
                 action_id = message.get(KEY_ACTIONID)
-                if not action_id is None and self._manager.serve_outstanding_request(action_id):
+                if not action_id is None and self._manager._serve_outstanding_request(action_id):
                     with self._served_requests_lock as lock:
                         if not action_id in self._served_requests: #If there's already an associated response, treat this one as orphaned to avoid data-loss
                             self._served_requests[action_id] = message
@@ -516,16 +521,13 @@ class _MessageReader(threading.Thread):
                     
 class _Request(dict):
     """
-    Provides a generic container for assembling AMI requests.
+    Provides a generic container for assembling AMI requests, the basis of all actions.
     
     Subclasses may override `__init__` and define any additional behaviours they may need, as well
     as override `process_response()` to specially format the data to be returned after a request
     has been served.
     """
-    timeout = 5 #The number of seconds to wait before considering this request timed out, may be a float
-    #Indefinite waiting is not supported, but arbitrarily large values may be provided
-    #A request that has timed out may still be serviced by Asterisk, with the notification being treated as orphaned
-    #Changing the timeout value of the request object has no effect on set requests
+    timeout = 5 #The number of seconds to wait before considering this request timed out; may be a float
     
     def __init__(self, action):
         """
