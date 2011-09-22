@@ -1,38 +1,35 @@
 """
 pystrix.agi.core
+================
 
-Purpose
-=======
- All standard AGI actions as instantiable classes, suitable for passing to the
- `execute()` function of an AGI interface.
+All standard AGI actions as instantiable classes, suitable for passing to the
+`execute()` function of an AGI interface.
 
- Also includes constants to make programmatic interaction cleaner.
-
-Usage
-=====
- Usage of this module is provided in the examples directory of the source
- distribution.
+Also includes constants to make programmatic interaction cleaner.
  
 Legal
-=====
- This file is part of pystrix.
- pystrix is free software; you can redistribute it and/or modify
- it under the terms of the GNU Lesser General Public License as published
- by the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
+-----
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU Lesser General Public License for more details.
+This file is part of pystrix.
+pystrix is free software; you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published
+by the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
 
- You should have received a copy of the GNU General Public License and
- GNU Lesser General Public License along with this program. If not, see
- <http://www.gnu.org/licenses/>.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU General Public License and
+GNU Lesser General Public License along with this program. If not, see
+<http://www.gnu.org/licenses/>.
  
- (C) Ivrnet, inc., 2011
- Authors:
- - Neil Tallim <n.tallim@ivrnet.com>
+(C) Ivrnet, inc., 2011
+
+Authors:
+
+- Neil Tallim <n.tallim@ivrnet.com>
 """
 from agi_core import (
  _Action,
@@ -213,7 +210,7 @@ class DatabaseDel(_Action):
 
 class DatabaseDeltree(_Action):
     """
-    Deletes the specificed family (and optinally keytree) from Asterisk's database.
+    Deletes the specificed family (and optionally keytree) from Asterisk's database.
 
     `AGIAppError` is raised on failure.
     
@@ -292,7 +289,7 @@ class Exec(_Action):
     `options` is an optional sequence of arguments, with any double-quote characters or pipes
     explicitly escaped.
 
-    `AGIAppError is raised if the application could not be executed.
+    `AGIAppError` is raised if the application could not be executed.
     """
     check_hangup = False
     
@@ -856,7 +853,7 @@ class StreamFile(_Action):
             return (dtmf_character, offset)
         return None
 
-class TddMode(_Action):
+class TDDMode(_Action):
     """
     Sets the TDD transmission `mode` on supporting channels, one of the following:
     - TDD_ON

@@ -6,6 +6,7 @@ Provides classes meant to be fed to a `Manager` instance's `send_action()` funct
  
 Notes
 -----
+
 pystrix.ami.core_events contains event-definitions and processing rules for events raised by
 actions in this module (and some others, since extensions can use built-in features).
  

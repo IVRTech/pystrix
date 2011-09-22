@@ -7,6 +7,7 @@ Asterisk Management Interface (AMI) protocol.
 
 Usage
 -----
+
 Importing this package is recommended over importing individual modules.
 
 Legal
