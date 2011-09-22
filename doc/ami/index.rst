@@ -11,3 +11,5 @@ actions and serving callback handlers when events are received.
 .. toctree::
 
     core.rst
+    dahdi.rst
+    zaptel.rst
