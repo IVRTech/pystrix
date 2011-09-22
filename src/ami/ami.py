@@ -301,7 +301,8 @@ class Manager(object):
         request command as though they were native headers, though the original object is
         unaffected.
         
-        Asterisk's response is returned as a named tuple of the following form:
+        Asterisk's response is returned as a named tuple of the following form, or `None` if the
+        request timed out:
         
         - result: The processed response from Asterisk, nominally the same as `response`; see the
           specific `_Request` subclass for details in case it provides additional processing
@@ -313,10 +314,6 @@ class Manager(object):
         
         For forward-compatibility reasons, elements of the tuple should be accessed by name, rather
         than by index.
-
-        tuple  a processed response (normally the 
-        `_Message` object, the original request, and
-        the time-delta in seconds, or `None` if the request timed out.
         
         Raises `ManagerError` if the manager is not connected.
 
