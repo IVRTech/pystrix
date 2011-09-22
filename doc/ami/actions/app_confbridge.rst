@@ -5,6 +5,15 @@ Confbridge is Asterisk's new conferencing subsystem, providing far greater funct
 Meetme, with better performance and structural design. While technically a part of Asterisk's core,
 it's specialised enough that pystrix treats it as a module.
 
+Members
+-------
+
+All of the following objects should be accessed as part of the `ami.app_confbirdge` namespace,
+regardless of the modules in which they are defined.
+
+Classes
++++++++
+
 .. autoclass:: ami.app_confbridge.ConfbridgeKick
     :members: __init__
 

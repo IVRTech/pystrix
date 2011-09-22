@@ -1,17 +1,17 @@
 """
 pystrix.ami.core
+================
 
-Purpose
-=======
 Provides classes meant to be fed to a `Manager` instance's `send_action()` function.
  
 Notes
-=====
+-----
 pystrix.ami.core_events contains event-definitions and processing rules for events raised by
 actions in this module (and some others, since extensions can use built-in features).
  
 Legal
-=====
+-----
+
 This file is part of pystrix.
 pystrix is free software; you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published
@@ -28,9 +28,10 @@ GNU Lesser General Public License along with this program. If not, see
 <http://www.gnu.org/licenses/>.
 
 (C) Ivrnet, inc., 2011
+
 Authors:
 
-* Neil Tallim <n.tallim@ivrnet.com>
+- Neil Tallim <n.tallim@ivrnet.com>
 
 The requests implemented by this module follow the definitions provided by
 http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
@@ -50,6 +51,7 @@ EVENTMASK_CALL = 'call'
 EVENTMASK_LOG = 'log'
 EVENTMASK_SYSTEM = 'system'
 
+#Audio format constants
 FORMAT_SLN = 'sln'
 FORMAT_G723 = 'g723'
 FORMAT_G729 = 'g729'

@@ -4,6 +4,74 @@ Core actions
 Asterisk provides a rich collection of features by default, the standard set of which are described
 here.
 
+Members
+-------
+
+All of the following objects should be accessed as part of the `ami.core` namespace, regardless of
+the modules in which they are defined.
+
+Constants
++++++++++
+
+.. data:: AUTHTYPE_MD5
+
+    Uses MD5 authentication when logging into AMI
+    
+.. data:: EVENTMASK_ALL
+
+    Turns on all events with the :class:`ami.core.Events` action
+
+.. data:: EVENTMASK_NONE
+
+    Turns off all events with the :class:`ami.core.Events` action
+    
+.. data:: EVENTMASK_CALL
+
+    Turns on call events with the :class:`ami.core.Events` action
+    
+.. data:: EVENTMASK_LOG
+
+    Turns on log events with the :class:`ami.core.Events` action
+    
+.. data:: EVENTMASK_SYSTEM
+
+    Turns on system events with the :class:`ami.core.Events` action
+
+.. data:: FORMAT_SLN
+
+    Selects the `sln` audio format
+    
+.. data:: FORMAT_G723
+
+    Selects the `g723` audio format
+    
+.. data:: FORMAT_G729
+
+    Selects the `g729` audio format
+    
+.. data:: FORMAT_GSM
+
+    Selects the `gsm` audio format
+    
+.. data:: FORMAT_ALAW
+
+    Selects the `alaw` audio format
+    
+.. data:: FORMAT_ULAW
+
+    Selects the `ulaw` audio format
+    
+.. data:: FORMAT_VOX
+
+    Selects the `vox` audio format
+    
+.. data:: FORMAT_WAV
+
+    Selects the `wav` audio format
+
+Classes
++++++++
+
 .. autoclass:: ami.core.AbsoluteTimeout
     :members: __init__
 
@@ -167,3 +235,9 @@ here.
 .. autoclass:: ami.core.VoicemailUsersList
     :members: __init__
 
+Exceptions
+++++++++++
+
+.. autoexception:: ami.core.ManagerAuthError
+    :show-inheritance:
+    
