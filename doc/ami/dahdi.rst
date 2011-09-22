@@ -1,6 +1,8 @@
 DAHDI actions
 =============
 
+DAHDI is an interface layer for integrating traditional telephony technologies with digital formats.
+
 .. autoclass:: ami.dahdi.DAHDIDNDoff
     :members: __init__
     :show-inheritance:

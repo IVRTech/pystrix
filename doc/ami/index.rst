@@ -13,3 +13,6 @@ actions and serving callback handlers when events are received.
     core.rst
     dahdi.rst
     zaptel.rst
+    app_confbridge.rst
+    app_meetme.rst
+    

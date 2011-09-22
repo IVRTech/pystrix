@@ -1,6 +1,9 @@
 Core actions
 ============
 
+Asterisk provides a rich collection of features by default, the standard set of which are described
+here.
+
 .. autoclass:: ami.core.AbsoluteTimeout
     :members: __init__
     :show-inheritance:

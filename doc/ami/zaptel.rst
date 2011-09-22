@@ -1,6 +1,9 @@
 Zaptel actions
 ==============
 
+Zaptel is a legacy PRI-interaction technology, deprecated by DAHDI. Support for this feature-set
+will likely disappear in the future.
+
 .. autoclass:: ami.zaptel.ZapDNDoff
     :members: __init__
     :show-inheritance:
