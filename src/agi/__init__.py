@@ -44,7 +44,7 @@ from agi import (
  AGISIGHUPHangup,
 )
 
-from fagi import (
+from fastagi import (
  FastAGIServer, FastAGI,
 )
 
