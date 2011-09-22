@@ -23,7 +23,7 @@ modules in which they are defined.
 Constants
 +++++++++
 
-Aside, perhaps, from the "GENERIC" values, to be matched against :attr:`_Message.name` responses,
+Aside, perhaps, from the "GENERIC" values, to be matched against :attr:`ami.ami._Message.name` responses,
 these constants are largely unnecessary outside of internal module usage, but they're exposed for
 convenience's sake.
 
