@@ -8,4 +8,4 @@ for the associated Asterisk function.
 
     ami.rst
     agi.rst
-    fast_agi.rst
+    fastagi.rst
