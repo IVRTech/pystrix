@@ -3,38 +3,34 @@ pystrix.ami.core
 
 Purpose
 =======
- Provides classes meant to be fed to a `Manager` instance's `send_action()` function.
+Provides classes meant to be fed to a `Manager` instance's `send_action()` function.
  
 Notes
 =====
- pystrix.ami.core_events contains event-definitions and processing rules for events raised by
- actions in this module (and some others, since extensions can use built-in features).
- 
-Usage
-=====
- Usage of this module is provided in the examples directory of the source
- distribution.
+pystrix.ami.core_events contains event-definitions and processing rules for events raised by
+actions in this module (and some others, since extensions can use built-in features).
  
 Legal
 =====
- This file is part of pystrix.
- pystrix is free software; you can redistribute it and/or modify
- it under the terms of the GNU Lesser General Public License as published
- by the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
+This file is part of pystrix.
+pystrix is free software; you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published
+by the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU Lesser General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
 
- You should have received a copy of the GNU General Public License and
- GNU Lesser General Public License along with this program. If not, see
- <http://www.gnu.org/licenses/>.
- 
- (C) Ivrnet, inc., 2011
- Authors:
- - Neil Tallim <n.tallim@ivrnet.com>
+You should have received a copy of the GNU General Public License and
+GNU Lesser General Public License along with this program. If not, see
+<http://www.gnu.org/licenses/>.
+
+(C) Ivrnet, inc., 2011
+Authors:
+
+* Neil Tallim <n.tallim@ivrnet.com>
 
 The requests implemented by this module follow the definitions provided by
 http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
@@ -240,12 +236,15 @@ class Events(_Request):
     def __init__(self, mask):
         """
         `Mask` is one of the following...
-        - EVENTMASK_ALL
-        - EVENTMASK_NONE
+        
+        * EVENTMASK_ALL
+        * EVENTMASK_NONE
+        
         ...or an iterable, like a tuple, of any of the following...
-        - EVENTMASK_CALL
-        - EVENTMASK_LOG
-        - EVENTMASK_SYSTEM
+        
+        * EVENTMASK_CALL
+        * EVENTMASK_LOG
+        * EVENTMASK_SYSTEM
         
         If an empty value is provided, EVENTMASK_NONE is assumed.
         """
@@ -271,11 +270,13 @@ class ExtensionState(_Request):
     Provides the state of an extension.
     
     If successful, a 'Status' key will be present, with one of the following values as a string:
-    - -2 : Extension removed
-    - -1 : Extension hint not found
-    -  0 : Idle
-    -  1 : In use
-    -  2 : Busy
+    
+    * -2 : Extension removed
+    * -1 : Extension hint not found
+    *  0 : Idle
+    *  1 : In use
+    *  2 : Busy
+    
     If non-negative, a 'Hint' key will be present, too, containing string data that can be helpful
     in discerning the current activity of the device.
     
@@ -310,13 +311,13 @@ class GetConfig(_Request):
         
     def process_response(self, response):
         """
-        Adds a 'lines' attribute as a generator that produces every line in order.
+        Adds a 'get_lines' function that returns a generator that yields every line in order.
         """
         response = _Request.process_response(self, response)
         response.get_lines = lambda : (value for (key, value) in sorted(response.items()) if key.startswith('Line-'))
         return response
         
-def GetVar(_Request):
+class Getvar(_Request):
     """
     Gets the value of a channel or global variable from Asterisk, returning the result under the
     'Value' key.
@@ -328,7 +329,7 @@ def GetVar(_Request):
         `variable` is the name of the variable to retrieve. `channel` is optional; if not specified,
         a global variable is retrieved.
         """
-        _Request.__init__(self, 'GetVar')
+        _Request.__init__(self, 'Getvar')
         self['Variable'] = variable
         if not channel is None:
             self['Channel'] = channel
@@ -491,9 +492,10 @@ class MixMonitorMute(_Request):
         `channel` is the channel to operate on.
 
         `direction` is one of the following:
-        - 'read' : voice originating on the `channel`
-        - 'write' : voice delivered to the `channel`
-        - 'both' : all audio on the `channel`
+        
+        * 'read' : voice originating on the `channel`
+        * 'write' : voice delivered to the `channel`
+        * 'both' : all audio on the `channel`
 
         `mute` is `True` to muste the audio.
         """
@@ -524,19 +526,21 @@ class ModuleLoad(_Request):
     def __init__(self, load_type, module=None):
         """
         `load_type` is one of the following:
-        - 'load'
-        - 'unload'
-        - 'reload' : if `module` is undefined, all modules are reloaded
+        
+        * 'load'
+        * 'unload'
+        * 'reload' : if `module` is undefined, all modules are reloaded
         
         `module` is optionally the name of the module, with extension, or one of the following for
         a built-in subsystem:
-        - 'cdr'
-        - 'dnsmgr'
-        - 'enum'
-        - 'extconfig'
-        - 'http'
-        - 'manager'
-        - 'rtp'
+        
+        * 'cdr'
+        * 'dnsmgr'
+        * 'enum'
+        * 'extconfig'
+        * 'http'
+        * 'manager'
+        * 'rtp'
         """
         _Request.__init__(self, 'ModuleLoad')
         self['LoadType'] = load_type
@@ -555,14 +559,15 @@ class Monitor(_Request):
         extension, as either an auto-resolved or absolute path.
 
         `format` may be any format Asterisk understands, defaulting to FORMAT_WAV:
-        - FORMAT_SLN
-        - FORMAT_G723
-        - FORMAT_G729
-        - FORMAT_GSM
-        - FORMAT_ALAW
-        - FORMAT_ULAW
-        - FORMAT_VOX
-        - FORMAT_WAV : PCM16
+        
+        * FORMAT_SLN
+        * FORMAT_G723
+        * FORMAT_G729
+        * FORMAT_GSM
+        * FORMAT_ALAW
+        * FORMAT_ULAW
+        * FORMAT_VOX
+        * FORMAT_WAV : PCM16
 
         `mix`, defaulting to `True`, muxes both audio streams associated with the channel, with the
         alternative recording only audio produced by the channel.
@@ -988,7 +993,7 @@ class SetCDRUserField(_Request):
         self['Channel'] = channel
         self['UserField'] = user_field
         
-class SetVar(_Request):
+class Setvar(_Request):
     """
     Sets a channel-level or global variable.
     
@@ -1000,7 +1005,7 @@ class SetVar(_Request):
         
         `channel` is the channel to be affected, or `None`, the default, if the variable is global.
         """
-        _Request.__init__(self, 'SetVar')
+        _Request.__init__(self, 'Setvar')
         if channel:
             self['Channel'] = channel
         self['Variable'] = variable
@@ -1055,49 +1060,49 @@ class SIPshowpeer(_Request):
     Provides detailed information about a SIP peer.
 
     The response has the following key-value pairs:
-    - 'ACL' : True or False
-    - 'Address-IP' : The IP of the peer
-    - 'Address-Port' : The port of the peer, as an integer
-    - 'AMAflags' : "Unknown"
-    - 'Callgroup' : ?
-    - 'Callerid' : "Linksys #2" <555>
-    - 'Call-limit' : ?
-    - 'Channeltype' : "SIP"
-    - 'ChanObjectType' : "peer"
-    - 'CID-CallingPres' : ?
-    - 'Context' : The context associated with the peer
-       - 'CodecOrder' : The order in which codecs are tried
-       - 'Codecs': A list of supported codecs
-    - 'Default-addr-IP' : ?
-    - 'Default-addr-port' : ?
-    - 'Default-Username' : ?
-    - 'Dynamic' : True or False, depending on whether the peer is resolved by static IP or
-                  authentication
-    - 'Language' : The language preference (may be empty) of this peer
-    - 'LastMsgsSent' : ?
-    - 'MaxCallBR' : The maximum bitrate in kbps supported by the peer, as an integer
-    - 'MD5SecretExist' : True or False, depending on whether an MD5 secret is defined
-    - 'ObjectName' : The internal name of the peer
-    - 'Pickupgroup' : ?
-    - 'Reg-Contact' : The registration contact address for this peer
-    - 'RegExpire': Time in seconds until SIP registration expires, as an integer
-    - 'RegExtension' : ?
-    - 'SecretExist' : True or False, depending on whether a secret is defined.
-    - 'SIP-AuthInsecure' : True or False
-    - 'SIP-CanReinvite' : True or False, depending on whether the peer supports REINVITE
-    - 'SIP-DTMFmode' : The DTMF transport mode to use with this peer, "rfc2833" or ?
-    - 'SIP-NatSupport' : The NATting workarounds supported by this peer, "RFC3581" or ?
-    - 'SIP-PromiscRedir' : True or False, depending on whether this peer is allowed to arbitrarily
-                           redirect calls
-    - 'SIP-Useragent' : The User-Agent of the peer
-    - 'SIP-UserPhone' : True or False, (presumably) depending on whether this peer is a terminal
-                        device
-    - 'SIP-VideoSupport' : True or False
-    - 'SIPLastMsg' : ?
-    - 'Status' : 'Unmonitored', 'OK (\d+ ms)'
-    - 'ToHost' : ?
-    - 'TransferMode' : "open"
-    - 'VoiceMailbox' : The mailbox associated with the peer; may be null
+    
+    * 'ACL' : True or False
+    * 'Address-IP' : The IP of the peer
+    * 'Address-Port' : The port of the peer, as an integer
+    * 'AMAflags' : "Unknown"
+    * 'Callgroup' : ?
+    * 'Callerid' : "Linksys #2" <555>
+    * 'Call-limit' : ?
+    * 'Channeltype' : "SIP"
+    * 'ChanObjectType' : "peer"
+    * 'CID-CallingPres' : ?
+    * 'Context' : The context associated with the peer
+    
+     * 'CodecOrder' : The order in which codecs are tried
+     * 'Codecs': A list of supported codecs
+     
+    * 'Default-addr-IP' : ?
+    * 'Default-addr-port' : ?
+    * 'Default-Username' : ?
+    * 'Dynamic' : True or False, depending on whether the peer is resolved by static IP or authentication
+    * 'Language' : The language preference (may be empty) of this peer
+    * 'LastMsgsSent' : ?
+    * 'MaxCallBR' : The maximum bitrate in kbps supported by the peer, as an integer
+    * 'MD5SecretExist' : True or False, depending on whether an MD5 secret is defined
+    * 'ObjectName' : The internal name of the peer
+    * 'Pickupgroup' : ?
+    * 'Reg-Contact' : The registration contact address for this peer
+    * 'RegExpire': Time in seconds until SIP registration expires, as an integer
+    * 'RegExtension' : ?
+    * 'SecretExist' : True or False, depending on whether a secret is defined.
+    * 'SIP-AuthInsecure' : True or False
+    * 'SIP-CanReinvite' : True or False, depending on whether the peer supports REINVITE
+    * 'SIP-DTMFmode' : The DTMF transport mode to use with this peer, "rfc2833" or ?
+    * 'SIP-NatSupport' : The NATting workarounds supported by this peer, "RFC3581" or ?
+    * 'SIP-PromiscRedir' : True or False, depending on whether this peer is allowed to arbitrarily redirect calls
+    * 'SIP-Useragent' : The User-Agent of the peer
+    * 'SIP-UserPhone' : True or False, (presumably) depending on whether this peer is a terminal device
+    * 'SIP-VideoSupport' : True or False
+    * 'SIPLastMsg' : ?
+    * 'Status' : 'Unmonitored', 'OK (\d+ ms)'
+    * 'ToHost' : ?
+    * 'TransferMode' : "open"
+    * 'VoiceMailbox' : The mailbox associated with the peer; may be null
     
     Requires system
     """
@@ -1209,17 +1214,20 @@ class UpdateConfig(_Request):
         module, that module is reloaded.
 
         `changes` may be any iterable object countaining quintuples with the following items:
-        - One of the following:
-         - 'NewCat' : creates a new category
-         - 'RenameCat' : renames a category
-         - 'DelCat' : deletes a category
-         - 'Update' : changes a value
-         - 'Delete' : removes a value
-         - 'Append' : adds a value
-        - The name of the category to operate on
-        - `None` or the name of the variable to operate on
-        - `None` or the value to be set/added (has no effect with 'Delete')
-        - `None` or a string that needs to be matched in the line to serve as a qualifier
+        
+        * One of the following:
+        
+         * 'NewCat' : creates a new category
+         * 'RenameCat' : renames a category
+         * 'DelCat' : deletes a category
+         * 'Update' : changes a value
+         * 'Delete' : removes a value
+         * 'Append' : adds a value
+         
+        * The name of the category to operate on
+        * `None` or the name of the variable to operate on
+        * `None` or the value to be set/added (has no effect with 'Delete')
+        * `None` or a string that needs to be matched in the line to serve as a qualifier
         """
         _Request.__init__(self, "UpdateConfig")
         self['SrcFilename'] = src_filename
