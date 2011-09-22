@@ -1,0 +1,69 @@
+Core
+====
+
+Asterisk provides a rich assortment of information-carrying events by default, the standard set of
+which are described here.
+
+Members
+-------
+
+All of the following objects should be accessed as part of the `ami.core_events` namespace,
+regardless of the modules in which they are defined.
+
+Classes
++++++++
+
+.. autoclass:: ami.core_events.DBGetResponse
+    :members:
+
+.. autoclass:: ami.core_events.FullyBooted
+    :members:
+
+.. autoclass:: ami.core_events.Hangup
+    :members:
+
+.. autoclass:: ami.core_events.ParkedCall
+    :members:
+
+.. autoclass:: ami.core_events.ParkedCallsComplete
+    :members:
+
+.. autoclass:: ami.core_events.PeerEntry
+    :members:
+
+.. autoclass:: ami.core_events.PeerlistComplete
+    :members:
+
+.. autoclass:: ami.core_events.QueueEntry
+    :members:
+
+.. autoclass:: ami.core_events.QueueMember
+    :members:
+
+.. autoclass:: ami.core_events.QueueMemberAdded
+    :members:
+
+.. autoclass:: ami.core_events.QueueMemberPaused
+    :members:
+
+.. autoclass:: ami.core_events.QueueMemberRemoved
+    :members:
+
+.. autoclass:: ami.core_events.QueueParams
+    :members:
+
+.. autoclass:: ami.core_events.QueueStatusComplete
+    :members:
+
+.. autoclass:: ami.core_events.Status
+    :members:
+
+.. autoclass:: ami.core_events.StatusComplete
+    :members:
+
+.. autoclass:: ami.core_events.UserEvent
+    :members:
+
+.. autoclass:: ami.core_events.VarSet
+    :members:
+

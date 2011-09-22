@@ -1,5 +1,5 @@
-Zaptel actions
-==============
+Zaptel
+======
 
 Zaptel is a legacy PRI-interaction technology, deprecated by DAHDI. Support for this feature-set
 will likely disappear in the future.

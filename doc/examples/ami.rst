@@ -87,9 +87,9 @@ information::
             #The event that will be registered is 'FullyBooted', sent by Asterisk immediately after
             #connecting, to indicate that everything is online. What the following code does is
             #register three different callback handlers for this event using three different
-            #match-methods: string comparison, regular expression, and class-match. Of them, string
-            #comparison offers the best performance, but has that icky hardcoded feeling, which is
-            #why class-matching is provided.
+            #match-methods: string comparison, regular expression, and class-match. String-matching
+            #and class-resolution are equally performant, so choose whichever you think looks
+            #better.
             self._manager.register_callback('FullyBooted', self._handle_string_event)
             self._manager.register_callback(re.compile("Fully\w+"), self._handle_regex_event)
             self._manager.register_callback(pystrix.ami.core_events.FullyBooted, self._handle_class_event)

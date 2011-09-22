@@ -1,5 +1,5 @@
-Core actions
-============
+Core
+====
 
 Asterisk provides a rich collection of features by default, the standard set of which are described
 here.

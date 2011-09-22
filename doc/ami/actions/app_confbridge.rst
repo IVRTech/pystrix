@@ -1,5 +1,5 @@
-(Application) Confbridge actions
-================================
+(Application) Confbridge
+========================
 
 Confbridge is Asterisk's new conferencing subsystem, providing far greater functionality than
 Meetme, with better performance and structural design. While technically a part of Asterisk's core,

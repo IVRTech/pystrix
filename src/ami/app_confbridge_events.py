@@ -1,36 +1,33 @@
 """
 pystrix.ami.app_confbridge_events
+=================================
 
-Purpose
-=======
- Provides defnitions and filtering rules for events that may be raised by Asterisk's ConfBridge
- module.
- 
-Usage
-=====
- This module should never be used directly by user code. Rather, it is a pre-processing resource to
- simplify event-interpretation and a reference for application authors.
- 
+Provides defnitions and filtering rules for events that may be raised by Asterisk's ConfBridge
+module.
+
 Legal
-=====
- This file is part of pystrix.
- pystrix is free software; you can redistribute it and/or modify
- it under the terms of the GNU Lesser General Public License as published
- by the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
+-----
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU Lesser General Public License for more details.
+This file is part of pystrix.
+pystrix is free software; you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published
+by the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
 
- You should have received a copy of the GNU General Public License and
- GNU Lesser General Public License along with this program. If not, see
- <http://www.gnu.org/licenses/>.
- 
- (C) Ivrnet, inc., 2011
- Authors:
- - Neil Tallim <n.tallim@ivrnet.com>
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU General Public License and
+GNU Lesser General Public License along with this program. If not, see
+<http://www.gnu.org/licenses/>.
+
+(C) Ivrnet, inc., 2011
+
+Authors:
+
+- Neil Tallim <n.tallim@ivrnet.com>
 
 The events implemented by this module follow the definitions provided by
 http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
@@ -40,12 +37,14 @@ from ami import _Message
 class ConfbridgeEnd(_Message):
     """
     Indicates that a ConfBridge has ended.
+    
     - 'Conference' : The room's identifier
     """
     
 class ConfbridgeJoin(_Message):
     """
     Indicates that a participant has joined a ConfBridge room.
+    
     - 'CallerIDname' (optional) : The name, on supporting channels, of the participant
     - 'CallerIDnum' : The (often) numeric address of the participant
     - 'Channel' : The channel that joined
@@ -56,6 +55,7 @@ class ConfbridgeJoin(_Message):
 class ConfbridgeLeave(_Message):
     """
     Indicates that a participant has left a ConfBridge room.
+    
     - 'CallerIDname' (optional) : The name, on supporting channels, of the participant
     - 'CallerIDnum' : The (often) numeric address of the participant
     - 'Channel' : The channel that left
@@ -66,6 +66,7 @@ class ConfbridgeLeave(_Message):
 class ConfbridgeList(_Message):
     """
     Describes a participant in a ConfBridge room.
+    
     - 'Admin' : 'Yes' or 'No'
     - 'CallerIDNum' : The (often) numeric address of the participant
     - 'CallerIDName' (optional) : The name of the participant on supporting channels
@@ -87,6 +88,7 @@ class ConfbridgeList(_Message):
 class ConfbridgeListComplete(_Message):
     """
     Indicates that all participants in a ConfBridge room have been enumerated.
+    
     - 'ListItems' : The number of items returned prior to this event
     """
     def process(self):
@@ -105,6 +107,7 @@ class ConfbridgeListComplete(_Message):
 class ConfbridgeListRooms(_Message):
     """
     Describes a ConfBridge room.
+    
     - 'Conference' : The room's identifier
     - 'Locked' : 'Yes' or 'No'
     - 'Marked' : The number of marked users
@@ -131,6 +134,7 @@ class ConfbridgeListRooms(_Message):
 class ConfbridgeListRoomsComplete(_Message):
     """
     Indicates that all ConfBridge rooms have been enumerated.
+    
     - 'ListItems' : The number of items returned prior to this event
     """
     def process(self):
@@ -149,12 +153,14 @@ class ConfbridgeListRoomsComplete(_Message):
 class ConfbridgeStart(_Message):
     """
     Indicates that a ConfBridge has started.
+    
     - 'Conference' : The room's identifier
     """
 
 class ConfbridgeTalking(_Message):
     """
     Indicates that a participant has started or stopped talking.
+    
     - 'Channel' : The Asterisk channel in use by the participant
     - 'Conference' : The room's identifier
     - 'TalkingStatus' : 'on' or 'off'

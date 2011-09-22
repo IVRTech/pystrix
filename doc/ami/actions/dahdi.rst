@@ -1,5 +1,5 @@
-DAHDI actions
-=============
+DAHDI
+=====
 
 DAHDI is an interface layer for integrating traditional telephony technologies with digital formats.
 

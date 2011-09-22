@@ -6,8 +6,10 @@ ellicit responses. Additionally, a number of event classes are defined to provid
 processing on the various messages Asterisk generates.
 
 .. toctree::
-
+    :maxdepth: 2
+    
     actions/index.rst
+    events/index.rst
     
 All of these concepts are bound together by the :class:`ami.Manager` class, which provides
 facilities for sending actions and serving callback handlers when events are received.
