@@ -121,14 +121,14 @@ class ChannelStatus(_Action):
     
     Returns one of the channel-state constants listed below:
     
-    - CHANNEL_DOWN_AVAILABLE : Channel is down and available
-    - CHANNEL_DOWN_RESERVED : Channel is down and reserved
-    - CHANNEL_OFFHOOK : Channel is off-hook
-    - CHANNEL_DIALED : A destination address has been specified
-    - CHANNEL_ALERTING : The channel is locally ringing
-    - CHANNEL_REMOTE_ALERTING : The channel is remotely ringing
-    - CHANNEL_UP : The channel is connected
-    - CHANNEL_BUSY : The channel is in a busy, non-conductive state
+    - CHANNEL_DOWN_AVAILABLE: Channel is down and available
+    - CHANNEL_DOWN_RESERVED: Channel is down and reserved
+    - CHANNEL_OFFHOOK: Channel is off-hook
+    - CHANNEL_DIALED: A destination address has been specified
+    - CHANNEL_ALERTING: The channel is locally ringing
+    - CHANNEL_REMOTE_ALERTING: The channel is remotely ringing
+    - CHANNEL_UP: The channel is connected
+    - CHANNEL_BUSY: The channel is in a busy, non-conductive state
 
     The value returned is an integer in the range 0-7; values outside of
     that range were undefined at the time of writing, but will be returned
@@ -490,7 +490,7 @@ class RecordFile(_Action):
     - FORMAT_ALAW
     - FORMAT_ULAW
     - FORMAT_VOX
-    - FORMAT_WAV : PCM16
+    - FORMAT_WAV: PCM16
 
     The filename may also contain the special string '%d', which Asterisk will replace with an
     auto-incrementing number, with the resulting filename appearing in the 'RECORDED_FILE'
@@ -618,19 +618,19 @@ class SayDatetime(_SayAction):
     `format` defaults to "ABdY 'digits/at' IMp", but may be a string with any of the following
     meta-characters:
     
-    - A : Day of the week
-    - B : Month (Full Text)
-    - m : Month (Numeric)
-    - d : Day of the month
-    - Y : Year
-    - I : Hour (12-hour format)
-    - H : Hour (24-hour format)
-    - M : Minutes
-    - P : AM/PM
-    - Q : Shorthand for Today, Yesterday or ABdY
-    - R : Shorthand for HM
-    - S : Seconds
-    - T : Timezone
+    - A: Day of the week
+    - B: Month (Full Text)
+    - m: Month (Numeric)
+    - d: Day of the month
+    - Y: Year
+    - I: Hour (12-hour format)
+    - H: Hour (24-hour format)
+    - M: Minutes
+    - P: AM/PM
+    - Q: Shorthand for Today, Yesterday or ABdY
+    - R: Shorthand for HM
+    - S: Seconds
+    - T: Timezone
 
     `timezone` may be a string in standard UNIX form, like 'America/Edmonton'. If `format` is
     undefined, `timezone` is ignored and left to default to the system's local value.

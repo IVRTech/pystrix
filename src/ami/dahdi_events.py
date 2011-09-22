@@ -37,10 +37,10 @@ class DAHDIShowChannels(_Message):
     """
     Describes the current state of a DAHDI channel.
     
-    - 'ActionID' : The ID associated with the original request
-    - 'Channel' : The channel being described
-    - 'Context' : The context associated with the channel
-    - 'DND' : 'Disabled' or 'Enabled'
+    - 'ActionID': The ID associated with the original request
+    - 'Channel': The channel being described
+    - 'Context': The context associated with the channel
+    - 'DND': 'Disabled' or 'Enabled'
     """
     def process(self):
         """
@@ -54,6 +54,6 @@ class DAHDIShowChannelsComplete(_Message):
     """
     Indicates that all DAHDI channels have been described.
     
-    - 'ActionID' : The ID associated with the original request
+    - 'ActionID': The ID associated with the original request
     """
 

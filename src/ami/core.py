@@ -244,7 +244,7 @@ class Events(_Request):
         * EVENTMASK_ALL
         * EVENTMASK_NONE
         
-        ...or an iterable, like a tuple, of any of the following...
+        ...or an iterable, like a tuple, with any combination of the following...
         
         * EVENTMASK_CALL
         * EVENTMASK_LOG
@@ -275,11 +275,11 @@ class ExtensionState(_Request):
     
     If successful, a 'Status' key will be present, with one of the following values as a string:
     
-    * -2 : Extension removed
-    * -1 : Extension hint not found
-    *  0 : Idle
-    *  1 : In use
-    *  2 : Busy
+    * -2: Extension removed
+    * -1: Extension hint not found
+    *  0: Idle
+    *  1: In use
+    *  2: Busy
     
     If non-negative, a 'Hint' key will be present, too, containing string data that can be helpful
     in discerning the current activity of the device.
@@ -497,9 +497,9 @@ class MixMonitorMute(_Request):
 
         `direction` is one of the following:
         
-        * 'read' : voice originating on the `channel`
-        * 'write' : voice delivered to the `channel`
-        * 'both' : all audio on the `channel`
+        * 'read': voice originating on the `channel`
+        * 'write': voice delivered to the `channel`
+        * 'both': all audio on the `channel`
 
         `mute` is `True` to muste the audio.
         """
@@ -533,7 +533,7 @@ class ModuleLoad(_Request):
         
         * 'load'
         * 'unload'
-        * 'reload' : if `module` is undefined, all modules are reloaded
+        * 'reload': if `module` is undefined, all modules are reloaded
         
         `module` is optionally the name of the module, with extension, or one of the following for
         a built-in subsystem:
@@ -571,7 +571,7 @@ class Monitor(_Request):
         * FORMAT_ALAW
         * FORMAT_ULAW
         * FORMAT_VOX
-        * FORMAT_WAV : PCM16
+        * FORMAT_WAV: PCM16
 
         `mix`, defaulting to `True`, muxes both audio streams associated with the channel, with the
         alternative recording only audio produced by the channel.
@@ -1065,48 +1065,51 @@ class SIPshowpeer(_Request):
 
     The response has the following key-value pairs:
     
-    * 'ACL' : True or False
-    * 'Address-IP' : The IP of the peer
-    * 'Address-Port' : The port of the peer, as an integer
-    * 'AMAflags' : "Unknown"
-    * 'Callgroup' : ?
-    * 'Callerid' : "Linksys #2" <555>
-    * 'Call-limit' : ?
-    * 'Channeltype' : "SIP"
-    * 'ChanObjectType' : "peer"
-    * 'CID-CallingPres' : ?
-    * 'Context' : The context associated with the peer
+    * 'ACL': True or False
+    * 'Address-IP': The IP of the peer
+    * 'Address-Port': The port of the peer, as an integer
+    * 'AMAflags': "Unknown"
+    * 'Callgroup': ?
+    * 'Callerid': "Linksys #2" <555>
+    * 'Call-limit': ?
+    * 'Channeltype': "SIP"
+    * 'ChanObjectType': "peer"
+    * 'CID-CallingPres': ?
+    * 'Context': The context associated with the peer
     
-     * 'CodecOrder' : The order in which codecs are tried
+     * 'CodecOrder': The order in which codecs are tried
      * 'Codecs': A list of supported codecs
      
-    * 'Default-addr-IP' : ?
-    * 'Default-addr-port' : ?
-    * 'Default-Username' : ?
-    * 'Dynamic' : True or False, depending on whether the peer is resolved by static IP or authentication
-    * 'Language' : The language preference (may be empty) of this peer
-    * 'LastMsgsSent' : ?
-    * 'MaxCallBR' : The maximum bitrate in kbps supported by the peer, as an integer
-    * 'MD5SecretExist' : True or False, depending on whether an MD5 secret is defined
-    * 'ObjectName' : The internal name of the peer
-    * 'Pickupgroup' : ?
-    * 'Reg-Contact' : The registration contact address for this peer
+    * 'Default-addr-IP': ?
+    * 'Default-addr-port': ?
+    * 'Default-Username': ?
+    * 'Dynamic': True or False, depending on whether the peer is resolved by static IP or
+      authentication
+    * 'Language': The language preference (may be empty) of this peer
+    * 'LastMsgsSent': ?
+    * 'MaxCallBR': The maximum bitrate in kbps supported by the peer, as an integer
+    * 'MD5SecretExist': True or False, depending on whether an MD5 secret is defined
+    * 'ObjectName': The internal name of the peer
+    * 'Pickupgroup': ?
+    * 'Reg-Contact': The registration contact address for this peer
     * 'RegExpire': Time in seconds until SIP registration expires, as an integer
-    * 'RegExtension' : ?
-    * 'SecretExist' : True or False, depending on whether a secret is defined.
-    * 'SIP-AuthInsecure' : True or False
-    * 'SIP-CanReinvite' : True or False, depending on whether the peer supports REINVITE
-    * 'SIP-DTMFmode' : The DTMF transport mode to use with this peer, "rfc2833" or ?
-    * 'SIP-NatSupport' : The NATting workarounds supported by this peer, "RFC3581" or ?
-    * 'SIP-PromiscRedir' : True or False, depending on whether this peer is allowed to arbitrarily redirect calls
-    * 'SIP-Useragent' : The User-Agent of the peer
-    * 'SIP-UserPhone' : True or False, (presumably) depending on whether this peer is a terminal device
-    * 'SIP-VideoSupport' : True or False
-    * 'SIPLastMsg' : ?
-    * 'Status' : 'Unmonitored', 'OK (\d+ ms)'
-    * 'ToHost' : ?
-    * 'TransferMode' : "open"
-    * 'VoiceMailbox' : The mailbox associated with the peer; may be null
+    * 'RegExtension': ?
+    * 'SecretExist': True or False, depending on whether a secret is defined.
+    * 'SIP-AuthInsecure': True or False
+    * 'SIP-CanReinvite': True or False, depending on whether the peer supports REINVITE
+    * 'SIP-DTMFmode': The DTMF transport mode to use with this peer, "rfc2833" or ?
+    * 'SIP-NatSupport': The NATting workarounds supported by this peer, "RFC3581" or ?
+    * 'SIP-PromiscRedir': True or False, depending on whether this peer is allowed to arbitrarily
+      redirect calls
+    * 'SIP-Useragent': The User-Agent of the peer
+    * 'SIP-UserPhone': True or False, (presumably) depending on whether this peer is a terminal
+      device
+    * 'SIP-VideoSupport': True or False
+    * 'SIPLastMsg': ?
+    * 'Status': 'Unmonitored', 'OK (\d+ ms)'
+    * 'ToHost': ?
+    * 'TransferMode': "open"
+    * 'VoiceMailbox': The mailbox associated with the peer; may be null
     
     Requires system
     """
@@ -1219,19 +1222,19 @@ class UpdateConfig(_Request):
 
         `changes` may be any iterable object countaining quintuples with the following items:
         
-        * One of the following:
+        #. One of the following:
         
-         * 'NewCat' : creates a new category
-         * 'RenameCat' : renames a category
-         * 'DelCat' : deletes a category
-         * 'Update' : changes a value
-         * 'Delete' : removes a value
-         * 'Append' : adds a value
+         * 'NewCat': creates a new category
+         * 'RenameCat': renames a category
+         * 'DelCat': deletes a category
+         * 'Update': changes a value
+         * 'Delete': removes a value
+         * 'Append': adds a value
          
-        * The name of the category to operate on
-        * `None` or the name of the variable to operate on
-        * `None` or the value to be set/added (has no effect with 'Delete')
-        * `None` or a string that needs to be matched in the line to serve as a qualifier
+        2. The name of the category to operate on
+        #. `None` or the name of the variable to operate on
+        #. `None` or the value to be set/added (has no effect with 'Delete')
+        #. `None` or a string that needs to be matched in the line to serve as a qualifier
         """
         _Request.__init__(self, "UpdateConfig")
         self['SrcFilename'] = src_filename

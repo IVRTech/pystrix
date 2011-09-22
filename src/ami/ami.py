@@ -303,14 +303,13 @@ class Manager(object):
         
         Asterisk's response is returned as a named tuple of the following form:
         
-        - result : The processed response from Asterisk, nominally the same as `response`; see the
-                   specific `_Request` subclass for details in case it provides additional
-                   processing
-        - response : The formatted, but unprocessed, response from Asterisk
-        - request : The `_Request` object supplied when the request was placed; not a copy of the
-                    original
-        - success : A boolean value indicating whether the request was met with success
-        - time : The number of seconds, as a float, that the request took to be serviced
+        - result: The processed response from Asterisk, nominally the same as `response`; see the
+          specific `_Request` subclass for details in case it provides additional processing
+        - response: The formatted, but unprocessed, response from Asterisk
+        - request: The `_Request` object supplied when the request was placed; not a copy of the
+          original
+        - success: A boolean value indicating whether the request was met with success
+        - time: The number of seconds, as a float, that the request took to be serviced
         
         For forward-compatibility reasons, elements of the tuple should be accessed by name, rather
         than by index.

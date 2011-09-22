@@ -39,12 +39,12 @@ class ZapShowChannels(_Message):
     """
     Describes the current state of a Zaptel channel.
     
-    - 'ActionID' : The ID associated with the original request
-    - 'Alarm' : "No Alarm"
-    - 'Channel' : The channel being described
-    - 'Context' : The context associated with the channel
-    - 'DND' : 'Disabled' or 'Enabled'
-    - 'Signalling' : "FXO Kewlstart", "FXS Kewlstart"
+    - 'ActionID': The ID associated with the original request
+    - 'Alarm': "No Alarm"
+    - 'Channel': The channel being described
+    - 'Context': The context associated with the channel
+    - 'DND': 'Disabled' or 'Enabled'
+    - 'Signalling': "FXO Kewlstart", "FXS Kewlstart"
     """
     def process(self):
         """
@@ -58,6 +58,6 @@ class ZapShowChannelsComplete(_Message):
     """
     Indicates that all Zaptel channels have been described.
     
-    - 'ActionID' : The ID associated with the original request
+    - 'ActionID': The ID associated with the original request
     """
 
