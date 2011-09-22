@@ -120,6 +120,7 @@ class ChannelStatus(_Action):
     channel.
     
     Returns one of the channel-state constants listed below:
+    
     - CHANNEL_DOWN_AVAILABLE : Channel is down and available
     - CHANNEL_DOWN_RESERVED : Channel is down and reserved
     - CHANNEL_OFFHOOK : Channel is off-hook
@@ -481,6 +482,7 @@ class RecordFile(_Action):
     defaulting to Asterisk's sounds path or an absolute path, without extension. ('myfile.wav'
     would be specified as 'myfile') `format` is one of the following, which sets the extension
     and encoding, with WAV being the default:
+    
     - FORMAT_SLN
     - FORMAT_G723
     - FORMAT_G729
@@ -615,6 +617,7 @@ class SayDatetime(_SayAction):
 
     `format` defaults to "ABdY 'digits/at' IMp", but may be a string with any of the following
     meta-characters:
+    
     - A : Day of the week
     - B : Month (Full Text)
     - m : Month (Numeric)
@@ -856,6 +859,7 @@ class StreamFile(_Action):
 class TDDMode(_Action):
     """
     Sets the TDD transmission `mode` on supporting channels, one of the following:
+    
     - TDD_ON
     - TDD_OFF
     - TDD_MATE
@@ -878,6 +882,7 @@ class Verbose(_Action):
     corresponding verbosity threshold.
     
     `level` is one of the following, defaulting to LOG_INFO:
+    
     - LOG_DEBUG
     - LOG_INFO
     - LOG_WARN
