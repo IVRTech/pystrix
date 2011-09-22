@@ -10,7 +10,7 @@ up::
     import time
 
     import pystrix
-        
+    
     class FastAGIServer(threading.Thread):
         """
         A simple thread that runs a FastAGI server forever.
@@ -39,7 +39,7 @@ up::
             be raised, making AGI scripts very easy to write.
             """
             agi.execute(pystrix.agi.core.Answer()) #Answer the call
-            response = agi.execute(pystrix.agi.core.StreamFile(escape_digits=('1', '2'))) #Play a file; allow DTMF '1' or '2' to interrupt
+            response = agi.execute(pystrix.agi.core.StreamFile('demo-greeting', escape_digits=('1', '2'))) #Play a file; allow DTMF '1' or '2' to interrupt
             if response: #Playback was interrupted; if you don't care, you don't need to catch this
                 (dtmf_character, offset) = response #The key pressed by the user and the playback time
             agi.execute(pystrix.agi.core.Hangup()) #Hang up the call
