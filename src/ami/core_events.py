@@ -71,6 +71,35 @@ class Hangup(_Message):
         except Exception:
             headers['Cause'] = None
         return (headers, data)
+
+class Newchannel(_Message):
+    """
+    Indicates that a new channel has been created.
+
+    - 'AccountCode': The billing account associated with the channel; may be empty
+    - 'CallerIDNum': The (often) numeric identifier of the caller
+    - 'CallerIDName': The caller's name, on supporting channels
+    - 'Channel': The channel identifier used by Asterisk
+    - 'ChannelState': One of the following numeric values, as a string:
+
+     - '0': Not connected
+
+    - 'ChannelStateDesc': A lexical description of the channel's current state
+    - 'Context': The context that the channel is currently operating in
+    - 'Exten': The extension the channel is currently operating in
+    - 'Uniqueid': An Asterisk unique value
+    """
+    def process(self):
+        """
+        Translates the 'ChannelState' header's value into an int, setting it to `None` if coercion
+        fails.
+        """
+        (headers, data) = _Message.process(self)
+        try:
+            headers['ChannelState'] = int(headers['ChannelState'])
+        except Exception:
+            headers['ChannelState'] = None
+        return (headers, data)
         
 class ParkedCall(_Message):
     """
