@@ -54,8 +54,8 @@ def quote(value):
     Encapsulates `value` in double-quotes and coerces it into a string, if
     necessary.
     """
-    return '"%(string)s"' % {
-     'string': str(string),
+    return '"%(value)s"' % {
+     'value': str(value),
     }
 
 
