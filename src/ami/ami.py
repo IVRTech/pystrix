@@ -66,6 +66,7 @@ class Manager(object):
     _action_id_lock = None #A lock used to prevent race conditions on ActionIDs
     _connection = None #A connection to the Asterisk manager, realised as a `_SynchronisedSocket`
     _connection_lock = None #A means of preventing race conditions on the connection
+    _debug = False #If True, development information is printed to console
     _event_callbacks = None #A dictionary of sets of event callbacks keyed by the string to match
     _event_callbacks_cls = None #A dictionary of tuples of classes and sets of event callbacks
     _event_callbacks_re = None #A dictionary of tuples of expressions and sets of event callbacks
@@ -75,13 +76,17 @@ class Manager(object):
     _message_reader = None #A thread that continuously collects messages from the Asterisk server
     _outstanding_requests = None #A set of ActionIDs sent to Asterisk, currently awaiting responses
     
-    def __init__(self):
+    def __init__(self, debug=False):
         """
         Sets up an environment for interacting with an Asterisk Management Interface.
 
         To proceed, register any necessary callbacks, then call `connect()`, then pass the core
         `Login` or `Challenge` request to `send_action()`.
+
+        `debug` should only be turned on for library development.
         """
+        self._debug = debug
+        
         self._action_id = 0
         self._action_id_lock = threading.Lock()
 

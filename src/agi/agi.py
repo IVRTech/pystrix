@@ -42,15 +42,17 @@ class AGI(_AGI):
     """
     _got_sighup = False #True when a hangup signal has been received.
     
-    def __init__(self):
+    def __init__(self, debug=False):
         """
         Binds the SIGHUP signal and associates I/O with stdin/stdout.
+
+        `debug` should only be turned on for library development.
         """
         signal.signal(signal.SIGHUP, self._handle_sighup)
         self._rfile = sys.stdin
         self._wfile = sys.stdout
         
-        _AGI.__init__(self)
+        _AGI.__init__(self, debug)
         
     def _handle_sighup(self, signum, frame):
         """

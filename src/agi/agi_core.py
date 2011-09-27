@@ -68,13 +68,18 @@ class _AGI(object):
     Asterisk. 
     """
     _environment = None #The environment variables received from Asterisk for this channel
+    _debug = False #If True, development information is printed to console
     _rfile = None #The input file-like-object
     _wfile = None #The output file-like-object
     
-    def __init__(self):
+    def __init__(self, debug=False):
         """
         Sets up variables required to process an AGI session.
+
+        `debug` should only be turned on for library development.
         """
+        self._debug = debug
+        
         self._environment = {}
         self._parse_agi_environment()
 

@@ -57,7 +57,7 @@ class _AGIClientHandler(SocketServer.StreamRequestHandler):
         Creates an instance of an AGI-interface object and passes it to a pre-specified callable,
         selected by matching the request parameters against a series of regular expressions.
         """
-        agi_instance = FastAGI(self.rfile, self.wfile)
+        agi_instance = FastAGI(self.rfile, self.wfile, debug=self.server.debug)
 
         (path, kwargs) = self._extract_query_elements(agi_instance)
         args = self._extract_positional_args(agi_instance)
@@ -90,11 +90,12 @@ class FastAGIServer(_ThreadedTCPServer):
     """
     Provides a FastAGI TCP server to handle requests from Asterisk servers.
     """
+    debug = False #Used to enable various printouts for library development
     _default_script_handler = None #A script-handler to use if nothing else matched
     _script_handlers = None #A list of regex/callable pairs to use when determining how to handle an AGI request
     _script_handlers_lock = None #A lock used to prevent race conditions on the handlers list
     
-    def __init__(self, interface='127.0.0.1', port=4573, daemon_threads=True):
+    def __init__(self, interface='127.0.0.1', port=4573, daemon_threads=True, debug=False):
         """
         Creates the server and binds the client-handler callable.
         
@@ -105,8 +106,11 @@ class FastAGIServer(_ThreadedTCPServer):
         `daemon_threads` indicates whether any threads spawned to handle
         requests should be killed if the main thread dies. (Generally a good
         idea to avoid hung calls keeping the process alive forever)
+
+        `debug` should only be turned on for library development.
         """
         _ThreadedTCPServer.__init__(self, (interface, port), _AGIClientHandler)
+        self.debug = debug
         self.daemon_threads = daemon_threads
         self._script_handlers = []
         self._script_handlers_lock = threading.Lock()
@@ -182,12 +186,14 @@ class FastAGI(_AGI):
     An interface to Asterisk, exposing request-response functions for
     synchronous management of the call associated with this channel.
     """
-    def __init__(self, rfile, wfile):
+    def __init__(self, rfile, wfile, debug=False):
         """
         Associates I/O with `rfile` and `wfile`.
+
+        `debug` should only be turned on for library development.
         """
         self._rfile = rfile
         self._wfile = wfile
         
-        _AGI.__init__(self)
+        _AGI.__init__(self, debug)
         
