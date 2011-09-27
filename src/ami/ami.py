@@ -516,6 +516,8 @@ class _MessageReader(threading.Thread):
                     event_class = _EVENT_REGISTRY.get(message.name)
                     if event_class:
                         message.__class__ = event_class
+                    elif self._debug:
+                        print("Unknown event received: " + repr(message))
                         
                     self.event_queue.put(message)
                 else:
