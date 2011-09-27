@@ -22,6 +22,15 @@ Classes
 .. autoclass:: ami.core_events.Hangup
     :members:
 
+.. autoclass:: ami.core.Newchannel
+    :members:
+    
+.. autoclass:: ami.core.Newexten
+    :members:
+    
+.. autoclass:: ami.core.Newstate
+    :members:
+
 .. autoclass:: ami.core_events.ParkedCall
     :members:
 
@@ -53,6 +62,9 @@ Classes
     :members:
 
 .. autoclass:: ami.core_events.QueueStatusComplete
+    :members:
+
+.. autoclass: ami.core_events.SoftHangupRequest
     :members:
 
 .. autoclass:: ami.core_events.Status

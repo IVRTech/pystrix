@@ -83,6 +83,8 @@ class Newchannel(_Message):
     - 'ChannelState': One of the following numeric values, as a string:
 
      - '0': Not connected
+     - '4': Alerting
+     - '6': Connected
 
     - 'ChannelStateDesc': A lexical description of the channel's current state
     - 'Context': The context that the channel is currently operating in
@@ -100,7 +102,50 @@ class Newchannel(_Message):
         except Exception:
             headers['ChannelState'] = None
         return (headers, data)
-        
+
+class Newexten(_Message):
+    """
+    Emitted when a channel switches executing extensions.
+
+    - 'AppData': The argument passed to the application
+    - 'Application': The application being invoked
+    - 'Channel': The channel identifier used by Asterisk
+    - 'Context': The context the channel is currently operating in
+    - 'Extension': The extension the channel is currently operating in
+    - 'Priority': The priority the channel is currently operating in
+    - 'Uniqueid': An Asterisk unique value
+    """
+
+class Newstate(_Message):
+    """
+    Indicates that a channel's state has changed.
+
+    - 'CallerIDNum': The (often) numeric identifier of the caller
+    - 'CallerIDName': The caller's name, on supporting channels
+    - 'Channel': The channel identifier used by Asterisk
+    - 'ChannelStateDesc': A lexical description of the channel's current state
+    - 'ChannelState': One of the following numeric values, as a string:
+
+     - '0': Not connected
+     - '4': Alerting
+     - '6': Connected
+
+    - 'ConnectedLineNum': ?
+    - 'ConnectedLineName': ?
+    - 'Uniqueid': An Asterisk unique value
+    """
+    def process(self):
+        """
+        Translates the 'ChannelState' header's value into an int, setting it to `None` if coercion
+        fails.
+        """
+        (headers, data) = _Message.process(self)
+        try:
+            headers['ChannelState'] = int(headers['ChannelState'])
+        except Exception:
+            headers['ChannelState'] = None
+        return (headers, data)
+
 class ParkedCall(_Message):
     """
     Describes a parked call.
@@ -360,6 +405,19 @@ class QueueStatusComplete(_Message):
     Indicates that a QueueStatus request has completed.
     
     - 'ActionID': The ID associated with the original request
+    """
+
+class SoftHangupRequest(_Message):
+    """
+    Emitted when a request to terminate the call is exchanged.
+
+    - 'Channel': The channel identifier used by Asterisk
+    - 'Cause': The reason for the disconnect, a numeric value as a string:
+
+     - '16': ?
+     - '32': ?
+     
+    - 'Uniqueid': An Asterisk unique value
     """
     
 class Status(_Message):
