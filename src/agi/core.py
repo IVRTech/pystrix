@@ -420,7 +420,7 @@ class Hangup(_Action):
     `AGIAppError` is raised on failure.
     """
     def __init__(self, channel=None):
-        _Action.__init__('HANGUP', (channel and quote(channel) or None))
+        _Action.__init__(self, 'HANGUP', (channel and quote(channel) or None))
 
 class Noop(_Action):
     """

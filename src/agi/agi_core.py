@@ -96,7 +96,7 @@ class _AGI(object):
         self._test_hangup()
         
         self._send_command(action.command, *action.arguments)
-        return action.process_result(self._get_result(action.check_hangup))
+        return action.process_response(self._get_result(action.check_hangup))
 
     def get_environment(self):
         """
@@ -151,12 +151,12 @@ class _AGI(object):
                  'result-key': _RESULT_KEY,
                 }, response)
 
-            with response.get(_RESULT_KEY) as result:
-                if result.value == '-1': #A result of -1 always indicates failure
-                    raise AGIAppError("Error executing application or the channel was hung up", response)
-                if check_hangup and result.data == 'hangup': #A 'hangup' response usually indicates that the channel was hungup, but it is a legal variable value
-                    raise AGIResultHangup("User hung up during execution", response)
-                    
+            result = response.get(_RESULT_KEY)
+            if result.value == '-1': #A result of -1 always indicates failure
+                raise AGIAppError("Error executing application or the channel was hung up", response)
+            if check_hangup and result.data == 'hangup': #A 'hangup' response usually indicates that the channel was hungup, but it is a legal variable value
+                raise AGIResultHangup("User hung up during execution", response)
+                
             return _Response(response, code, raw)
         elif code == 510:
             raise AGIInvalidCommandError(response)
