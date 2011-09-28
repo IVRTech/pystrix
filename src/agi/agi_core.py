@@ -158,6 +158,8 @@ class _AGI(object):
                 raise AGIResultHangup("User hung up during execution", response)
                 
             return _Response(response, code, raw)
+        elif code == 0:
+            raise AGIResultHangup("Call hung up")
         elif code == 510:
             raise AGIInvalidCommandError(response)
         elif code == 511:
@@ -171,8 +173,9 @@ class _AGI(object):
                     break
             raise AGIUsageError('\n'.join(usage + ['']))
         else:
-            raise AGIUnknownError("Unhandled code or undefined response: %(code)i" % {
+            raise AGIUnknownError("Unhandled code or undefined response: %(code)i : %(line)s" % {
              'code': code,
+             'line': repr(line),
             })
             
     def _parse_agi_environment(self):

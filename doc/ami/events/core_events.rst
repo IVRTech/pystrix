@@ -22,6 +22,9 @@ Classes
 .. autoclass:: ami.core_events.Hangup
     :members:
 
+.. autoclass: ami.core_events.HangupRequest
+    :members:
+
 .. autoclass:: ami.core.Newchannel
     :members:
     
@@ -64,7 +67,13 @@ Classes
 .. autoclass:: ami.core_events.QueueStatusComplete
     :members:
 
-.. autoclass: ami.core_events.SoftHangupRequest
+.. autoclass:: ami.core_events.RTCPReceived
+    :members:
+
+.. autoclass:: ami.core_events.RTCPSent
+    :members:
+
+.. autoclass:: ami.core_events.SoftHangupRequest
     :members:
 
 .. autoclass:: ami.core_events.Status

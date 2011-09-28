@@ -72,6 +72,14 @@ class Hangup(_Message):
             headers['Cause'] = None
         return (headers, data)
 
+class HangupRequest(_Message):
+    """
+    Emitted when a request to terminate the call is received.
+
+    - 'Channel': The channel identifier used by Asterisk
+    - 'Uniqueid': An Asterisk unique value
+    """
+
 class Newchannel(_Message):
     """
     Indicates that a new channel has been created.
@@ -382,7 +390,7 @@ class QueueParams(_Message):
         ints, setting them to -1 on error.
         
         Translates the 'ServiceLevel', 'ServiceLevelPerf', and 'Weight' values into
-        floats, setting them to None on error.
+        floats, setting them to -1 on error.
         """
         (headers, data) = _Message.process(self)
         
@@ -406,6 +414,109 @@ class QueueStatusComplete(_Message):
     
     - 'ActionID': The ID associated with the original request
     """
+
+class RTCPReceived(_Message):
+    """
+    A Real Time Control Protocol message emitted by Asterisk when using an RTP-based channel,
+    providing statistics on the quality of a connection, for the receiving leg.
+
+    - 'DLSR': ? (float as a string, followed by '(sec)')
+    - 'FractionLost': The percentage of lost packets, a float as a string
+    - 'From': The IP and port of the source, separated by a colon
+    - 'HighestSequence': ? (int as string)
+    - 'IAJitter': ? (float as a string)
+    - 'LastSR': ? (int as string)
+    - 'PacketsLost': The number of lost packets, as a string
+    - 'PT': ?
+    - 'ReceptionReports': The number of reports used to compile this event, as a string
+    - 'SenderSSRC': Session source
+    - 'SequenceNumberCycles': ?
+    """
+    def process(self):
+        """
+        Translates the 'HighestSequence', 'LastSR', 'PacketsLost', 'ReceptionReports,
+        and 'SequenceNumbercycles' values into ints, setting them to -1 on error.
+
+        Translates the 'DLSR', 'FractionLost', 'IAJitter', and 'SentNTP' values into floats, setting
+        them to -1 on error.
+
+        Splits 'From' into a tuple of IP:str and port:int, or sets it to `None` if the format is
+        unknown.
+        """
+        (headers, data) = _Message.process(self)
+        
+        for header in ('HighestSequence', 'LastSR', 'PacketsLost', 'ReceptionReports', 'SequenceNumbercycles'):
+            try:
+                headers[header] = int(headers.get(header))
+            except Exception:
+                headers[header] = -1
+
+        headers['DLSR'] = (headers.get('DSLR') or '').split(' ', 1)[0]
+        for header in ('DLSR', 'FractionLost', 'IAJitter'):
+            try:
+                headers[header] = float(headers.get(header))
+            except Exception:
+                headers[header] = -1
+
+        to = headers.get('From')
+        if to and ':' in to:
+            headers['From'] = tuple(to.rsplit(':', 1))
+        else:
+            headers['From'] = None
+            
+        return (headers, data)
+
+class RTCPSent(_Message):
+    """
+    A Real Time Control Protocol message emitted by Asterisk when using an an RTP-based channel,
+    providing statistics on the quality of a connection, for the sending leg.
+
+    - 'CumulativeLoss': The number of lost packets, as a string
+    - 'DLSR': ? (float as a string, followed by '(sec)')
+    - 'FractionLost': The percentage of lost packets, a float as a string
+    - 'IAJitter': ? (float as a string)
+    - 'OurSSRC': Session source
+    - 'ReportBlock': ?
+    - 'SentNTP': The NTP value, a float as a string
+    - 'SentOctets': The number of bytes sent, as a string
+    - 'SentPackets': The number of packets sent, as a string
+    - 'SentRTP': The number of RTP events sent, as a string
+    - 'TheirLastSR': ? (int as string)
+    - 'To': The IP and port of the recipient, separated by a colon
+    """
+    def process(self):
+        """
+        Translates the 'CumulativeLoss', 'SentOctets', 'SentPackets', 'SentRTP', and
+        'TheirLastSR' values into ints, setting them to -1 on error.
+
+        Translates the 'DLSR', 'FractionLost', 'IAJitter', and 'SentNTP' values into floats, setting
+        them to -1 on error.
+
+        Splits 'To' into a tuple of IP:str and port:int, or sets it to `None` if the format is
+        unknown.
+        """
+        (headers, data) = _Message.process(self)
+        
+        for header in ('CumulativeLoss', 'SentOctets', 'SentPackets', 'SentRTP', 'TheirLastSR'):
+            try:
+                headers[header] = int(headers.get(header))
+            except Exception:
+                headers[header] = -1
+
+        headers['DLSR'] = (headers.get('DSLR') or '').split(' ', 1)[0]
+        for header in ('DLSR', 'FractionLost', 'IAJitter', 'SentNTP'):
+            try:
+                headers[header] = float(headers.get(header))
+            except Exception:
+                headers[header] = -1
+
+        to = headers.get('To')
+        if to and ':' in to:
+            headers['To'] = tuple(to.rsplit(':', 1))
+        else:
+            headers['To'] = None
+            
+        return (headers, data)
 
 class SoftHangupRequest(_Message):
     """
