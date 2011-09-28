@@ -41,7 +41,7 @@ import time
 _Response = collections.namedtuple('Response', ('items', 'code', 'raw'))
 _ValueData = collections.namedtuple('ValueData', ('value', 'data'))
 
-_RE_CODE = re.compile(r'(^\d*)\s*(.*)') #Matches Asterisk's response-code lines
+_RE_CODE = re.compile(r'(^\d+)\s*(.+)') #Matches Asterisk's response-code lines
 _RE_KV = re.compile(r'(?P<key>\w+)=(?P<value>[^\s]+)(?:\s+\((?P<data>.*)\))?') #Matches Asterisk's key-value response-pairs
 
 _RESULT_KEY = 'result'
