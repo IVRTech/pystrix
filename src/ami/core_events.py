@@ -55,7 +55,8 @@ class Hangup(_Message):
     
     - 'Cause': One of the following numeric values, as a string:
     
-     - '0': Channel cleared normally
+     - '0': Hung up
+     - '16': Normal clearing
      
     - 'Cause-txt': Additional information related to the hangup
     - 'Channel': The channel hung-up
