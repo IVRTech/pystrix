@@ -22,16 +22,16 @@ Classes
 .. autoclass:: ami.core_events.Hangup
     :members:
 
-.. autoclass: ami.core_events.HangupRequest
+.. autoclass:: ami.core_events.HangupRequest
     :members:
 
-.. autoclass:: ami.core.Newchannel
+.. autoclass:: ami.core_events.Newchannel
     :members:
     
-.. autoclass:: ami.core.Newexten
+.. autoclass:: ami.core_events.Newexten
     :members:
     
-.. autoclass:: ami.core.Newstate
+.. autoclass:: ami.core_events.Newstate
     :members:
 
 .. autoclass:: ami.core_events.ParkedCall
