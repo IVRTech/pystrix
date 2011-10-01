@@ -8,10 +8,10 @@ a matter of registering a callback handler for an event with
 
 .. toctree::
 
-    core_events.rst
-    dahdi_events.rst
-    zaptel_events.rst
-    app_confbridge_events.rst
-    app_meetme_events.rst
+    core.rst
+    dahdi.rst
+    zaptel.rst
+    app_confbridge.rst
+    app_meetme.rst
     
 
