@@ -295,7 +295,7 @@ class Exec(_Action):
     check_hangup = False
     
     def __init__(self, application, options=()):
-        options = '|'.join((str(o) for o in options))
+        options = '|'.join((str(o or '') for o in options))
         _Action.__init__(self, 'EXEC', application, (options and quote(options)) or '')
 
     def process_response(self, response):
