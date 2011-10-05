@@ -287,7 +287,7 @@ class Exec(_Action):
     Executes an arbitrary Asterisk `application` with the given `options`, returning that
     application's output.
 
-    `options` is an optional sequence of arguments, with any double-quote characters or pipes
+    `options` is an optional sequence of arguments, with any double-quote characters or commas
     explicitly escaped.
 
     `AGIAppError` is raised if the application could not be executed.
@@ -295,7 +295,7 @@ class Exec(_Action):
     check_hangup = False
     
     def __init__(self, application, options=()):
-        options = '|'.join((str(o or '') for o in options))
+        options = ','.join((str(o or '') for o in options))
         _Action.__init__(self, 'EXEC', application, (options and quote(options)) or '')
 
     def process_response(self, response):
