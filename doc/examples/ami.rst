@@ -1,9 +1,9 @@
 Asterisk Management Interface (AMI)
 ===================================
 
-A simple AMI implementation is provided below, demonstrating how to connect to Asterisk with
-MD5-based authentication, how to connect callback handlers for events, and how to send requests for
-information::
+A simple, if verbose, AMI implementation is provided below, demonstrating how to connect to Asterisk
+with MD5-based authentication, how to connect callback handlers for events, and how to send requests
+for information::
 
     import re
     import time
@@ -113,9 +113,6 @@ information::
             #Shutdown signal, emitted when the system is shutting down.
             self._manager.register_callback('Shutdown', self._handle_shutdown)
             
-        def is_alive(self):
-            return not self._kill_flag
-            
         def _handle_shutdown(self, event, manager):
             self._kill_flag = True
             
@@ -130,6 +127,9 @@ information::
 
         def _handle_regex_event(self, event, manager):
             print "Recieved regex event: %s" % event.name
+            
+        def is_alive(self):
+            return not self._kill_flag
             
         def kill(self):
             self._manager.close()
