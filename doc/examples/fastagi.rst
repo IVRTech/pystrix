@@ -2,7 +2,7 @@ Fast Asterisk Gateway Interface (FastAGI)
 =========================================
 
 A simple FastAGI implementation is provided below, demonstrating how to listen for and handle
-requests from Asterisk, like, as covered below, answering a call, playing a message, and hanging
+requests from Asterisk, like, as illustrated, answering a call, playing a message, and hanging
 up::
 
     import re
