@@ -389,7 +389,7 @@ class GetOption(_Action):
         result = response.items.get(_RESULT_KEY)
         if not result.value == '0':
             dtmf_character = _convert_to_char(result.value, response.items)
-            offset = _convert_to_int(response.items.get('endpos'))
+            offset = _convert_to_int(response.items)
             return (dtmf_character, offset)
         return None
 
@@ -531,7 +531,7 @@ class RecordFile(_Action):
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
-        offset = _convert_to_int(response.items.get('endpos'))
+        offset = _convert_to_int(response.items)
         
         if result.data == 'randomerror':
             raise AGIAppError("Unknown error occurred %(ms)i into recording: %(error)s" % {
@@ -852,7 +852,7 @@ class StreamFile(_Action):
         result = response.items.get(_RESULT_KEY)
         if not result.value == '0':
             dtmf_character = _convert_to_char(result.value, response.items)
-            offset = _convert_to_int(response.items.get('endpos'))
+            offset = _convert_to_int(response.items)
             return (dtmf_character, offset)
         return None
 
