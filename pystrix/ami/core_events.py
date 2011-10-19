@@ -416,6 +416,15 @@ class QueueStatusComplete(_Message):
     - 'ActionID': The ID associated with the original request
     """
 
+class Reload(_Message):
+    """
+    Indicates that Asterisk's configuration was reloaded.
+    
+    - 'Message': A human-readable summary
+    - 'Module': The affected module
+    - 'Status': 'Enabled'
+    """
+    
 class RTCPReceived(_Message):
     """
     A Real Time Control Protocol message emitted by Asterisk when using an RTP-based channel,
