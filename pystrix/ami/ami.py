@@ -465,6 +465,7 @@ class _MessageReader(threading.Thread):
     def __init__(self, manager):
         threading.Thread.__init__(self)
         self.daemon = True
+        self.name = 'pystrix-ami-message-reader'
         
         self._manager = manager
 
@@ -674,6 +675,8 @@ class _SynchronisedSocket(object):
                      'errno': errno,
                      'error': message,
                     })
+                except AttributeError:
+                    raise ManagerSocketError("Local socket no longer defined, caused by system shutdown and blocking I/O")
 
             if line == _EOL and not wait_for_marker:
                 if response_lines: #A full response has been collected
