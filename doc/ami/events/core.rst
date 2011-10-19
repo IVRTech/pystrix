@@ -67,6 +67,9 @@ Classes
 .. autoclass:: ami.core_events.QueueStatusComplete
     :members:
 
+.. autoclass:: ami.core_events.Reload
+    :members:
+
 .. autoclass:: ami.core_events.RTCPReceived
     :members:
 
