@@ -36,6 +36,7 @@ Authors:
 - Neil Tallim <n.tallim@ivrnet.com>
 """
 import cgi
+import socket
 import SocketServer
 import threading
 
