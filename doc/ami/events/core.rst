@@ -13,6 +13,12 @@ regardless of the modules in which they are defined.
 Classes
 +++++++
 
+.. autoclass:: ami.core_events.CoreShowChannel
+    :members:
+        
+.. autoclass:: ami.core_events.CoreShowChannelsComplete
+    :members:
+
 .. autoclass:: ami.core_events.DBGetResponse
     :members:
 
