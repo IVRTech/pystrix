@@ -33,6 +33,76 @@ http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
 """
 from ami import _Message
 
+class CoreShowChannel(_Message):
+    """
+    Provides the definition of an active Asterisk channel.
+    
+    - 'AccountCode': The account code associated with the channel
+    - 'ActionID': The ID associated with the original request
+    - 'Application': The application currently being executed by the channel
+    - 'ApplicationData': The arguments provided to the application
+    - 'BridgedChannel': The channel to which this channel is connected, if any
+    - 'BridgedUniqueID': ?
+    - 'CallerIDnum': The (often) numeric address of the caller
+    - 'CallerIDname': The (optional, media-specific) name of the caller
+    - 'Channel': The channel being described
+    - 'ChannelState': One of the following numeric values, as a string:
+
+     - '0': Not connected
+     - '4': Alerting
+     - '6': Connected
+     
+    - 'ChannelStateDesc': A lexical description of the channel's current state
+    - 'ConnectedLineNum': The (often) numeric address of the called party (may be nil)
+    - 'ConnectedLineName': The (optional, media-specific) name of the called party (may be nil)
+    - 'Context': The dialplan context in which the channel is executing
+    - 'Duration': The client's connection time in "hh:mm:ss" form
+    - 'Extension': The dialplan context in which the channel is executing
+    - 'Priority': The dialplan priority in which the channel is executing
+    - 'UniqueID': An Asterisk-unique value
+    """
+    def process(self):
+        """
+        Translates the 'ChannelState' header's value into an int, setting it to `None` if coercion
+        fails.
+        
+        Replaces the 'Duration' header's value with the number of seconds, as an int, or -1 if
+        conversion fails.
+        """
+        (headers, data) = _Message.process(self)
+        try:
+            headers['ChannelState'] = int(headers['ChannelState'])
+        except Exception:
+            headers['ChannelState'] = None
+            
+        try:
+            (h, m, s) = (int(v) for v in headers['Duration'].split(':'))
+            headers['Duration'] = s + m * 60 + h * 60 * 60
+        except Exception:
+            headers['Duration'] = -1
+            
+        return (headers, data)
+        
+class CoreShowChannelsComplete(_Message):
+    """
+    Indicates that all Asterisk channels have been listed.
+    
+    - 'ActionID': The ID associated with the original request
+    - 'ListItems' : The number of items returned prior to this event
+    """
+    def process(self):
+        """
+        Translates the 'ListItems' header's value into an int, or -1 on failure.
+        """
+        (headers, data) = _Message.process(self)
+        
+        try:
+            headers['ListItems'] = int(headers['ListItems'])
+        except Exception:
+            headers['ListItems'] = -1
+            
+        return (headers, data)
+        
 class DBGetResponse(_Message):
     """
     Provides the value requested from the database.

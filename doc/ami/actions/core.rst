@@ -89,6 +89,9 @@ Classes
 
 .. autoclass:: ami.core.Command
     :members: __init__
+    
+.. autoclass:: ami.core.CoreShowChannels
+    :members: __init__
 
 .. autoclass:: ami.core.CreateConfig
     :members: __init__
