@@ -160,6 +160,18 @@ class Command(_Request):
         _Request.__init__(self, 'Command')
         self['Command'] = command
 
+class CoreShowChannels(_Request):
+    """
+    Asks Asterisk to list all active channels.
+    
+    Any number of 'CoreShowChannel' events may be generated in response to this request, followed by
+    one 'CoreShowChannelsComplete'.
+
+    Requires system
+    """
+    def __init__(self):
+        _Request.__init__(self, "CoreShowChannels")
+        
 class CreateConfig(_Request):
     """
     Creates an empty configuration file, intended for use before `UpdateConfig()`.
