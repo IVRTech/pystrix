@@ -49,7 +49,7 @@ _EOL_FAKE = ('\n\r\n', '\r\r\n') #End-of-line patterns that indicate data, not h
 _EOC_INDICATOR = re.compile(r'Response:\s*Follows\s*$') #A regular expression that matches response headers that indicate the payload is attached
 
 _Response = collections.namedtuple('Response', [
- 'result', 'response', 'request', 'success', 'time',
+ 'result', 'response', 'request', 'action_id', 'success', 'time',
 ]) #A container for responses to requests.
 
 RESPONSE_GENERIC = 'Generic Response' #A header-value provided as a surrogate for unidentifiable responses
@@ -314,6 +314,7 @@ class Manager(object):
         - response: The formatted, but unprocessed, response from Asterisk
         - request: The `_Request` object supplied when the request was placed; not a copy of the
           original
+        - action_id: The 'ActionID' sent with this request
         - success: A boolean value indicating whether the request was met with success
         - time: The number of seconds, as a float, that the request took to be serviced
         
@@ -329,6 +330,7 @@ class Manager(object):
         if not self.is_connected():
             raise ManagerError("Not connected to an Asterisk manager")
 
+        action_id = None
         with self._connection_lock as lock:
             (command, action_id) = request.build_request(self._get_host_action_id, **kwargs)
             self._connection.send_message(command)
@@ -345,6 +347,7 @@ class Manager(object):
                      processed_response,
                      response,
                      request,
+                     action_id,
                      hasattr(processed_response, 'success') and processed_response.success,
                      time.time() - start_time
                     )
