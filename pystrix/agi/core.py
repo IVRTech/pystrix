@@ -705,7 +705,7 @@ class SayTime(_SayAction):
     `AGIAppError` is raised on failure, most commonly because the channel was
     hung-up.
     """
-    def say_time(self, seconds=None, escape_digits=''):
+    def __init__(self, seconds=None, escape_digits=''):
         if seconds is None:
             seconds = int(time.time())
         _SayAction.__init__(self, 'TIME', seconds, escape_digits)
@@ -770,7 +770,7 @@ class SetContext(_Action):
     
     `AGIAppError` is raised on failure.
     """
-    def set_context(self, context):
+    def __init__(self, context):
         _Action.__init__(self, 'SET CONTEXT', quote(context))
 
 class SetExtension(_Action):
