@@ -598,6 +598,24 @@ class RTCPSent(_Message):
             
         return (headers, data)
 
+class Shutdown(_Message):
+    """
+    Emitted when Asterisk shuts down.
+    
+    - 'Restart': "True" or "False"
+    - 'Shutdown': "Cleanly"
+    """
+    def process(self):
+        """
+        'Restart' is set to a bool.
+        """
+        (headers, data) = _Message.process(self)
+        
+        restart = headers.get('Restart')
+        headers['Restart'] = restart and restart == 'True'
+        
+        return (headers, data)
+        
 class SoftHangupRequest(_Message):
     """
     Emitted when a request to terminate the call is exchanged.

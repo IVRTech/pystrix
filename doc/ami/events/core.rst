@@ -82,6 +82,9 @@ Classes
 .. autoclass:: ami.core_events.RTCPSent
     :members:
 
+.. autoclass:: ami.core_events.Shutdown
+    :members:
+
 .. autoclass:: ami.core_events.SoftHangupRequest
     :members:
 
