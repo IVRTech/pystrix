@@ -36,9 +36,11 @@ Authors:
 - Neil Tallim <n.tallim@ivrnet.com>
 """
 import cgi
+import re
 import socket
 import SocketServer
 import threading
+import types
 
 from agi_core import *
 from agi_core import _AGI
@@ -136,7 +138,11 @@ class FastAGIServer(_ThreadedTCPServer):
         """
         with self._script_handlers_lock as lock:
             for (regex, handler) in self._script_handlers:
-                match = regex.match(script_path)
+                match = None
+                if type(regex) in types.StringTypes:
+                    match = re.match(regex, script_path)
+                else:
+                    match = regex.match(script_path)
                 if match:
                     return (handler, match)
                     
@@ -149,8 +155,8 @@ class FastAGIServer(_ThreadedTCPServer):
         dictionary containing any keyword arguments, the match object (may be `None`), and the
         original script address as a string.
 
-        Handlers are resolved by `regex` match in the order in which they were supplied, so provide
-        more specific qualifiers first.
+        Handlers are resolved by `regex`, which may be a regular expression object or a string,
+        match in the order in which they were supplied, so provide more specific qualifiers first.
 
         The special `regex` value `None` sets the default handler, invoked when every comparison
         fails; this is preferable to adding a catch-all handler in case the list is changed at
