@@ -33,6 +33,35 @@ http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
 """
 from ami import _Message
 
+class AGIExec(_Message):
+    """
+    Generated when an AGI script executes an arbitrary application.
+    
+    - 'Channel': The channel in use
+    - 'Command': The command that was issued
+    - 'CommandId': The command's identifier, used to track events from start to finish
+    - 'SubEvent': "Start", "End"
+    - 'Result': Only present when 'SubEvent' is "End": "Success" (and "Failure"?)
+    - 'ResultCode': Only present when 'SubEvent' is "End": the result-code from Asterisk
+    """
+    def process(self):
+        """
+        Translates the 'Result' header's value into a bool.
+        
+        Translates the 'ResultCode' header's value into an int, setting it to `-1` if coercion
+        fails.
+        """
+        (headers, data) = _Message.process(self)
+        
+        try:
+            headers['ResultCode'] = int(headers['ResultCode'])
+        except Exception:
+            headers['ResultCode'] = -1
+            
+        headers['Result'] = headers.get('Result') == 'Success'
+        
+        return (headers, data)
+        
 class CoreShowChannel(_Message):
     """
     Provides the definition of an active Asterisk channel.
@@ -70,6 +99,7 @@ class CoreShowChannel(_Message):
         conversion fails.
         """
         (headers, data) = _Message.process(self)
+        
         try:
             headers['ChannelState'] = int(headers['ChannelState'])
         except Exception:
