@@ -148,6 +148,9 @@ Classes
 .. autoclass:: ami.core.Monitor
     :members: __init__
 
+.. autoclass:: ami.core.MuteAudio
+    :members: __init__
+
 .. autoclass:: ami.core.Originate_Application
     :members: __init__
 

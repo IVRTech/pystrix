@@ -594,6 +594,31 @@ class Monitor(_Request):
         self['Format'] = format
         self['Mix'] = mix and 'true' or 'false'
 
+class MuteAudio(_Request):
+    """
+    Starts or stops muting audio on a channel.
+
+    Either (or both) directions can be silenced.
+    
+    Requires system
+    """
+    def __init__(self, channel, input=False, output=False, muted=False):
+        """
+        `channel` is the channel to be affected and `muted` indicates whether audio is being turned
+        on or off. `input` and `output` indicate the subchannels to be adjusted.
+        """
+        _Request.__init__(self, 'MuteAudio')
+        self['Channel'] = channel
+        if input and output:
+            self['Direction'] = 'all'
+        elif input:
+            self['Direction'] = 'in'
+        elif output:
+            self['Direction'] = 'out'
+        else:
+            raise ValueError("Unable to construct request that affects no audio subchannels")
+        self['State'] = muted and 'on' or 'off'
+
 class _Originate(_Request):
     """
     Provides the common base for originated calls.
