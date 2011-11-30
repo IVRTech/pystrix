@@ -973,7 +973,7 @@ class QueueStatus(_Request):
 
 class Redirect(_Request):
     """
-    Redirects a call with to an arbitrary context/extension/priority.
+    Redirects a call to an arbitrary context/extension/priority.
     
     Requires call
     """
