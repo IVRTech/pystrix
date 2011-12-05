@@ -62,6 +62,25 @@ class AGIExec(_Message):
         
         return (headers, data)
         
+class ChannelUpdate(_Message):
+    """
+    Describes a change in a channel.
+    
+    Some fields are type-dependent and will appear as children of that type in the list.
+    
+    - 'Channel': The channel being described
+    - 'Channeltype': One of the following types
+    
+     - 'SIP': SIP channels have the following fields
+     
+      - 'SIPcallid': 'DB45B1B5-1EAD11E1-B979D0B6-32548E42@10.13.38.201', the CallID negotiated with
+        the endpoint; this should be present in any CDRs generated
+      - 'SIPfullcontact': 'sip:flan@uguu.ca', the address of the SIP contact field, if any (observed
+        during a REFER)
+    
+    - 'UniqueID': An Asterisk-unique value
+    """
+    
 class CoreShowChannel(_Message):
     """
     Provides the definition of an active Asterisk channel.
@@ -142,6 +161,28 @@ class DBGetResponse(_Message):
     - 'Val': The value being provided, represented as a string
     """
 
+class DTMF(_Message):
+    """
+    - 'Begin': 'Yes' or 'No', indicating whether this started or ended the DTMF press
+    - 'Channel': The channel being described
+    - 'Digit': The DTMF digit that was pressed
+    - 'Direction': 'Received' or 'Sent'
+    - 'End': 'Yes' or 'No', indicating whether this started or ended the DTMF press (inverse of
+      `Begin`, though both may be `Yes` if the event has no duration)
+    - 'UniqueID': An Asterisk-unique value
+    """
+    def process(self):
+        """
+        Translates 'Begin' and 'End' into booleans, and adds a 'Received':bool header.
+        """
+        (headers, data) = _Message.process(self)
+        
+        for header in ('Begin', 'End'):
+            headers[header] = headers.get(header) == 'Yes'
+        headers['Received'] = headers.get('Direction') == 'Received'
+        
+        return (headers, data)
+        
 class FullyBooted(_Message):
     """
     Indicates that Asterisk is online.
