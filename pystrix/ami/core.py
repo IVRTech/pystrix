@@ -585,8 +585,8 @@ class Monitor(_Request):
         * FORMAT_VOX
         * FORMAT_WAV: PCM16
 
-        `mix`, defaulting to `True`, muxes both audio streams associated with the channel, with the
-        alternative recording only audio produced by the channel.
+        `mix`, defaulting to `True`, muxes both audio streams associated with the channel after
+        recording is complete, with the alternative leaving the two streams separate.
         """
         _Request.__init__(self, 'Monitor')
         self['Channel'] = channel
