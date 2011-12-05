@@ -16,6 +16,9 @@ Classes
 .. autoclass:: ami.core_events.AGIExec
     :members:
 
+.. autoclass:: ami.core_events.ChannelUpdate
+    :members:
+
 .. autoclass:: ami.core_events.CoreShowChannel
     :members:
     
@@ -25,6 +28,9 @@ Classes
 .. autoclass:: ami.core_events.DBGetResponse
     :members:
 
+.. autoclass:: ami.core_events.DTMF
+    :members:
+    
 .. autoclass:: ami.core_events.FullyBooted
     :members:
 
