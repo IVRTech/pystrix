@@ -15,7 +15,9 @@ setup(
  license = 'LGPLv3',
  url = 'http://code.google.com/p/media-storage/',
  packages = [
-  'media_storage',
+  'pystrix',
+  'pystrix.agi',
+  'pystrix.ami',
   ],
 )
 
