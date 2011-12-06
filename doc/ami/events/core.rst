@@ -40,6 +40,12 @@ Classes
 .. autoclass:: ami.core_events.HangupRequest
     :members:
 
+.. autoclass:: ami.core_events.MonitorStart
+    :members:
+    
+.. autoclass:: ami.core_events.MonitorStop
+    :members:
+
 .. autoclass:: ami.core_events.Newchannel
     :members:
     

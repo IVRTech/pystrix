@@ -222,6 +222,22 @@ class HangupRequest(_Message):
     - 'Uniqueid': An Asterisk unique value
     """
 
+class MonitorStart(_Message):
+    """
+    Indicates that monitoring has begun.
+    
+    - 'Channel': The channel being monitored
+    - 'Uniqueid': An Asterisk unique value
+    """
+
+class MonitorStop(_Message):
+    """
+    Indicates that monitoring has ceased.
+    
+    - 'Channel': The channel that was monitored
+    - 'Uniqueid': An Asterisk unique value
+    """
+
 class Newchannel(_Message):
     """
     Indicates that a new channel has been created.
