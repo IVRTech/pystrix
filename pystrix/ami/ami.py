@@ -37,6 +37,7 @@ import re
 import socket
 import threading
 import time
+import traceback
 import types
 import warnings
 
@@ -149,10 +150,11 @@ class Manager(object):
                     try:
                         callback(event, self)
                     except Exception as e:
-                        warnings.warn("Exception occurred while processing event callback: name='%(event)s' handler='%(function)s' exception: %(error)s" % {
+                        warnings.warn("Exception occurred while processing event callback: name='%(event)s' handler='%(function)s' exception: %(error)s; trace:\n%(trace)s" % {
                          'event': event_name,
                          'function': str(callback),
                          'error': str(e),
+                         'trace': traceback.format_exc(),
                         })
 
             #Handle orphaned responses
@@ -170,9 +172,10 @@ class Manager(object):
                     try:
                         callback(response, self)
                     except Exception as e:
-                        warnings.warn("Exception occurred while processing orphaned response handler: handler='%(function)s' exception: %(error)s" % {
+                        warnings.warn("Exception occurred while processing orphaned response handler: handler='%(function)s' exception: %(error)s; trace:\n%(trace)s" % {
                          'function': str(callback),
                          'error': str(e),
+                         'trace': traceback.format_exc(),
                         })
                         
             if sleep:
