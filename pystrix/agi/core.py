@@ -568,7 +568,7 @@ class _SayAction(_Action):
         )
 
     def process_response(self, response):
-        result = response.get(_RESULT_KEY)
+        result = response.items.get(_RESULT_KEY)
 
         if not result.value == '0':
             return _convert_to_char(result.value, response.items)
