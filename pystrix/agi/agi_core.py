@@ -147,7 +147,7 @@ class _AGI(object):
                 response[key] = _ValueData(value, data)
                 
             if not _RESULT_KEY in response: #Must always be present.
-                raise AGIError("Asterisk did not provide a '%(result-key)s' key-value pair" % {
+                raise AGINoResultError("Asterisk did not provide a '%(result-key)s' key-value pair" % {
                  'result-key': _RESULT_KEY,
                 }, response)
 
@@ -282,6 +282,11 @@ class AGIException(Exception):
 class AGIError(AGIException):
     """
     The base error from which all errors native to this module inherit.
+    """
+    
+class AGINoResultError(AGIException):
+    """
+    Indicates that Asterisk did not return a 'result' parameter in a 200 response.
     """
     
 class AGIUnknownError(AGIError):
