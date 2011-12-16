@@ -76,22 +76,17 @@ class Manager(object):
     _hostname = socket.gethostname() #The hostname of this system, used to prevent repeated calls through the C layer
     _message_reader = None #A thread that continuously collects messages from the Asterisk server
     _outstanding_requests = None #A set of ActionIDs sent to Asterisk, currently awaiting responses
-    _ping_interval = None #The number of seconds to wait between Pings to the Asterisk core.
     
-    def __init__(self, ping_interval=2.5, debug=False):
+    def __init__(self, debug=False):
         """
         Sets up an environment for interacting with an Asterisk Management Interface.
 
         To proceed, register any necessary callbacks, then call `connect()`, then pass the core
         `Login` or `Challenge` request to `send_action()`.
 
-        `ping_interval` is the number of seconds to wait between automated Pings to see if Asterisk
-        is still alive; defaults to 2.5.
-
         `debug` should only be turned on for library development.
         """
         self._debug = debug
-        self._ping_interval = ping_interval
         
         self._action_id = 0
         self._action_id_lock = threading.Lock()
@@ -274,16 +269,19 @@ class Manager(object):
         with self._connection_lock as lock:
             return bool(self._connection and self._connection.is_connected())
 
-    def monitor_connection(self):
+    def monitor_connection(self, interval=2.5):
         """
         Spawns a thread that watches the AMI connection to indicate a disruption when the connection
         goes down.
+        
+        `interval` is the number of seconds to wait between automated Pings to see if Asterisk
+        is still alive; defaults to 2.5.
         """
         def _monitor_connection(self):
             import core
             while self.is_connected():
                 self.send_action(core.Ping())
-                time.sleep(self._ping_interval)
+                time.sleep(interval)
                 
         monitor = threading.Thread(target=_monitor_connection, name='pystrix-ami-monitor')
         monitor.daemon = True
