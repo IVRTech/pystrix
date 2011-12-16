@@ -41,6 +41,8 @@ import traceback
 import types
 import warnings
 
+import core
+
 _EVENT_REGISTRY = {} #Meant to be internally managed only, this provides mappings from event-class-names to the classes, to enable type-mutation
 
 _EOC = '--END COMMAND--' #A string used by Asterisk to mark the end of some of its responses.
@@ -76,17 +78,22 @@ class Manager(object):
     _hostname = socket.gethostname() #The hostname of this system, used to prevent repeated calls through the C layer
     _message_reader = None #A thread that continuously collects messages from the Asterisk server
     _outstanding_requests = None #A set of ActionIDs sent to Asterisk, currently awaiting responses
+    _ping_interval = None #The number of seconds to wait between Pings to the Asterisk core.
     
-    def __init__(self, debug=False):
+    def __init__(self, ping_interval=2.5, debug=False):
         """
         Sets up an environment for interacting with an Asterisk Management Interface.
 
         To proceed, register any necessary callbacks, then call `connect()`, then pass the core
         `Login` or `Challenge` request to `send_action()`.
 
+        `ping_interval` is the number of seconds to wait between automated Pings to see if Asterisk
+        is still alive; defaults to 2.5.
+
         `debug` should only be turned on for library development.
         """
         self._debug = debug
+        self._ping_interval = ping_interval
         
         self._action_id = 0
         self._action_id_lock = threading.Lock()
@@ -200,6 +207,15 @@ class Manager(object):
          'id': self._get_action_id(),
         }
 
+    def _monitor_connection(self):
+        """
+        Spawned as a thread, this sends Ping messages via AMI to ensure that the `is_connected()`
+        operation returns a meaningful value.
+        """
+        while self.is_connected():
+            self.send_action(core.Ping())
+            time.sleep(self._ping_interval)
+            
     def close(self):
         """
         Release all resources associated with this manager and ensure that all threads have stopped.
@@ -227,6 +243,10 @@ class Manager(object):
             
             self._message_reader = _MessageReader(self)
             self._message_reader.start()
+            
+            monitor = threading.Thread(target=self._monitor_connection, name='pystrix-ami-monitor')
+            monitor.daemon = True
+            monitor.start()
             
     def disconnect(self):
         """
