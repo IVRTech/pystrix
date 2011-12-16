@@ -41,8 +41,6 @@ import traceback
 import types
 import warnings
 
-import core
-
 _EVENT_REGISTRY = {} #Meant to be internally managed only, this provides mappings from event-class-names to the classes, to enable type-mutation
 
 _EOC = '--END COMMAND--' #A string used by Asterisk to mark the end of some of its responses.
@@ -212,6 +210,7 @@ class Manager(object):
         Spawned as a thread, this sends Ping messages via AMI to ensure that the `is_connected()`
         operation returns a meaningful value.
         """
+        import core
         while self.is_connected():
             self.send_action(core.Ping())
             time.sleep(self._ping_interval)
