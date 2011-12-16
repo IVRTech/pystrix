@@ -277,7 +277,7 @@ class Manager(object):
         `interval` is the number of seconds to wait between automated Pings to see if Asterisk
         is still alive; defaults to 2.5.
         """
-        def _monitor_connection(self):
+        def _monitor_connection():
             import core
             while self.is_connected():
                 self.send_action(core.Ping())
