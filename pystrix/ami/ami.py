@@ -205,18 +205,6 @@ class Manager(object):
          'id': self._get_action_id(),
         }
 
-    def _monitor_connection(self):
-        """
-        Spawned as a thread, this sends Ping messages via AMI to ensure that the `is_connected()`
-        operation returns a meaningful value.
-        """
-        import core
-        x = open('/home/ivrnet/close', 'wb').write("Pystrix connection closed!")
-        while self.is_connected():
-            x.write("Pinging!\n")
-            self.send_action(core.Ping())
-            time.sleep(self._ping_interval)
-            
     def close(self):
         """
         Release all resources associated with this manager and ensure that all threads have stopped.
@@ -244,10 +232,6 @@ class Manager(object):
             
             self._message_reader = _MessageReader(self)
             self._message_reader.start()
-            
-            monitor = threading.Thread(target=self._monitor_connection, name='pystrix-ami-monitor')
-            monitor.daemon = True
-            monitor.start()
             
     def disconnect(self):
         """
@@ -289,6 +273,21 @@ class Manager(object):
         """
         with self._connection_lock as lock:
             return bool(self._connection and self._connection.is_connected())
+
+    def monitor_connection(self):
+        """
+        Spawns a thread that watches the AMI connection to indicate a disruption when the connection
+        goes down.
+        """
+        def _monitor_connection(self):
+            import core
+            while self.is_connected():
+                self.send_action(core.Ping())
+                time.sleep(self._ping_interval)
+                
+        monitor = threading.Thread(target=_monitor_connection, name='pystrix-ami-monitor')
+        monitor.daemon = True
+        monitor.start()
 
     def register_callback(self, event, function):
         """
@@ -656,7 +655,6 @@ class _SynchronisedSocket(object):
         """
         Performs the actual closing; needed to avoid a deadlock.
         """
-        open('/home/ivrnet/close', 'wb').write("Pystrix connection closed!")
         self._connected = False
         for closable in (self._socket_file, self._socket):
             try:
