@@ -800,7 +800,7 @@ class Ping(_Request):
         """
         Records the time at which the request was assembled, to provide a latency value.
         """
-        request = _Request.build_request(self, id_generator, kwargs)
+        request = _Request.build_request(self, id_generator, **kwargs)
         self._start_time = time.time()
         return request
         
