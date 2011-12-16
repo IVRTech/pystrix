@@ -6,9 +6,11 @@ __author__ = 'Neil Tallim'
 
 from distutils.core import setup
 
+from pystrix import VERSION
+
 setup(
  name = 'pystrix',
- version = '0.9.2',
+ version = VERSION,
  description = 'Python bindings for Asterisk Manager Interface and Asterisk Gateway Interface',
  author = 'Neil Tallim',
  author_email = 'neil.tallim@linux.com',
