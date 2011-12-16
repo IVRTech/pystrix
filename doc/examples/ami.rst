@@ -78,6 +78,9 @@ for information::
                  'reason': reason,
                 })
 
+            #Start a thread to make is_connected() fail if Asterisk dies.
+            self._manager.monitor_connection()
+
         def _register_callbacks(self):
             #This sets up some event callbacks, so that interesting things, like calls being
             #established or torn down, will be processed by your application's logic. Of course,
