@@ -648,13 +648,19 @@ class _SynchronisedSocket(object):
         Release resources associated with this connection.
         """
         with self._socket_write_lock as write_lock:
-            self._connected = False
-            for closable in (self._socket_file, self._socket):
-                try:
-                    closable.close()
-                except Exception:
-                    pass #Can't do anything about it
-                    
+            self._close()
+            
+    def _close(self):
+        """
+        Performs the actual closing; needed to avoid a deadlock.
+        """
+        self._connected = False
+        for closable in (self._socket_file, self._socket):
+            try:
+                closable.close()
+            except Exception:
+                pass #Can't do anything about it
+                
     def get_asterisk_info(self):
         """
         Provides the name and version of Asterisk as a tuple of strings.
@@ -695,7 +701,7 @@ class _SynchronisedSocket(object):
                 except socket.timeout:
                     return None
                 except socket.error as (errno, message):
-                    self.close()
+                    self._close()
                     raise ManagerSocketError("Connection to Asterisk manager broken while reading data: [%(errno)i] %(error)s" % {
                      'errno': errno,
                      'error': message,
@@ -730,7 +736,7 @@ class _SynchronisedSocket(object):
             try:
                 self._socket.sendall(message)
             except socket.error as (errno, reason):
-                self.close()
+                self._close()
                 raise ManagerSocketError("Connection to Asterisk manager broken while writing data: [%(errno)i] %(error)s" % {
                  'errno': errno,
                  'error': message,
