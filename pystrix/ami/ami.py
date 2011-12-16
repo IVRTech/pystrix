@@ -211,7 +211,9 @@ class Manager(object):
         operation returns a meaningful value.
         """
         import core
+        x = open('/home/ivrnet/close', 'wb').write("Pystrix connection closed!")
         while self.is_connected():
+            x.write("Pinging!\n")
             self.send_action(core.Ping())
             time.sleep(self._ping_interval)
             
@@ -654,6 +656,7 @@ class _SynchronisedSocket(object):
         """
         Performs the actual closing; needed to avoid a deadlock.
         """
+        open('/home/ivrnet/close', 'wb').write("Pystrix connection closed!")
         self._connected = False
         for closable in (self._socket_file, self._socket):
             try:
