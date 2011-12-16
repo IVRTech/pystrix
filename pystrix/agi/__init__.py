@@ -35,7 +35,8 @@ Authors:
 - Neil Tallim <n.tallim@ivrnet.com>
 """
 from agi_core import (
- AGIException, AGIError, AGIUnknownError, AGIAppError, AGIHangup, AGISIGPIPEHangup, AGIResultHangup,
+ AGIException, AGIError, AGINoResultError, AGIUnknownError, AGIAppError,
+ AGIHangup, AGISIGPIPEHangup, AGIResultHangup,
  AGIDeadChannelError, AGIUsageError, AGIInvalidCommandError,
 )
 
