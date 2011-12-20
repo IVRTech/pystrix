@@ -79,6 +79,9 @@ for information::
                 })
 
             #Start a thread to make is_connected() fail if Asterisk dies.
+            #This is not done automatically because it disallows the possibility of immediate
+            #correction in applications that could gracefully replace their connection upon receipt
+            #of a `ManagerSocketError`.
             self._manager.monitor_connection()
 
         def _register_callbacks(self):
