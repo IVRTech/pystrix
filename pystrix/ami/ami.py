@@ -213,7 +213,8 @@ class Manager(object):
         
     def connect(self, host, port=5038, timeout=5):
         """
-        Establishes a connection to the specified Asterisk manager.
+        Establishes a connection to the specified Asterisk manager, closing any existing connection
+        first.
 
         `timeout` specifies the number of seconds to allow Asterisk to go between producing lines of
         a response; it differs from the timeout that may be set on individual requests and exists
