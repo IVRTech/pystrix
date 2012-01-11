@@ -676,7 +676,7 @@ class SayNumber(_SayAction):
     """
     def __init__(self, number, escape_digits=''):
         number = _process_digit_list(number)
-        _SayAction.__init__(self, 'DIGITS', number, escape_digits)
+        _SayAction.__init__(self, 'NUMBER', number, escape_digits)
 
 class SayPhonetic(_SayAction):
     """
