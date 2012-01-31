@@ -61,7 +61,7 @@ up::
 
 
     if __name__ == '__main__':
-        fastagi_core = src.fastagi_core.FastAGIServer()
+        fastagi_core = FastAGIServer()
         fastagi_core.start()
         
         while fastagi_core.is_alive():
