@@ -615,8 +615,8 @@ class SayDatetime(_SayAction):
     of possibly mixed ints and strings. Playback ends immediately when one is received and it is
     returned. If nothing is recieved, `None` is returned.
 
-    `format` defaults to "ABdY 'digits/at' IMp", but may be a string with any of the following
-    meta-characters:
+    `format` defaults to `"ABdY 'digits/at' IMp"`, but may be a string with any of the following
+    meta-characters (or single-quote-escaped sound-file references):
     
     - A: Day of the week
     - B: Month (Full Text)
@@ -626,7 +626,7 @@ class SayDatetime(_SayAction):
     - I: Hour (12-hour format)
     - H: Hour (24-hour format)
     - M: Minutes
-    - P: AM/PM
+    - p: AM/PM
     - Q: Shorthand for Today, Yesterday or ABdY
     - R: Shorthand for HM
     - S: Seconds
