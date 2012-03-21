@@ -120,6 +120,9 @@ class ConfbridgeUnmute(_Request):
 class ConfbridgePlayFile(_Request):
     """
     Plays a file to individuals or an entire conference.
+    
+    Note: This implementation is built upon the not-yet-accepted patch under
+    https://issues.asterisk.org/jira/browse/ASTERISK-19571
     """
     def __init__(self, file, conference, channel=None):
         """
