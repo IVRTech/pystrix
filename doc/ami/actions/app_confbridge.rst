@@ -35,6 +35,9 @@ Classes
 .. autoclass:: ami.app_confbridge.ConfbridgeUnmute
     :members: __init__
 
+.. autoclass:: ami.app_confbridge.ConfbridgePlayFile
+    :members: __init__
+    
 .. autoclass:: ami.app_confbridge.ConfbridgeStartRecord
     :members: __init__
 

@@ -117,6 +117,21 @@ class ConfbridgeUnmute(_Request):
         self['Conference'] = conference
         self['Channel'] = channel
 
+class ConfbridgePlayFile(_Request):
+    """
+    Plays a file to individuals or an entire conference.
+    """
+    def __init__(self, file, conference, channel=None):
+        """
+        `file`, resolved like other Asterisk media, is played to `conference`
+        or, if specified, a specific `channel` therein.
+        """
+        _Request.__init__(self, 'ConfbridgeUnmute')
+        self['Conference'] = conference
+        if channel:
+            self['Channel'] = channel
+        self['File'] = file
+        
 class ConfbridgeStartRecord(_Request):
     """
     Starts recording a ConfBridge conference.
