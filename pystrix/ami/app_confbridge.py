@@ -126,7 +126,7 @@ class ConfbridgePlayFile(_Request):
         `file`, resolved like other Asterisk media, is played to `conference`
         or, if specified, a specific `channel` therein.
         """
-        _Request.__init__(self, 'ConfbridgeUnmute')
+        _Request.__init__(self, 'ConfbridgePlayFile')
         self['Conference'] = conference
         if channel:
             self['Channel'] = channel
