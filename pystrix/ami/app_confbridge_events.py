@@ -49,6 +49,7 @@ class ConfbridgeJoin(_Message):
     - 'CallerIDnum' : The (often) numeric address of the participant
     - 'Channel' : The channel that joined
     - 'Conference' : The identifier of the room that was joined
+    - 'NameRecordingPath' (optional) : The path at which the user's name-recording is kept
     - 'Uniqueid' : An Asterisk unique value
     """
 
@@ -73,6 +74,7 @@ class ConfbridgeList(_Message):
     - 'Channel' : The Asterisk channel in use by the participant
     - 'Conference' : The room's identifier
     - 'MarkedUser' : 'Yes' or 'No'
+    - 'NameRecordingPath' (optional) : The path at which the user's name-recording is kept
     """
     def process(self):
         """
