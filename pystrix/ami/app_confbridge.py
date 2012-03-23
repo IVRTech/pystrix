@@ -93,6 +93,38 @@ class ConfbridgeUnlock(_Request):
         _Request.__init__(self, 'ConfbridgeUnlock')
         self['Conference'] = conference
 
+class ConfbridgeMoHOn(_Request):
+    """
+    Forces MoH to a participant in a ConfBridge room.
+    
+    This action does not mute audio coming from the participant.
+    
+    Depends on <path>.
+    """
+    def __init__(self, conference, channel):
+        """
+        `channel` is the channel to which MoH should be started in `conference`.
+        """
+        _Request.__init__(self, 'ConfbridgeMoHOn')
+        self['Conference'] = conference
+        self['Channel'] = channel
+
+class ConfbridgeMoHOff(_Request):
+    """
+    Stops forcing MoH to a participant in a ConfBridge room.
+    
+    This action does not unmute audio coming from the participant.
+    
+    Depends on <path>.
+    """
+    def __init__(self, conference, channel):
+        """
+        `channel` is the channel to which MoH should be stopped in `conference`.
+        """
+        _Request.__init__(self, 'ConfbridgeMoHOff')
+        self['Conference'] = conference
+        self['Channel'] = channel
+
 class ConfbridgeMute(_Request):
     """
     Mutes a participant in a ConfBridge room.
