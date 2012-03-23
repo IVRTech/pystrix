@@ -605,7 +605,8 @@ class MuteAudio(_Request):
     def __init__(self, channel, input=False, output=False, muted=False):
         """
         `channel` is the channel to be affected and `muted` indicates whether audio is being turned
-        on or off. `input` and `output` indicate the subchannels to be adjusted.
+        on or off. `input` (from the channel) and `output` (to the channel) indicate the subchannels
+        to be adjusted.
         """
         _Request.__init__(self, 'MuteAudio')
         self['Channel'] = channel
