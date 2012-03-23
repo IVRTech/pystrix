@@ -45,6 +45,8 @@ class ConfbridgeJoin(_Message):
     """
     Indicates that a participant has joined a ConfBridge room.
     
+    `NameRecordingPath` blocks on <path>
+    
     - 'CallerIDname' (optional) : The name, on supporting channels, of the participant
     - 'CallerIDnum' : The (often) numeric address of the participant
     - 'Channel' : The channel that joined
