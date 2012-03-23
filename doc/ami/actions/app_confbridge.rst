@@ -29,6 +29,12 @@ Classes
 .. autoclass:: ami.app_confbridge.ConfbridgeUnlock
     :members: __init__
 
+.. autoclass:: ami.app_confbridge.ConfbridgeMoHOn
+    :members: __init__
+
+.. autoclass:: ami.app_confbridge.ConfbridgeMoHOff
+    :members: __init__
+
 .. autoclass:: ami.app_confbridge.ConfbridgeMute
     :members: __init__
 
