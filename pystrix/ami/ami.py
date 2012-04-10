@@ -139,7 +139,7 @@ class Manager(object):
             except Queue.Empty:
                 pass
             else:
-                event_name = event[KEY_EVENT]
+                event_name = event.name
                 callbacks = set()
                 with self._event_callbacks_lock as lock:
                     callbacks.update(self._event_callbacks.get(event_name) or ()) #Start with exact matches, if any
@@ -151,12 +151,17 @@ class Manager(object):
                         if type(event) == cls:
                             callbacks.update(functions)
 
+                if self._logger:
+                    self._logger.debug("Received event '%(name)s' with %(callbacks)i callbacks" % {
+                     'name': event_name,
+                     'callbacks': len(callbacks),
+                    })
                 for callback in callbacks:
                     try:
                         callback(event, self)
                     except Exception as e:
-                        (self._logger and self._logger.error or warnings.warn)("Exception occurred while processing event callback: name='%(event)s' handler='%(function)s' exception: %(error)s; trace:\n%(trace)s" % {
-                         'event': event_name,
+                        (self._logger and self._logger.error or warnings.warn)("Exception occurred while processing event callback: event='%(event)r'; handler='%(function)s' exception: %(error)s; trace:\n%(trace)s" % {
+                         'event': event,
                          'function': str(callback),
                          'error': str(e),
                          'trace': traceback.format_exc(),
@@ -173,11 +178,17 @@ class Manager(object):
                 with self._event_callbacks_lock as lock:
                     callbacks = self._event_callbacks.get(None) or () #Only select the explicit orphan-handlers
                     
+                if self._logger:
+                    self._logger.debug("Received orphaned response '%(name)s' with %(callbacks)i callbacks" % {
+                     'name': response.name,
+                     'callbacks': len(callbacks),
+                    })
                 for callback in callbacks:
                     try:
                         callback(response, self)
                     except Exception as e:
-                        (self._logger and self._logger.error or warnings.warn)("Exception occurred while processing orphaned response handler: handler='%(function)s' exception: %(error)s; trace:\n%(trace)s" % {
+                        (self._logger and self._logger.error or warnings.warn)("Exception occurred while processing orphaned response handler: response=%(response)r; handler='%(function)s'; exception: %(error)s; trace:\n%(trace)s" % {
+                         'response': response,
                          'function': str(callback),
                          'error': str(e),
                          'trace': traceback.format_exc(),
@@ -418,7 +429,7 @@ class Manager(object):
                 
 class _Message(dict):
     """
-    The common base-class for both methods and events, this is any structured response received
+    The common base-class for both replies and events, this is any structured response received
     from Asterisk.
 
     All message headers are exposed as dictionary items on this object directly.
