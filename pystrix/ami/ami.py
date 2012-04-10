@@ -76,17 +76,22 @@ class Manager(object):
     _hostname = socket.gethostname() #The hostname of this system, used to prevent repeated calls through the C layer
     _message_reader = None #A thread that continuously collects messages from the Asterisk server
     _outstanding_requests = None #A set of ActionIDs sent to Asterisk, currently awaiting responses
+    _logger = None #A logger that may be used to record warnings
     
-    def __init__(self, debug=False):
+    def __init__(self, debug=False, logger=None):
         """
         Sets up an environment for interacting with an Asterisk Management Interface.
 
         To proceed, register any necessary callbacks, then call `connect()`, then pass the core
         `Login` or `Challenge` request to `send_action()`.
 
+        `logger` may be a logging.Logger object to use for logging problems in AMI threads. If not
+        provided, problems will be emitted through the Python warnings interface.
+
         `debug` should only be turned on for library development.
         """
         self._debug = debug
+        self._logger = logger
         
         self._action_id = 0
         self._action_id_lock = threading.Lock()
@@ -150,7 +155,7 @@ class Manager(object):
                     try:
                         callback(event, self)
                     except Exception as e:
-                        warnings.warn("Exception occurred while processing event callback: name='%(event)s' handler='%(function)s' exception: %(error)s; trace:\n%(trace)s" % {
+                        (self._logger and self._logger.error or warnings.warn)("Exception occurred while processing event callback: name='%(event)s' handler='%(function)s' exception: %(error)s; trace:\n%(trace)s" % {
                          'event': event_name,
                          'function': str(callback),
                          'error': str(e),
@@ -172,7 +177,7 @@ class Manager(object):
                     try:
                         callback(response, self)
                     except Exception as e:
-                        warnings.warn("Exception occurred while processing orphaned response handler: handler='%(function)s' exception: %(error)s; trace:\n%(trace)s" % {
+                        (self._logger and self._logger.error or warnings.warn)("Exception occurred while processing orphaned response handler: handler='%(function)s' exception: %(error)s; trace:\n%(trace)s" % {
                          'function': str(callback),
                          'error': str(e),
                          'trace': traceback.format_exc(),
