@@ -650,7 +650,7 @@ class _Originate(_Request):
 
         `async` should always be `True`. If not, only one unanswered call can be active at a time.
         """
-        self.__init__(self, "Originate")
+        _Request.__init__(self, "Originate")
         self['Channel'] = channel
         self['Async'] = async and 'true' or 'false'
         
