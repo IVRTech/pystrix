@@ -23,7 +23,7 @@ up::
             
             self._fagi_server = pystrix.agi.FastAGIServer()
             
-            self._fagi_server.register_script_handler(re.compile('/demo'), self._demo_handler)
+            self._fagi_server.register_script_handler(re.compile('demo'), self._demo_handler)
             self._fagi_server.register_script_handler(None, self._noop_handler)
             
         def _demo_handler(self, agi, args, kwargs, match, path):
