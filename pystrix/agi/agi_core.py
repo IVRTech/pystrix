@@ -8,7 +8,7 @@ Usage
 -----
 
 This module should not be used directly; instead, import one of `agi`
-or `fagi`.
+or `fastagi`.
 
 Legal
 -----
