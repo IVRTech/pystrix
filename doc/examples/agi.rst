@@ -4,8 +4,7 @@ Asterisk Gateway Interface (AGI)
 A simple AGI implementation is provided below, demonstrating how to handle requests from Asterisk,
 like, as illustrated, answering a call, playing a message, and hanging up::
 
-    import time
-
+    #!/usr/bin/env python
     import pystrix
     
     if __name__ == '__main__':
