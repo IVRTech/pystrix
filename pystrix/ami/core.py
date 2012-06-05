@@ -682,7 +682,7 @@ class Originate_Application(_Originate):
 
         `application` is the name of the application to be executed, and `data` is optionally any
         parameters to pass to the application, as an ordered sequence (list or tuple) of strings,
-        escaped as necessary (the '|' character is special).
+        escaped as necessary (the ',' character is special).
 
         `timeout`, if given, is the number of milliseconds to wait before dropping an unanwsered
         call. If set, the request's timeout value will be set to this number + 2 seconds, removing
@@ -704,7 +704,7 @@ class Originate_Application(_Originate):
         _Originate.__init__(self, channel, timeout, callerid, variables, account, async)
         self['Application'] = application
         if data:
-            self['Data'] = '|'.join((str(d) for d in data))
+            self['Data'] = ','.join((str(d) for d in data))
             
 class Originate_Context(_Originate):
     """
