@@ -68,6 +68,34 @@ Constants
 .. data:: FORMAT_WAV
 
     Selects the `wav` audio format
+    
+.. data:: ORIGINATE_RESULT_REJECT
+
+    Remote extension rejected (hung up) without answering
+    
+.. data:: ORIGINATE_RESULT_RING_LOCAL
+
+    Local extension rang, but didn't answer
+    
+.. data:: ORIGINATE_RESULT_RING_REMOTE
+
+    Remote extension rang, but didn't answer
+    
+.. data:: ORIGINATE_RESULT_ANSWERED
+
+    Remote extension answered
+    
+.. data:: ORIGINATE_RESULT_BUSY
+
+    Remote extension was busy
+    
+.. data:: ORIGINATE_RESULT_CONGESTION
+
+    Remote extension was unreachable
+    
+.. data:: ORIGINATE_RESULT_INCOMPLETE
+
+    Remote extension could not be identified
 
 Classes
 +++++++

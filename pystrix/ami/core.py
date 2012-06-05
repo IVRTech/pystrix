@@ -62,6 +62,15 @@ FORMAT_ULAW = 'ulaw'
 FORMAT_VOX = 'vox'
 FORMAT_WAV = 'wav'
 
+#Originate result constants
+ORIGINATE_RESULT_REJECT = 1 #Remote hangup
+ORIGINATE_RESULT_RING_LOCAL = 2
+ORIGINATE_RESULT_RING_REMOTE = 3
+ORIGINATE_RESULT_ANSWERED = 4
+ORIGINATE_RESULT_BUSY = 5
+ORIGINATE_RESULT_CONGESTION = 8
+ORIGINATE_RESULT_INCOMPLETE = 30 #Unable to resolve
+
 class AbsoluteTimeout(_Request):
     """
     Causes Asterisk to hang up a channel after a given number of seconds.
@@ -668,10 +677,33 @@ class _Originate(_Request):
 
         if account:
             self['Account'] = account
-
+            
+    def process_response(self, response):
+        """
+        Sets the 'Reason' values to an int, with -1 indicating failure.
+        """
+        response = _Request.process_response(self, response)
+        
+        try:
+            response['Reason'] = int(response.get('Reason'))
+        except Exception:
+            response['Reason'] = -1
+            
+        return response
+        
 class Originate_Application(_Originate):
     """
     Initiates a call that answers, executes an arbitrary dialplan application, and hangs up.
+    
+    The response, available after the connection succeeds or fails, has the following key-value
+    pairs:
+    
+    * 'CallerIDName': The supplied source name
+    * 'CallerIDNum': The supplied source address
+    * 'Channel': The Asterisk channel used for the call
+    * 'Context': The dialplan context into which the call was placed, as a string; unused for applications
+    * 'Exten': The dialplan extension into which the call was placed, as a string; unused for applications
+    * 'Reason': One of the `ORIGINATE_RESULT` constants, as an integer; undefined integers may exist
     
     Requires call
     """
@@ -682,7 +714,7 @@ class Originate_Application(_Originate):
 
         `application` is the name of the application to be executed, and `data` is optionally any
         parameters to pass to the application, as an ordered sequence (list or tuple) of strings,
-        escaped as necessary (the '|' character is special).
+        escaped as necessary (the ',' character is special).
 
         `timeout`, if given, is the number of milliseconds to wait before dropping an unanwsered
         call. If set, the request's timeout value will be set to this number + 2 seconds, removing
@@ -704,11 +736,21 @@ class Originate_Application(_Originate):
         _Originate.__init__(self, channel, timeout, callerid, variables, account, async)
         self['Application'] = application
         if data:
-            self['Data'] = '|'.join((str(d) for d in data))
+            self['Data'] = ','.join((str(d) for d in data))
             
 class Originate_Context(_Originate):
     """
     Initiates a call with instructions derived from an arbitrary context/extension/priority.
+    
+    The response, available after the connection succeeds or fails, has the following key-value
+    pairs:
+    
+    * 'CallerIDName': The supplied source name
+    * 'CallerIDNum': The supplied source address
+    * 'Channel': The Asterisk channel used for the call
+    * 'Context': The dialplan context into which the call was placed, as a string
+    * 'Exten': The dialplan extension into which the call was placed, as a string
+    * 'Reason': One of the `ORIGINATE_RESULT` constants, as an integer; undefined integers may exist
     
     Requires call
     """
