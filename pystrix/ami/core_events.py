@@ -238,6 +238,15 @@ class MonitorStop(_Message):
     - 'Uniqueid': An Asterisk unique value
     """
 
+class NewAccountCode(_Message):
+    """
+    Indicates that the account-code associated with a channel has changed.
+    
+    - 'AccountCode': The new account code
+    - 'Channel': The channel that was affected.
+    - 'OldAccountCode': The old account code
+    """
+
 class Newchannel(_Message):
     """
     Indicates that a new channel has been created.

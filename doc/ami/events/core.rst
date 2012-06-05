@@ -46,6 +46,9 @@ Classes
 .. autoclass:: ami.core_events.MonitorStop
     :members:
 
+.. autoclass:: ami.core_events.NewAccountCode
+    :members:
+
 .. autoclass:: ami.core_events.Newchannel
     :members:
     
