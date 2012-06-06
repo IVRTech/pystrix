@@ -84,7 +84,8 @@ class _AGIClientHandler(SocketServer.StreamRequestHandler):
     def _extract_query_elements(self, agi_instance):
         """
         Provides the path string and a dictionary of keyword arguments passed along with the AGI
-        request.
+        request. Arguments are supplied as a list, since the same parameter may be specified
+        multiple times.
         """
         tokens = (agi_instance.get_environment().get('agi_network_script') or '/').split('?', 1)
         path = tokens[0]
@@ -152,8 +153,8 @@ class FastAGIServer(_ThreadedTCPServer):
         """
         Registers the given `handler`, which is a callable that accepts an AGI object used to
         communicate with the Asterisk channel, a tuple containing any positional arguments, a
-        dictionary containing any keyword arguments, the match object (may be `None`), and the
-        original script address as a string.
+        dictionary containing any keyword arguments (values are enumerated in a list), the match
+        object (may be `None`), and the original script address as a string.
 
         Handlers are resolved by `regex`, which may be a regular expression object or a string,
         match in the order in which they were supplied, so provide more specific qualifiers first.
