@@ -30,9 +30,9 @@ up::
             """
             `agi` is the AGI instance used to process events related to the channel, `args` is a
             collection of positional arguments provided with the script as a tuple, `kwargs` is a
-            dictionary of keyword arguments supplied with the script, `match` is the regex match object
-            (None if the fallback handler), and `path` is the string path supplied by Asterisk, in case
-            special processing is needed.
+            dictionary of keyword arguments supplied with the script (values are enumerated in a list),
+            `match` is the regex match object (None if the fallback handler), and `path` is the string
+            path supplied by Asterisk, in case special processing is needed.
 
             The directives issued in this function can all raise Hangup exceptions, which should be
             caught if doing anything complex, but an uncaught exception will simply cause a warning to
