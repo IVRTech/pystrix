@@ -678,32 +678,9 @@ class _Originate(_Request):
         if account:
             self['Account'] = account
             
-    def process_response(self, response):
-        """
-        Sets the 'Reason' values to an int, with -1 indicating failure.
-        """
-        response = _Request.process_response(self, response)
-        
-        try:
-            response['Reason'] = int(response.get('Reason'))
-        except Exception:
-            response['Reason'] = -1
-            
-        return response
-        
 class Originate_Application(_Originate):
     """
     Initiates a call that answers, executes an arbitrary dialplan application, and hangs up.
-    
-    The response, available after the connection succeeds or fails, has the following key-value
-    pairs:
-    
-    * 'CallerIDName': The supplied source name
-    * 'CallerIDNum': The supplied source address
-    * 'Channel': The Asterisk channel used for the call
-    * 'Context': The dialplan context into which the call was placed, as a string; unused for applications
-    * 'Exten': The dialplan extension into which the call was placed, as a string; unused for applications
-    * 'Reason': One of the `ORIGINATE_RESULT` constants, as an integer; undefined integers may exist
     
     Requires call
     """
@@ -741,16 +718,6 @@ class Originate_Application(_Originate):
 class Originate_Context(_Originate):
     """
     Initiates a call with instructions derived from an arbitrary context/extension/priority.
-    
-    The response, available after the connection succeeds or fails, has the following key-value
-    pairs:
-    
-    * 'CallerIDName': The supplied source name
-    * 'CallerIDNum': The supplied source address
-    * 'Channel': The Asterisk channel used for the call
-    * 'Context': The dialplan context into which the call was placed, as a string
-    * 'Exten': The dialplan extension into which the call was placed, as a string
-    * 'Reason': One of the `ORIGINATE_RESULT` constants, as an integer; undefined integers may exist
     
     Requires call
     """

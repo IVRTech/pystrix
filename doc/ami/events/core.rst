@@ -58,6 +58,9 @@ Classes
 .. autoclass:: ami.core_events.Newstate
     :members:
 
+.. autoclass:: ami.core_events.OriginateResponse
+    :members:
+    
 .. autoclass:: ami.core_events.ParkedCall
     :members:
 

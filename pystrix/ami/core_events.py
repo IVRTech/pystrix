@@ -320,7 +320,32 @@ class Newstate(_Message):
         except Exception:
             headers['ChannelState'] = None
         return (headers, data)
-
+        
+class OriginateResponse(_Message):
+    """
+    Describes the result of an Originate request.
+    
+    * 'CallerIDName': The supplied source name
+    * 'CallerIDNum': The supplied source address
+    * 'Channel': The Asterisk channel used for the call
+    * 'Context': The dialplan context into which the call was placed, as a string; unused for applications
+    * 'Exten': The dialplan extension into which the call was placed, as a string; unused for applications
+    * 'Reason': An integer as a string, ostensibly one of the `ORIGINATE_RESULT` constants; undefined integers may exist
+    """
+    def process(self):
+        """
+        Sets the 'Reason' values to an int, one of the `ORIGINATE_RESULT` constants, with -1
+        indicating failure.
+        """
+        response = _Request.process_response(self, response)
+        
+        try:
+            response['Reason'] = int(response.get('Reason'))
+        except Exception:
+            response['Reason'] = -1
+            
+        return response
+        
 class ParkedCall(_Message):
     """
     Describes a parked call.
