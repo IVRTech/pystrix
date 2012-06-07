@@ -344,6 +344,9 @@ class Manager(object):
         request command as though they were native headers, though the original object is
         unaffected.
         
+        `action_id` is an optional Asterisk ActionID to use; if unspecified, whatever is in the
+        request, keyed at 'ActionID', is used with the output of `id_generator` being a fallback.
+        
         Asterisk's response is returned as a named tuple of the following form, or `None` if the
         request timed out:
         
