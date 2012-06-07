@@ -337,7 +337,7 @@ class Manager(object):
             callbacks.add(function)
             callbacks_dict[event] = callbacks
             
-    def send_action(self, request, **kwargs):
+    def send_action(self, request, action_id=None, **kwargs):
         """
         Sends a command, contained in `request`, a `_Request`, to the Asterisk manager, referred to
         interchangeably as "actions". Any additional keyword arguments are added directly into the
@@ -367,10 +367,9 @@ class Manager(object):
         """
         if not self.is_connected():
             raise ManagerError("Not connected to an Asterisk manager")
-
-        action_id = None
+            
         with self._connection_lock as lock:
-            (command, action_id) = request.build_request(self._get_host_action_id, **kwargs)
+            (command, action_id) = request.build_request(action_id and str(action_id), self._get_host_action_id, **kwargs)
             self._connection.send_message(command)
             self._outstanding_requests.add(action_id)
 
@@ -581,10 +580,13 @@ class _Request(dict):
         """
         self['Action'] = action
         
-    def build_request(self, id_generator, **kwargs):
+    def build_request(self, action_id, id_generator, **kwargs):
         """
         Returns a string formatted for transmission to Asterisk to place a request and the action ID
         associated with the request.
+        
+        `action_id` is the Asterisk ActionID to use, or None to use whatever is in the request, if
+        anything, or the output of `id_generator` if not.
         
         `id_generator` is a function that generates an Asterisk ActionID.
         
@@ -594,7 +596,7 @@ class _Request(dict):
         The 'Action' line is always first.
         """
         items = [(KEY_ACTION, self[KEY_ACTION])]
-        for (key, value) in [(k, v) for (k, v) in self.items() if not k == KEY_ACTION] + kwargs.items():
+        for (key, value) in [(k, v) for (k, v) in self.items() if not k in (KEY_ACTION, KEY_ACTIONID)] + kwargs.items():
             key = str(key)
             if type(value) in (tuple, list, set, frozenset):
                 for val in value:
@@ -602,9 +604,11 @@ class _Request(dict):
             else:
                 items.append((key, str(value)))
 
-        action_id = self.get(KEY_ACTIONID)
-        if action_id is None: #Add an ActionID if not already defined
-            action_id = str(id_generator())
+        if action_id or not KEY_ACTIONID in self: #Replace or add an ActionID, if necessary
+            if not action_id:
+                action_id = str(id_generator())
+            elif KEY_ACTIONID in self:
+                action_id = self[KEY_ACTIONID]
             items.append((KEY_ACTIONID, action_id))
             
         return (
