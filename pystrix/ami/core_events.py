@@ -337,7 +337,7 @@ class OriginateResponse(_Message):
         Sets the 'Reason' values to an int, one of the `ORIGINATE_RESULT` constants, with -1
         indicating failure.
         """
-        response = _Request.process_response(self, response)
+        response = _Message.process(self)
         
         try:
             response['Reason'] = int(response.get('Reason'))
