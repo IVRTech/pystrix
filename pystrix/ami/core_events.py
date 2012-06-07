@@ -337,14 +337,12 @@ class OriginateResponse(_Message):
         Sets the 'Reason' values to an int, one of the `ORIGINATE_RESULT` constants, with -1
         indicating failure.
         """
-        response = _Message.process(self)
-        
+        (headers, data) = _Message.process(self)
         try:
-            response['Reason'] = int(response.get('Reason'))
+            headers['Reason'] = int(headers.get('Reason'))
         except Exception:
-            response['Reason'] = -1
-            
-        return response
+            headers['Reason'] = -1
+        return (headers, data)
         
 class ParkedCall(_Message):
     """
