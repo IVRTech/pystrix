@@ -589,6 +589,65 @@ class SayAlpha(_SayAction):
         characters = _process_digit_list(characters)
         _SayAction.__init__(self, 'ALPHA', characters, escape_digits)
 
+class SayDate(_SayAction):
+    """
+    Reads the date associated with `seconds` since the UNIX Epoch. If not given, the local time
+    is used.
+    
+    `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
+    of possibly mixed ints and strings. Playback ends immediately when one is received and it is
+    returned. If nothing is recieved, `None` is returned.
+
+    `AGIAppError` is raised on failure, most commonly because the channel was
+    hung-up.
+    """
+    def __init__(self, seconds=None, escape_digits=''):
+        if seconds is None:
+            seconds = int(time.time())
+        _SayAction.__init__(self, 'DATE', seconds, escape_digits)
+
+class SayDatetime(_SayAction):
+    """
+    Reads the datetime associated with `seconds` since the UNIX Epoch. If not given, the local
+    time is used.
+    
+    `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
+    of possibly mixed ints and strings. Playback ends immediately when one is received and it is
+    returned. If nothing is recieved, `None` is returned.
+
+    `format` defaults to `"ABdY 'digits/at' IMp"`, but may be a string with any of the following
+    meta-characters (or single-quote-escaped sound-file references):
+    
+    - A: Day of the week
+    - B: Month (Full Text)
+    - m: Month (Numeric)
+    - d: Day of the month
+    - Y: Year
+    - I: Hour (12-hour format)
+    - H: Hour (24-hour format)
+    - M: Minutes
+    - p: AM/PM
+    - Q: Shorthand for Today, Yesterday or ABdY
+    - R: Shorthand for HM
+    - S: Seconds
+    - T: Timezone
+
+    `timezone` may be a string in standard UNIX form, like 'America/Edmonton'. If `format` is
+    undefined, `timezone` is ignored and left to default to the system's local value.
+    
+    `AGIAppError` is raised on failure, most commonly because the channel was
+    hung-up.
+    """
+    def __init__(self, seconds=None, escape_digits='', format=None, timezone=None):
+        if seconds is None:
+            seconds = int(time.time())
+        if not format:
+            timezone = None
+        _SayAction.__init__(self,
+         'DATETIME', seconds, escape_digits,
+         (format and quote(format) or None), (timezone and quote(timezone) or None)
+        )
+
 class SayDigits(_SayAction):
     """
     Reads a numeric string of `digits`.
@@ -633,6 +692,23 @@ class SayPhonetic(_SayAction):
     def __init__(self, characters, escape_digits=''):
         characters = _process_digit_list(characters)
         _SayAction.__init__(self, 'ALPHA', characters, escape_digits)
+
+class SayTime(_SayAction):
+    """
+    Reads the time associated with `seconds` since the UNIX Epoch. If not given, the local
+    time is used.
+    
+    `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
+    of possibly mixed ints and strings. Playback ends immediately when one is received and it is
+    returned. If nothing is recieved, `None` is returned.
+
+    `AGIAppError` is raised on failure, most commonly because the channel was
+    hung-up.
+    """
+    def __init__(self, seconds=None, escape_digits=''):
+        if seconds is None:
+            seconds = int(time.time())
+        _SayAction.__init__(self, 'TIME', seconds, escape_digits)
 
 class SendImage(_Action):
     """
