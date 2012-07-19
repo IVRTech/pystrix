@@ -695,7 +695,7 @@ class SayPhonetic(_SayAction):
 
 class SayTime(_SayAction):
     """
-    Reads the datetime associated with `seconds` since the UNIX Epoch. If not given, the local
+    Reads the time associated with `seconds` since the UNIX Epoch. If not given, the local
     time is used.
     
     `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence

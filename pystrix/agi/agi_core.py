@@ -95,7 +95,7 @@ class _AGI(object):
         """
         self._test_hangup()
         
-        self._send_command(action.command, *action.arguments)
+        self._send_command(action.command)
         return action.process_response(self._get_result(action.check_hangup))
 
     def get_environment(self):
@@ -226,10 +226,6 @@ class _AGI(object):
 
         If the connection to Asterisk is broken, `AGISIGPIPEHangup` is raised.
         """
-        command = ' '.join([command.strip()] + [str(arg) for arg in args if not arg is None]).strip()
-        if not command.endswith('\n'):
-            command += '\n'
-            
         try:
             self._wfile.write(command)
             self._wfile.flush()
@@ -251,14 +247,21 @@ class _Action(object):
     """
     Provides the basis for assembling and issuing an action via AGI.
     """
-    command = None #The command that drives this action
-    arguments = None #A tuple of arguments to qualify the command
+    _command = None #The command that drives this action
+    _arguments = None #A tuple of arguments to qualify the command
     check_hangup = True #True if the output of this action is sure to be hangup-detection-safe
     
     def __init__(self, command, *arguments):
-        self.command = command
-        self.arguments = arguments
+        self._command = command
+        self._arguments = arguments
 
+    @property
+    def command(self):
+        command = ' '.join([self._command.strip()] + [str(arg) for arg in self._arguments if not arg is None]).strip()
+        if not command.endswith('\n'):
+            command += '\n'
+        return command
+        
     def process_response(self, response):
         """
         Just returns the `response` from Asterisk verbatim. May be overridden to allow for
