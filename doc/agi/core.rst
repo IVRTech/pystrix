@@ -156,17 +156,11 @@ Classes
 
 .. autoclass:: agi.core.SayAlpha
 
-.. autoclass:: agi.core.SayDate
-
-.. autoclass:: agi.core.SayDatetime
-
 .. autoclass:: agi.core.SayDigits
 
 .. autoclass:: agi.core.SayNumber
 
 .. autoclass:: agi.core.SayPhonetic
-
-.. autoclass:: agi.core.SayTime
 
 .. autoclass:: agi.core.SendImage
 
