@@ -204,9 +204,7 @@ class _AGI(object):
         try:
             line = self._rfile.readline()
             if not line: #EOF encountered
-                raise AGISIGPIPEHangup("Process input pipe closed: %(error)s" % {
-                 'error': str(e),
-                })
+                raise AGISIGPIPEHangup("Process input pipe closed")
             elif not line.endswith('\n'): #Fragment encountered
                 #Recursively append to the current fragment until the line is
                 #complete or the socket dies.
