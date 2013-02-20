@@ -63,12 +63,30 @@ Internal classes
 The following classes are not meant to be worked with directly, but are important for other parts of
 the system, with members that are worth knowing about.
 
+.. autoclass:: ami.ami._MessageTemplate
+    
+    .. attribute:: action_id
+    
+        The Asterisk Action-ID associated with this message, or `None` if undefined, as is the case
+        with unsolicited events.
+        
+.. autoclass:: ami.ami._Aggregate
+    :show-inheritance:
+    
+    .. attribute:: valid
+    
+        Indicates whether the aggregate is consistent with Asterisk's protocol.
+        
+    .. attribute:: error_message
+    
+        If `valid` is `False`, this will offer a string explaining why validation failed.
+        
 .. autoclass:: ami.ami._Message
-    :members:
+    :show-inheritance:
     
     .. attribute:: data
     
-        A series of lines containing the message's payload from Asterisk
+        A series of lines containing the message's payload from Asterisk.
         
     .. attribute:: headers
     
@@ -80,6 +98,8 @@ the system, with members that are worth knowing about.
     
         The raw response from Asterisk as a series of lines, provided for applications that need
         access to the original data.
+        
+    .. autofunction:: process
     
 .. autoclass:: ami.ami._Request
     

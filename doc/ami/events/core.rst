@@ -10,8 +10,8 @@ Members
 All of the following objects should be accessed as part of the `ami.core_events` namespace,
 regardless of the modules in which they are defined.
 
-Classes
-+++++++
+Events
+++++++
 
 .. autoclass:: ami.core_events.AGIExec
     :members:

@@ -10,7 +10,7 @@ Members
 All of the following objects should be accessed as part of the `ami.app_meetme` namespace,
 regardless of the modules in which they are defined.
 
-Classes
+Actions
 +++++++
 
 .. autoclass:: ami.app_meetme.MeetmeList

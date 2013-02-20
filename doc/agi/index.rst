@@ -34,9 +34,8 @@ Classes
     
     .. attribute:: timeout
 
-        The number of seconds to wait for a request when using
-        :meth:`handle_request`. Has no effect on
-        :meth:`serve_forever`.
+        The number of seconds to wait for a request when using :meth:`handle_request`. Has no effect
+        on :meth:`serve_forever`.
 
     .. method:: handle_request()
 
