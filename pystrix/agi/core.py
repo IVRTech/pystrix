@@ -324,8 +324,8 @@ class GetData(_Action):
     The value returned is a tuple consisting of (dtmf_keys:str, timeout:bool). '#' is always
     interpreted as an end-of-event character and will never be present in the output.
     
-    `AGIAppError` is raised on failure, most commonly because the channel was
-    hung-up.
+    `AGIAppError` is raised on failure, most commonly because no keys, aside from '#', were
+    entered.
     """
     def __init__(self, filename, timeout=2000, max_digits=255):
         _Action.__init__(self,
