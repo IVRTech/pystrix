@@ -9,8 +9,8 @@ Members
 All of the following objects should be accessed as part of the `ami.dahdi_events` namespace,
 regardless of the modules in which they are defined.
 
-Classes
-+++++++
+Events
+++++++
 
 .. autoclass:: ami.dahdi_events.DAHDIShowChannels
     :members:

@@ -97,7 +97,7 @@ Constants
 
     Remote extension could not be identified
 
-Classes
+Actions
 +++++++
 
 .. autoclass:: ami.core.AbsoluteTimeout

@@ -117,7 +117,7 @@ Constants
 
     Sets TDD to mate
 
-Classes
+Actions
 +++++++
 
 .. autoclass:: agi.core.Answer

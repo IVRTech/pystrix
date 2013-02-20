@@ -31,6 +31,7 @@ Authors:
 
 - Neil Tallim <n.tallim@ivrnet.com>
 """
+import abc
 import collections
 import Queue
 import re
@@ -429,7 +430,96 @@ class Manager(object):
             if callbacks:
                 callbacks.discard(function)
                 
-class _Message(dict):
+class _MessageTemplate(object):
+    """
+    An abstract base-class for all message-types, including aggregates.
+    """
+    __meta__ = abc.ABCMeta
+    
+    def __eq__(self, o):
+        """
+        A convenience qualifier for decision-blocks to allow the message to be compared to strings for
+        readability purposes.
+        """
+        if isinstance(o, types.StringType):
+            return self.name == o
+        return dict.__eq__(self, o)
+        
+    @property
+    def action_id(self):
+        """
+        Provides the action-ID associated with the message, if any.
+        """
+        raise NotImplementedError("Action-IDs must be implemented by subclasses")
+        
+    @property
+    def name(self):
+        """
+        Provides the name of the message.
+        """
+        raise NotImplementedError("Names must be implemented by subclasses")
+        
+class _Aggregate(_MessageTemplate, list):
+    """
+    Provides an ordered collection of messages received from Asterisk as a multi-part list.
+    
+    All messages are exposed as items in this object.
+    """
+    _name = None #The name of the aggregate-type
+    _action_id = None #The action-ID associated with the aggregate, if any
+    _valid = True #Indicates whether the aggregate's contents are consistent with Asterisk's protocol
+    _error_message = None #A string that explains why validation failed, if it failed
+    
+    def _inherit_action_id(self, message):
+        """
+        If no action-ID is yet assigned to this aggregate, copy the value from the new `message`.
+        """
+        if not self._action_id:
+            self._action_id = message.action_id
+            
+    def aggregate(self, message):
+        """
+        Adds the `message` to this aggregate, inheriting properties as necessary.
+        """
+        self._inherit_action_id(message)
+        self.append(message)
+        
+    def finalise(self, message):
+        """
+        Finalises this aggregate, performing any additional checks as needed, based on the
+        properties of the `message`.
+        """
+        self._inherit_action_id(message)
+        
+    @property
+    def action_id(self):
+        """
+        Provides the action-ID associated with the message, if any.
+        """
+        return self._action_id
+        
+    @property
+    def name(self):
+        """
+        Provides the name of the event or response.
+        """
+        return self._name
+        
+    @property
+    def valid(self):
+        """
+        Indicates whether the aggregate is consistent with Asterisk's protocol.
+        """
+        return self._valid
+        
+    @property
+    def error_message(self):
+        """
+        If `valid` is `False`, this will offer a string explaining why validation failed.
+        """
+        return self._error_message
+        
+class _Message(_MessageTemplate, dict):
     """
     The common base-class for both replies and events, this is any structured response received
     from Asterisk.
@@ -454,20 +544,11 @@ class _Message(dict):
         #salvagable. This typically only happens with specific events, so applications can deal
         #with it more effectively than the processing core.
         if KEY_EVENT not in self and KEY_RESPONSE not in self:
-            if self.has_header(KEY_ACTIONID): #If 'ActionID' is present, it's a response to an action.
+            if KEY_ACTIONID in self: #If 'ActionID' is present, it's a response to an action.
                 self.headers[KEY_RESPONSE] = RESPONSE_GENERIC
             else: #It's an unsolicited event
                 self.headers[KEY_EVENT] = EVENT_GENERIC
                 
-    def __eq__(self, o):
-        """
-        A convenience qualifier for decision-blocks to allow the message to be compared to strings for
-        readability purposes.
-        """
-        if isinstance(o, types.StringType):
-            return self.name == o
-        return dict.__eq__(self, o)
-        
     def _parse(self, response):
         """
         Parses the response from Asterisk.
@@ -482,6 +563,13 @@ class _Message(dict):
             (key, value) = response.pop(0).split(':', 1)
             self[key.strip()] = value.strip()
 
+    @property
+    def action_id(self):
+        """
+        Provides the action-ID associated with the message, if any.
+        """
+        return self.get(KEY_ACTIONID)
+        
     @property
     def name(self):
         """
