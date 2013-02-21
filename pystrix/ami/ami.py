@@ -470,26 +470,56 @@ class _Aggregate(_MessageTemplate, list):
     _valid = True #Indicates whether the aggregate's contents are consistent with Asterisk's protocol
     _error_message = None #A string that explains why validation failed, if it failed
     
-    def _inherit_action_id(self, message):
+    _aggregation_members = None #A tuple containing all classes that can be members of this aggregation
+    _aggregation_finaliser = None #The class that indicates that the aggregation is complete
+    
+    def __init__(self, action_id):
+        """
+        Associates the aggregate with an action-ID.
+        """
+        self._action_id = action_id
+        
+    def _evaluate_action_id(self, event):
         """
         If no action-ID is yet assigned to this aggregate, copy the value from the new `message`.
         """
-        if not self._action_id:
-            self._action_id = message.action_id
-            
-    def aggregate(self, message):
+        return self._action_id == event.action_id
+                
+    def _aggregate(self, event):
         """
-        Adds the `message` to this aggregate, inheriting properties as necessary.
-        """
-        self._inherit_action_id(message)
-        self.append(message)
+        Adds the `event` to this aggregate, if appropriate, inheriting properties as necessary.
         
-    def finalise(self, message):
+        The value returned indicates whether `event` was added.
         """
-        Finalises this aggregate, performing any additional checks as needed, based on the
-        properties of the `message`.
+        if self._evaluate_action_id(event):
+            self.append(event)
+            return True
+        return False
+        
+    def _finalise(self, event):
         """
-        self._inherit_action_id(message)
+        Finalises this aggregate, if appropriate, performing any additional checks as needed, based
+        on the properties of the `event`.
+        
+        The value returned indicates whether finalisation succeeded.
+        """
+        return self._evaluate_action_id(event)
+        
+    def evaluate_event(self, event):
+        """
+        Folds the event into the aggregation, if it's associated with the same action-ID and is of a
+        relevant type.
+        
+        `True` is returned if the aggregate is finalised after this event, `False` if it was simply
+        merged, or `None` if the aggregate was unrelated.
+        """
+        event_type = type(event)
+        if event_type in self._aggregation_members:
+            self._aggregate(event)
+            return False
+        elif event_type is self._aggregation_finaliser:
+            return self._finalise(event)
+        return None
         
     @property
     def action_id(self):
