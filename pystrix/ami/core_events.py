@@ -964,19 +964,6 @@ class CoreShowChannels_Aggregate(_Aggregate):
     """
     _aggregation_members = (CoreShowChannel,)
     _aggregation_finalisers = (CoreShowChannelsComplete,)
-    
-    def _finalise(self, event):
-        if not _Aggregate._finalise(event):
-            return False
-            
-        #The only finaliser is CoreShowChannelsComplete, so no testing is performed
-        self._valid = event.process()[0]['ListItems'] == len(self)
-        if not self._valid:
-            self._error_message = "Expected %(event)i channel descriptions; received %(count)i" % {
-             'event': event.process()[0]['ListItems'],
-             'count': len(self),
-            }
-        return True
         
 class ParkedCalls_Aggregate(_Aggregate):
     """
