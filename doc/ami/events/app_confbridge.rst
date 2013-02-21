@@ -15,29 +15,38 @@ Events
 ++++++
 
 .. autoclass:: ami.app_confbridge_events.ConfbridgeEnd
+    :show-inheritance:
     :members:
     
 .. autoclass:: ami.app_confbridge_events.ConfbridgeJoin
+    :show-inheritance:
     :members:
 
 .. autoclass:: ami.app_confbridge_events.ConfbridgeLeave
+    :show-inheritance:
     :members:
     
 .. autoclass:: ami.app_confbridge_events.ConfbridgeList
+    :show-inheritance:
     :members:
     
 .. autoclass:: ami.app_confbridge_events.ConfbridgeListComplete
+    :show-inheritance:
     :members:
     
 .. autoclass:: ami.app_confbridge_events.ConfbridgeListRooms
+    :show-inheritance:
     :members:
     
 .. autoclass:: ami.app_confbridge_events.ConfbridgeListRoomsComplete
+    :show-inheritance:
     :members:
     
 .. autoclass:: ami.app_confbridge_events.ConfbridgeStart
+    :show-inheritance:
     :members:
     
 .. autoclass:: ami.app_confbridge_events.ConfbridgeTalking
+    :show-inheritance:
     :members:
     

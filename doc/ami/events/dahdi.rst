@@ -13,8 +13,10 @@ Events
 ++++++
 
 .. autoclass:: ami.dahdi_events.DAHDIShowChannels
+    :show-inheritance:
     :members:
     
 .. autoclass:: ami.dahdi_events.DAHDIShowChannelsComplete
+    :show-inheritance:
     :members:
 
