@@ -946,6 +946,8 @@ class VoicemailUserEntryComplete(_Event):
     """
     Indicates that all requested voicemail user definitions have been provided.
     
+    No, its name is not a typo; it's really "Entry" in Asterisk's code.
+    
     - 'ActionID': The ID associated with the original request
     """
     

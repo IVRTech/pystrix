@@ -121,6 +121,14 @@ Events
     :show-inheritance:
     :members:
 
+.. autoclass:: ami.core_events.RegistryEntry
+    :show-inheritance:
+    :members:
+    
+.. autoclass:: ami.core_events.RegistratonsComplete
+    :show-inheritance:
+    :members:
+
 .. autoclass:: ami.core_events.Reload
     :show-inheritance:
     :members:
@@ -157,10 +165,42 @@ Events
     :show-inheritance:
     :members:
 
+.. autoclass:: ami.core_events.VoicemailUserEntry
+    :show-inheritance:
+    :members:
+
+.. autoclass:: ami.core_events.VoicemailUserEntryComplete
+    :show-inheritance:
+    :members:
+
 Aggregate Events
 ++++++++++++++++
 
 .. autoclass:: ami.core_events.CoreShowChannels_Aggregate
+    :show-inheritance:
+    :members:
+    
+.. autoclass:: ami.core_events.ParkedCalls_Aggregate
+    :show-inheritance:
+    :members:
+    
+.. autoclass:: ami.core_events.QueueStatus_Aggregate
+    :show-inheritance:
+    :members:
+    
+.. autoclass:: ami.core_events.SIPpeers_Aggregate
+    :show-inheritance:
+    :members:
+    
+.. autoclass:: ami.core_events.SIPshowregistry_Aggregate
+    :show-inheritance:
+    :members:
+    
+.. autoclass:: ami.core_events.Status_Aggregate
+    :show-inheritance:
+    :members:
+    
+.. autoclass:: ami.core_events.VoicemailUsersList_Aggregate
     :show-inheritance:
     :members:
     
