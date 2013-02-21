@@ -31,7 +31,7 @@ Authors:
 The events implemented by this module follow the definitions provided by
 http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
 """
-from ami import _Message
+from ami import (_Aggregate, _Message)
 
 class AGIExec(_Message):
     """
@@ -801,4 +801,32 @@ class VarSet(_Message):
     - 'Value': The value of the variable, as a string
     - 'Variable': The name of the variable that was set
     """
+
+
+#List-aggregation events
+####################################################################################################
+#These define non-Asterisk-native event-types that collect multiple events (cases where multiple
+#events are generated in response to a single action) and emit the bundle as a single message.
+
+class CoreShowChannels_Collection(_Aggregate):
+    """
+    Emitted after all channels have been received by a CoreShowChannels request.
+    
+    Its members consist of CoreShowChannel events.
+    """
+    _aggregation_members = (CoreShowChannel,)
+    _aggregation_finaliser = CoreShowChannelsComplete
+    
+    def _finalise(self, event):
+        self._valid = event.process()[0]['ListItems'] == len(self)
+        if not self._valid:
+            self._error_message = "Expected %(event)i channel descriptions; received %(count)i" % {
+             'event': event.process()[0]['ListItems'],
+             'count': len(self),
+            }
+        return self._evaluate_action_id(event)
+        
+#To enable this stuff, a list of aggregates should be created alongside the AMI core (an object within),
+#with every received event being thrown at every element in the list until one of them indicates that
+#processing occurred. An aggregate is added to the list whenever a corresponding request is made.
 
