@@ -131,8 +131,11 @@ the system, with members that are worth knowing about.
         Changing the timeout value of the request object has no effect on any previously-sent
         instances of the request object, since the value is copied at dispatch-time.
         
-.. autoclass:: ami.ami._Response
-    :show-inheritance:
+.. class:: ami.ami._Response
+    
+    .. attribute:: action_id
+    
+        The action-ID associated with the request that led to the creation of this response.
     
     .. attribute:: events
     
@@ -143,6 +146,32 @@ the system, with members that are worth knowing about.
         name as a string and the other being a reference to its class in pystrix. For each
         event-type, the value will be either the event itself or a list of events, depending on what
         is appropriate.
+        
+    .. attribute:: response
+    
+        The response from Asterisk, without any post-processing applied. You will generally want to
+        use `result` instead, unless you need to see exactly what Asterisk returned.
+        
+    .. attribute:: request
+    
+        The request object that led to this response. This will be `None` if the response is an
+        orhpan, which may happen when a request times out, but a response is generated anyway,
+        if multiple AMI clients are working with the same Asterisk instance (they won't know each
+        other's action-IDs), or when working with buggy or experimental versions of Asterisk.
+        
+    .. attribute:: result
+    
+        The response from Asterisk, with post-processing applied to make it easier to work with in
+        Python. This is the attribute about which you will likely care most.
+        
+    .. attribute:: success
+    
+        A boolean value that indicates whether the response appears to indicate that the request
+        succeeded.
+        
+    .. attribute:: time
+    
+        The amount of time, as a UNIX timestamp, that elapsed while waiting for a response.
         
 Exceptions
 ++++++++++
