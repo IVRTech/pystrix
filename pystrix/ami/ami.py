@@ -583,12 +583,33 @@ class _Aggregate(_MessageTemplate, dict):
         The value returned indicates whether finalisation succeeded.
         """
         if self._evaluate_action_id(event):
+            if self._valid:
+                self._check_list_items_count(event)
+                
             event_type = type(event)
             self[event_type] = event
             self._pending_finalisers.discard(event_type)
             return len(self._pending_finalisers) == 0
         return False
         
+    def _check_list_items_count(self, event):
+        """
+        Most finalisers have a 'ListItems' or 'Items' property, so check it to assert validity.
+        """
+        event = event.process()[0]
+        list_items_count = event.get('ListItems')
+        if list_items_count is None:
+            list_items_count = event.get('Items')
+            
+        if list_items_count is not None:
+            items_count = sum(len(i) for i in self.values() if type(i) == list)
+            self._valid = list_items_count == items_count
+            if not self._valid:
+                self._error_message = "Expected %(event)i list-items; received %(count)i" % {
+                 'event': list_items_count,
+                 'count': items_count,
+                }
+                
     def evaluate_event(self, event):
         """
         Folds the event into the aggregation, if it's associated with the same action-ID and is of a

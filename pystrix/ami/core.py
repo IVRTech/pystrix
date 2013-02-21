@@ -1212,11 +1212,13 @@ class SIPshowregistry(_Request):
     """
     Lists all SIP registrations.
 
-    Any number of 'Registrations' events may be generated in response to this request, followed by
+    Any number of 'RegistryEntry' events may be generated in response to this request, followed by
     one 'RegistrationsComplete'.
 
     Requires system
     """
+    _aggregates = (core_events.SIPshowregistry_Aggregate,)
+    
     def __init__(self):
         _Request.__init__(self, "SIPshowregistry")
         
@@ -1228,6 +1230,8 @@ class Status(_Request):
 
     Requires call
     """
+    _aggregates = (core_events.Status_Aggregate,)
+    
     def __init__(self, channel):
         """
         `channel` is the channel for which status information is to be retrieved.
@@ -1318,8 +1322,8 @@ class UserEvent(_Request):
     """
     def __init__(self, **kwargs):
         """
-        Any keyword-arguments passed will be present in the generated event, making this a crude
-        form of message-passing.
+        Any keyword-arguments passed will be present in the generated event, making this usable as a
+        crude form of message-passing between AMI clients.
         """
         _Request.__init__(self, 'UserEvent')
         for (key, value) in kwargs.items():
@@ -1328,9 +1332,14 @@ class UserEvent(_Request):
 class VoicemailUsersList(_Request):
     """
     Lists all voicemail information.
-
-    This probably involves events, but the details are not yet known.
+    
+    Any number of 'VoicemailUserEntry' events may be generated in response to this request, followed
+    by one 'VoicemailUserEntryComplete'.
+    
+    Requires system (probably)
     """
+    _aggregates = (core_events.VoicemailUsersList_Aggregate,)
+    
     def __init__(self):
         _Request.__init__(self, 'VoicemailUsersList')
 
