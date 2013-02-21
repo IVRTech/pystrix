@@ -25,9 +25,7 @@ for information::
         _kill_flag = False #True when the core has shut down of its own accord
          
         def __init__(self):
-            #The manager supports Python's native logging module and event-buffers, to emit
-            #sequences of related events as a single aggregated bundle, like
-            #CoreShowChannel* + CoreShowChannelsComplete -> CoreShowChannels_Collection; see its
+            #The manager supports Python's native logging module and has optional features; see its
             #constructor's documentation for details.
             self._manager = pystrix.ami.Manager()
 

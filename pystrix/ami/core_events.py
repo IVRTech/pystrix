@@ -808,7 +808,7 @@ class VarSet(_Message):
 #These define non-Asterisk-native event-types that collect multiple events (cases where multiple
 #events are generated in response to a single action) and emit the bundle as a single message.
 
-class CoreShowChannels_Collection(_Aggregate):
+class CoreShowChannels_Aggregate(_Aggregate):
     """
     Emitted after all channels have been received by a CoreShowChannels request.
     

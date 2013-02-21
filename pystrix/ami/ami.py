@@ -51,7 +51,7 @@ _EOL_FAKE = ('\n\r\n', '\r\r\n') #End-of-line patterns that indicate data, not h
 _EOC_INDICATOR = re.compile(r'Response:\s*Follows\s*$') #A regular expression that matches response headers that indicate the payload is attached
 
 _Response = collections.namedtuple('Response', [
- 'result', 'response', 'request', 'action_id', 'success', 'time',
+ 'result', 'response', 'request', 'action_id', 'success', 'time', 'events',
 ]) #A container for responses to requests.
 
 RESPONSE_GENERIC = 'Generic Response' #A header-value provided as a surrogate for unidentifiable responses
@@ -125,7 +125,7 @@ class Manager(object):
         while self._alive:
             #Determine whether there's actually anything to read from
             message_reader = None
-            with self._connection_lock as lock:
+            with self._connection_lock:
                 message_reader = self._message_reader
             if not message_reader:
                 time.sleep(0.02)
@@ -135,14 +135,19 @@ class Manager(object):
 
             #Handle events
             try:
+                #TODO
+                #Add the finished aggregate list here and test it first
                 event = message_reader.event_queue.get_nowait()
+                #TODO
+                #If something was found (outside of the aggregate list), update the aggregate list
+                #members and, if one of them is finalised, move it to the finished list
                 sleep = False
             except Queue.Empty:
                 pass
             else:
                 event_name = event.name
                 callbacks = set()
-                with self._event_callbacks_lock as lock:
+                with self._event_callbacks_lock:
                     callbacks.update(self._event_callbacks.get(event_name) or ()) #Start with exact matches, if any
                     callbacks.update(self._event_callbacks.get('') or ()) #Add the universal handlers, if any
                     for (pattern, functions) in self._event_callbacks_re.items(): #Add all regular expression matches
@@ -176,7 +181,7 @@ class Manager(object):
                 pass
             else:
                 callbacks = None
-                with self._event_callbacks_lock as lock:
+                with self._event_callbacks_lock:
                     callbacks = self._event_callbacks.get(None) or () #Only select the explicit orphan-handlers
                     
                 if self._logger:
@@ -202,7 +207,7 @@ class Manager(object):
         """
         Produces a session-unique int, suitable for passing to Asterisk as an ActionID.
         """
-        with self._action_id_lock as lock:
+        with self._action_id_lock:
             self._action_id += 1
             if self._action_id > 0xFFFFFFFF:
                 self._action_id = 1
@@ -240,7 +245,7 @@ class Manager(object):
         If the connection fails, `ManagerSocketError` is raised.
         """
         self.disconnect()
-        with self._connection_lock as lock:
+        with self._connection_lock:
             self._connection = _SynchronisedSocket(host=host, port=port, timeout=timeout)
             
             self._message_reader = _MessageReader(self)
@@ -252,7 +257,7 @@ class Manager(object):
         
         If not connected, this is a no-op.
         """
-        with self._connection_lock as lock:
+        with self._connection_lock:
             if self._connection: #Close the old connection, if any.
                 self._connection.close()
                 self._connection = None
@@ -267,7 +272,7 @@ class Manager(object):
 
         If not connected, `None` is returned.
         """
-        with self._connection_lock as lock:
+        with self._connection_lock:
             return (self.is_connected and self._connection.get_asterisk_info()) or None
 
     def get_connection(self):
@@ -284,7 +289,7 @@ class Manager(object):
         """
         Indicates whether the manager is connected.
         """
-        with self._connection_lock as lock:
+        with self._connection_lock:
             return bool(self._connection and self._connection.is_connected())
 
     def monitor_connection(self, interval=2.5):
@@ -327,7 +332,7 @@ class Manager(object):
 
         Callbacks are not guaranteed to be executed in any particular order.
         """
-        with self._event_callbacks_lock as lock:
+        with self._event_callbacks_lock:
             callbacks_dict = self._event_callbacks
             if not event is None and not isinstance(event, types.StringType): #Regular expression or class
                 if isinstance(event, (types.ClassType, types.TypeType)):
@@ -372,17 +377,26 @@ class Manager(object):
         if not self.is_connected():
             raise ManagerError("Not connected to an Asterisk manager")
             
-        with self._connection_lock as lock:
+        with self._connection_lock:
             (command, action_id) = request.build_request(action_id and str(action_id), self._get_host_action_id, **kwargs)
             self._connection.send_message(command)
             self._outstanding_requests.add(action_id)
+            #TODO
+            #If the request triggers any aggregation, add the aggregate to the list
 
         start_time = time.time()
         timeout = start_time + request.timeout
         while time.time() < timeout:
-            with self._connection_lock as lock:
+            with self._connection_lock:
                 response = self._message_reader.get_response(action_id)
                 if response:
+                    #TODO
+                    #if not response.get('Response') == 'Follows':
+                    #    No chance of there being any events
+                    events = None
+                    if request.synchronous:
+                        events = {}
+                        
                     processed_response = request.process_response(response)
                     return _Response(
                      processed_response,
@@ -390,7 +404,8 @@ class Manager(object):
                      request,
                      action_id,
                      hasattr(processed_response, 'success') and processed_response.success,
-                     time.time() - start_time
+                     time.time() - start_time,
+                     events
                     )
             time.sleep(0.05)
         self._serve_outstanding_request(action_id) #Get the ActionID out of circulation
@@ -401,7 +416,7 @@ class Manager(object):
         Returns `True` if the given `action_id` is waiting to be served and removes it from the
         local set as a side-effect.
         """
-        with self._connection_lock as lock:
+        with self._connection_lock:
             served = action_id in self._outstanding_requests
             if served:
                 self._outstanding_requests.discard(action_id)
@@ -419,7 +434,7 @@ class Manager(object):
         If the same function was registered under two different event qualifiers, only the one being
         deregistered will be removed.
         """
-        with self._event_callbacks_lock as lock:
+        with self._event_callbacks_lock:
             callbacks_dict = self._event_callbacks
             if not event is None and not isinstance(event, types.StringType): #Regular expression or class
                 if isinstance(event, (types.ClassType, types.TypeType)):
@@ -606,7 +621,12 @@ class _Message(_MessageTemplate, dict):
         Provides the name of the event or response.
         """
         return self.get(KEY_EVENT) or self.get(KEY_RESPONSE)
-        
+
+class _Event(_Message):
+    """
+    The base-class of any event received from Asterisk, either unsolicited or as part of an extended
+    response-chain.
+    """
     def process(self):
         """
         Provides a tuple containing a copy of all headers as a dictionary and a copy of all response
@@ -615,76 +635,6 @@ class _Message(_MessageTemplate, dict):
         """
         return (self.copy(), self.data[:])
         
-class _MessageReader(threading.Thread):
-    event_queue = None #A queue containing unsolicited events received from Asterisk
-    response_queue = None #A queue containing orphaned or unparented responses from Asterisk
-    _alive = True #False when this thread has been killed
-    _manager = None #A reference to the manager instance that serves as the parent of this thread
-    _served_requests = None #A dictionary of responses from Asterisk, keyed by ActionID
-    _served_requests_lock = None #A means of preventing race conditions from affecting the served-request set
-
-    def __init__(self, manager):
-        threading.Thread.__init__(self)
-        self.daemon = True
-        self.name = 'pystrix-ami-message-reader'
-        
-        self._manager = manager
-
-        self.event_queue = Queue.Queue()
-        self.response_queue = Queue.Queue()
-        self._served_requests = {}
-        self._served_requests_lock = threading.Lock()
-
-    def kill(self):
-        self._alive = False
-
-    def get_response(self, action_id):
-        """
-        Returns the response from Asterisk associated with the given `action_id`, if any.
-        """
-        with self._served_requests_lock as lock:
-            response = self._served_requests.get(action_id)
-            if not response is None:
-                del self._served_requests[action_id]
-            return response
-            
-    def run(self):
-        """
-        Continuously reads messages from the Asterisk server, placing them in the appropriate queue.
-
-        Stops running when the connection dies or when explicitly told to stop.
-        """
-        global _EVENT_REGISTRY
-        global KEY_ACTIONID
-        socket = self._manager.get_connection()
-        
-        while self._alive:
-            try:
-                message = socket.read_message()
-                if not message:
-                    continue
-            except ManagerSocketError:
-                break #Nothing can be reported, but the socket died, so there's no point in running
-            else:
-                action_id = message.get(KEY_ACTIONID)
-                if not action_id is None and self._manager._serve_outstanding_request(action_id):
-                    with self._served_requests_lock as lock:
-                        if not action_id in self._served_requests: #If there's already an associated response, treat this one as orphaned to avoid data-loss
-                            self._served_requests[action_id] = message
-                        else:
-                            self.response_queue.put(message)
-                elif KEY_EVENT in message:
-                    #See if the event has a corresponding subclass and mutate it if it does
-                    event_class = _EVENT_REGISTRY.get(message.name)
-                    if event_class:
-                        message.__class__ = event_class
-                    elif self._manager._debug:
-                        print("Unknown event received: " + repr(message))
-                        
-                    self.event_queue.put(message)
-                else:
-                    self.response_queue.put(message)
-                    
 class _Request(dict):
     """
     Provides a generic container for assembling AMI requests, the basis of all actions.
@@ -693,6 +643,8 @@ class _Request(dict):
     as override `process_response()` to specially format the data to be returned after a request
     has been served.
     """
+    aggregate = False #Only has an effect on certain types of requests; will result in an aggregate-event being generated after a list of independent events
+    synchronous = False #If True, requests will block until all response events have been collected; these events will appear in a `response` dictionary-attribute
     timeout = 5 #The number of seconds to wait before considering this request timed out; may be a float
     
     def __init__(self, action):
@@ -750,6 +702,76 @@ class _Request(dict):
         response.success = response.get('Response') in ('Success', 'Follows')
         return response
         
+class _MessageReader(threading.Thread):
+    event_queue = None #A queue containing unsolicited events received from Asterisk
+    response_queue = None #A queue containing orphaned or unparented responses from Asterisk
+    _alive = True #False when this thread has been killed
+    _manager = None #A reference to the manager instance that serves as the parent of this thread
+    _served_requests = None #A dictionary of responses from Asterisk, keyed by ActionID
+    _served_requests_lock = None #A means of preventing race conditions from affecting the served-request set
+
+    def __init__(self, manager):
+        threading.Thread.__init__(self)
+        self.daemon = True
+        self.name = 'pystrix-ami-message-reader'
+        
+        self._manager = manager
+
+        self.event_queue = Queue.Queue()
+        self.response_queue = Queue.Queue()
+        self._served_requests = {}
+        self._served_requests_lock = threading.Lock()
+
+    def kill(self):
+        self._alive = False
+
+    def get_response(self, action_id):
+        """
+        Returns the response from Asterisk associated with the given `action_id`, if any.
+        """
+        with self._served_requests_lock:
+            response = self._served_requests.get(action_id)
+            if not response is None:
+                del self._served_requests[action_id]
+            return response
+            
+    def run(self):
+        """
+        Continuously reads messages from the Asterisk server, placing them in the appropriate queue.
+
+        Stops running when the connection dies or when explicitly told to stop.
+        """
+        global _EVENT_REGISTRY
+        global KEY_ACTIONID
+        socket = self._manager.get_connection()
+        
+        while self._alive:
+            try:
+                message = socket.read_message()
+                if not message:
+                    continue
+            except ManagerSocketError:
+                break #Nothing can be reported, but the socket died, so there's no point in running
+            else:
+                action_id = message.get(KEY_ACTIONID)
+                if action_id is not None and self._manager._serve_outstanding_request(action_id):
+                    with self._served_requests_lock:
+                        if not action_id in self._served_requests:
+                            self._served_requests[action_id] = message
+                        else: #If there's already an associated response, treat this one as orphaned to avoid data-loss
+                            self.response_queue.put(message)
+                elif KEY_EVENT in message:
+                    #See if the event has a corresponding subclass and mutate it if it does
+                    event_class = _EVENT_REGISTRY.get(message.name)
+                    if event_class:
+                        message.__class__ = event_class
+                    elif self._manager._debug:
+                        print("Unknown event received: " + repr(message))
+                        
+                    self.event_queue.put(message)
+                else: #It's an orphaned response
+                    self.response_queue.put(message)
+                    
 class _SynchronisedSocket(object):
     """
     Provides a threadsafe conduit for communication with an Asterisk manager interface.
@@ -812,7 +834,7 @@ class _SynchronisedSocket(object):
         """
         Indicates whether the socket is connected.
         """
-        with self._socket_write_lock as lock:
+        with self._socket_write_lock:
             return self._connected
 
     def read_message(self):
@@ -836,7 +858,7 @@ class _SynchronisedSocket(object):
         response_lines = [] #Lines collected from Asterisk
         while True: #Keep reading lines until a full message has been collected
             line = None
-            with self._socket_read_lock as lock:
+            with self._socket_read_lock:
                 try:
                     line = self._socket_file.readline()
                 except socket.timeout:
@@ -873,7 +895,7 @@ class _SynchronisedSocket(object):
         if not self.is_connected():
             raise ManagerSocketError("Not connected to Asterisk server")
             
-        with self._socket_write_lock as lock:
+        with self._socket_write_lock:
             try:
                 self._socket.sendall(message)
             except socket.error as (errno, reason):
