@@ -142,10 +142,8 @@ the system, with members that are worth knowing about.
         If the corresponding request was `synchronous`, this is a dictionary containing any events
         emitted in response. If not, this is `None`.
         
-        The dictionary will contain two keys for each event-type received: one being the event's
-        name as a string and the other being a reference to its class in pystrix. For each
-        event-type, the value will be either the event itself or a list of events, depending on what
-        is appropriate.
+        The dictionary will contain references to either the events themselves or lists of events,
+        depending on what is appropriate, keyed by the event's class.
         
     .. attribute:: response
     

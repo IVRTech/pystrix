@@ -157,3 +157,10 @@ Events
     :show-inheritance:
     :members:
 
+Aggregate Events
+++++++++++++++++
+
+.. autoclass:: ami.core_events.CoreShowChannels_Aggregate
+    :show-inheritance:
+    :members:
+    
