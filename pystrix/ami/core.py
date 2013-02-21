@@ -42,6 +42,7 @@ import time
 import types
 
 from ami import (_Request, ManagerError)
+import core_events
 
 AUTHTYPE_MD5 = 'MD5' #Uses MD5 authentication when logging into AMI
 

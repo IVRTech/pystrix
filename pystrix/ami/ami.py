@@ -418,8 +418,10 @@ class Manager(object):
             (command, action_id) = request.build_request(action_id and str(action_id), self._get_host_action_id, **kwargs)
             self._connection.send_message(command)
             self._outstanding_requests.add(action_id)
-            #TODO
-            #If the request triggers any aggregation, add the aggregate to the list
+            if request.aggregate:
+                with self._event_aggregates_lock:
+                    for aggregate_class in request.get_aggregate_classes():
+                        self._event_aggregates.append(aggregate_class(action_id))
 
         start_time = time.time()
         timeout = start_time + request.timeout
@@ -683,6 +685,10 @@ class _Request(dict):
     aggregate = False #Only has an effect on certain types of requests; will result in an aggregate-event being generated after a list of independent events
     synchronous = False #If True, requests will block until all response events have been collected; these events will appear in a `response` dictionary-attribute
     timeout = 5 #The number of seconds to wait before considering this request timed out; may be a float
+    _aggregates = () #A tuple containing all aggregate-types associated with this request
+    _synchronous_events_unique = () #A tuple containing all unique events associatable with this request
+    _synchronous_events_list = () #A tuple containing all list-type events associatable with this request
+    _synchronous_events_finalising = () #A tuple containing all events that must be received to consider this request complete
     
     def __init__(self, action):
         """
@@ -738,6 +744,19 @@ class _Request(dict):
         """
         response.success = response.get('Response') in ('Success', 'Follows')
         return response
+        
+    def get_aggregate_classes(self):
+        """
+        Provides a tuple of all aggregate event-classes associated with this request.
+        """
+        return self._aggregates
+        
+    def get_synchronous_classes(self):
+        """
+        Provides a triple of (unique, list, finalising) tuples of sychronous event-classes
+        associated with this request.
+        """
+        return (self._synchronous_events_unique, self._synchronous_events_list, self._synchronous_events_finalising)
         
 class _MessageReader(threading.Thread):
     event_queue = None #A queue containing unsolicited events received from Asterisk
