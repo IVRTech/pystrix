@@ -33,9 +33,9 @@ Authors:
 The events implemented by this module follow the definitions provided by
 http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
 """
-from ami import _Message
+from ami import _Event
 
-class ZapShowChannels(_Message):
+class ZapShowChannels(_Event):
     """
     Describes the current state of a Zaptel channel.
     
@@ -50,11 +50,11 @@ class ZapShowChannels(_Message):
         """
         Translates the 'DND' header's value into a bool.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         headers['DND'] = headers.get('DND') == 'Enabled'
         return (headers, data)
  
-class ZapShowChannelsComplete(_Message):
+class ZapShowChannelsComplete(_Event):
     """
     Indicates that all Zaptel channels have been described.
     

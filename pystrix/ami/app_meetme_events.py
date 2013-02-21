@@ -31,9 +31,9 @@ Authors:
 The events implemented by this module follow the definitions provided by
 http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
 """
-from ami import _Message
+from ami import _Event
 
-class MeetmeJoin(_Message):
+class MeetmeJoin(_Event):
     """
     Indicates that a user has joined a Meetme bridge.
     
@@ -43,7 +43,7 @@ class MeetmeJoin(_Message):
     - 'Usernum' : The bridge-specific participant ID assigned to the channel
     """
 
-class MeetmeMute(_Message):
+class MeetmeMute(_Event):
     """
     Indicates that a user has been muted in a Meetme bridge.
     
@@ -57,7 +57,7 @@ class MeetmeMute(_Message):
         """
         Translates the 'Status' header's value into a bool.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         
         headers['Status'] = headers.get('Status') == 'on'
         

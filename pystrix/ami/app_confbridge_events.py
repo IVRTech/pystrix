@@ -32,16 +32,16 @@ Authors:
 The events implemented by this module follow the definitions provided by
 http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
 """
-from ami import _Message
+from ami import _Event
     
-class ConfbridgeEnd(_Message):
+class ConfbridgeEnd(_Event):
     """
     Indicates that a ConfBridge has ended.
     
     - 'Conference' : The room's identifier
     """
     
-class ConfbridgeJoin(_Message):
+class ConfbridgeJoin(_Event):
     """
     Indicates that a participant has joined a ConfBridge room.
     
@@ -55,7 +55,7 @@ class ConfbridgeJoin(_Message):
     - 'Uniqueid' : An Asterisk unique value
     """
 
-class ConfbridgeLeave(_Message):
+class ConfbridgeLeave(_Event):
     """
     Indicates that a participant has left a ConfBridge room.
     
@@ -66,7 +66,7 @@ class ConfbridgeLeave(_Message):
     - 'Uniqueid' : An Asterisk unique value
     """
     
-class ConfbridgeList(_Message):
+class ConfbridgeList(_Event):
     """
     Describes a participant in a ConfBridge room.
     
@@ -82,14 +82,14 @@ class ConfbridgeList(_Message):
         """
         Translates the 'Admin' and 'MarkedUser' headers' values into bools.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         
         for header in ('Admin', 'MarkedUser'):
             headers[header] = headers.get(header) == 'Yes'
             
         return (headers, data)
 
-class ConfbridgeListComplete(_Message):
+class ConfbridgeListComplete(_Event):
     """
     Indicates that all participants in a ConfBridge room have been enumerated.
     
@@ -99,7 +99,7 @@ class ConfbridgeListComplete(_Message):
         """
         Translates the 'ListItems' header's value into an int, or -1 on failure.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         
         try:
             headers['ListItems'] = int(headers['ListItems'])
@@ -108,7 +108,7 @@ class ConfbridgeListComplete(_Message):
             
         return (headers, data)
         
-class ConfbridgeListRooms(_Message):
+class ConfbridgeListRooms(_Event):
     """
     Describes a ConfBridge room.
     
@@ -123,7 +123,7 @@ class ConfbridgeListRooms(_Message):
         
         Translates the 'Locked' header's value into a bool.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         
         for header in ('Marked', 'Parties'):
             try:
@@ -135,7 +135,7 @@ class ConfbridgeListRooms(_Message):
         
         return (headers, data)
 
-class ConfbridgeListRoomsComplete(_Message):
+class ConfbridgeListRoomsComplete(_Event):
     """
     Indicates that all ConfBridge rooms have been enumerated.
     
@@ -145,7 +145,7 @@ class ConfbridgeListRoomsComplete(_Message):
         """
         Translates the 'ListItems' header's value into an int, or -1 on failure.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         
         try:
             headers['ListItems'] = int(headers['ListItems'])
@@ -154,14 +154,14 @@ class ConfbridgeListRoomsComplete(_Message):
             
         return (headers, data)
         
-class ConfbridgeStart(_Message):
+class ConfbridgeStart(_Event):
     """
     Indicates that a ConfBridge has started.
     
     - 'Conference' : The room's identifier
     """
 
-class ConfbridgeTalking(_Message):
+class ConfbridgeTalking(_Event):
     """
     Indicates that a participant has started or stopped talking.
     
@@ -174,7 +174,7 @@ class ConfbridgeTalking(_Message):
         """
         Translates the 'TalkingStatus' header's value into a bool.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         
         headers['TalkingStatus'] = headers.get('TalkingStatus') == 'on'
         
