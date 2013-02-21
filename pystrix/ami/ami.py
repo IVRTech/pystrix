@@ -74,6 +74,9 @@ class Manager(object):
     _event_callbacks_re = None #A dictionary of tuples of expressions and sets of event callbacks
     _event_callbacks_lock = None #A lock used to prevent race conditions on event callbacks
     _event_callbacks_thread = None #A thread used to process event callbacks
+    _event_aggregates = None #A list of aggregates awaiting fulfillment
+    #TODO: clean up aggregates when they time out
+    _event_aggregates_lock = None #A lock used to prevent race conditions on event aggregation
     _hostname = socket.gethostname() #The hostname of this system, used to prevent repeated calls through the C layer
     _message_reader = None #A thread that continuously collects messages from the Asterisk server
     _outstanding_requests = None #A set of ActionIDs sent to Asterisk, currently awaiting responses
@@ -101,6 +104,9 @@ class Manager(object):
 
         self._outstanding_requests = set()
 
+        self._event_aggregates = []
+        self._event_aggregates_lock = threading.Lock()
+
         self._event_callbacks = {}
         self._event_callbacks_cls = {}
         self._event_callbacks_re = {}
@@ -122,6 +128,7 @@ class Manager(object):
 
         If any callbacks throw exceptions, warnings are issued, but processing continues.
         """
+        event_aggregates_complete = collections.deque()
         while self._alive:
             #Determine whether there's actually anything to read from
             message_reader = None
@@ -131,78 +138,108 @@ class Manager(object):
                 time.sleep(0.02)
                 continue
                 
-            sleep = True #If False, the next cycle begins without delay
-
-            #Handle events
-            try:
-                #TODO
-                #Add the finished aggregate list here and test it first
-                event = message_reader.event_queue.get_nowait()
-                #TODO
-                #If something was found (outside of the aggregate list), update the aggregate list
-                #members and, if one of them is finalised, move it to the finished list
-                sleep = False
-            except Queue.Empty:
-                pass
-            else:
-                event_name = event.name
-                callbacks = set()
-                with self._event_callbacks_lock:
-                    callbacks.update(self._event_callbacks.get(event_name) or ()) #Start with exact matches, if any
-                    callbacks.update(self._event_callbacks.get('') or ()) #Add the universal handlers, if any
-                    for (pattern, functions) in self._event_callbacks_re.items(): #Add all regular expression matches
-                        if pattern.match(event_name):
-                            callbacks.update(functions)
-                    for (cls, functions) in self._event_callbacks_cls.items(): #Add all class matches
-                        if type(event) == cls:
-                            callbacks.update(functions)
-
-                if self._logger:
-                    self._logger.debug("Received event '%(name)s' with %(callbacks)i callbacks" % {
-                     'name': event_name,
-                     'callbacks': len(callbacks),
-                    })
-                for callback in callbacks:
-                    try:
-                        callback(event, self)
-                    except Exception as e:
-                        (self._logger and self._logger.error or warnings.warn)("Exception occurred while processing event callback: event='%(event)r'; handler='%(function)s' exception: %(error)s; trace:\n%(trace)s" % {
-                         'event': event,
-                         'function': str(callback),
-                         'error': str(e),
-                         'trace': traceback.format_exc(),
-                        })
-
-            #Handle orphaned responses
-            try:
-                response = message_reader.response_queue.get_nowait()
-                sleep = False
-            except Queue.Empty:
-                pass
-            else:
-                callbacks = None
-                with self._event_callbacks_lock:
-                    callbacks = self._event_callbacks.get(None) or () #Only select the explicit orphan-handlers
-                    
-                if self._logger:
-                    self._logger.debug("Received orphaned response '%(name)s' with %(callbacks)i callbacks" % {
-                     'name': response.name,
-                     'callbacks': len(callbacks),
-                    })
-                for callback in callbacks:
-                    try:
-                        callback(response, self)
-                    except Exception as e:
-                        (self._logger and self._logger.error or warnings.warn)("Exception occurred while processing orphaned response handler: response=%(response)r; handler='%(function)s'; exception: %(error)s; trace:\n%(trace)s" % {
-                         'response': response,
-                         'function': str(callback),
-                         'error': str(e),
-                         'trace': traceback.format_exc(),
-                        })
-                        
+            #Emit events, sleeping if nothing was sent during this cycle
+            sleep = not self._event_dispatcher_events(message_reader, event_aggregates_complete)
+            sleep = not self._event_dispatcher_orhpaned_responses(message_reader) and sleep
             if sleep:
                 time.sleep(0.02)
                 
+    def _event_dispatcher_events(self, message_reader, event_aggregates_complete):
+        """
+        Pulls events from the message-reader, then sends them to all registered callbacks. The
+        returned value indicates whether anything was done during the current cycle.
+        
+        If aggregates are in use, they are assembled and broadcast here, as well.
+        """
+        event = None
+        if event_aggregates_complete: #Check for completed aggregates first
+            event = event_aggregates_complete.popleft()
+        else:
+            try:
+                event = message_reader.event_queue.get_nowait()
+            except Queue.Empty:
+                pass
+            else: #Evaluate the new event against all pending aggregates
+                with self._event_aggregates_lock:
+                    for (i, aggregate) in enumerate(self._event_aggregates):
+                        aggregation_result = aggregate.evaluate_result(event)
+                        if aggregation_result is None: #Not relevant
+                            continue
+                        else:
+                            if aggregation_result: #Finalised
+                                event_aggregates_complete.append(aggregate)
+                                del self._event_aggregates[i]
+                            break
+        
+        if event:
+            event_name = event.name
+            callbacks = []
+            with self._event_callbacks_lock:
+                callbacks.update(self._event_callbacks.get(event_name) or ()) #Start with exact matches, if any
+                callbacks.update(self._event_callbacks.get('') or ()) #Add the universal handlers, if any
+                for (pattern, functions) in self._event_callbacks_re.items(): #Add all regular expression matches
+                    if pattern.match(event_name):
+                        callbacks.update(functions)
+                for (cls, functions) in self._event_callbacks_cls.items(): #Add all class matches
+                    if type(event) == cls:
+                        callbacks.update(functions)
+
+            if self._logger:
+                self._logger.debug("Received event '%(name)s' with %(callbacks)i callbacks" % {
+                 'name': event_name,
+                 'callbacks': len(callbacks),
+                })
+                
+            for callback in callbacks:
+                try:
+                    callback(event, self)
+                except Exception as e:
+                    (self._logger and self._logger.error or warnings.warn)("Exception occurred while processing event callback: event='%(event)r'; handler='%(function)s' exception: %(error)s; trace:\n%(trace)s" % {
+                     'event': event,
+                     'function': str(callback),
+                     'error': str(e),
+                     'trace': traceback.format_exc(),
+                    })
+                    
+            return True
+        return False
+        
+    def _event_dispatcher_orphaned_responses(self, message_reader):
+        """
+        Pulls orphaned responses from the message-reader, then sends them to orhpan-handler
+        callbacks. The returned value indicates whether anything was done during the current cycle.
+        """
+        response = None
+        try:
+            response = message_reader.response_queue.get_nowait()
+        except Queue.Empty:
+            pass
+            
+        if response:
+            callbacks = None
+            with self._event_callbacks_lock:
+                callbacks = self._event_callbacks.get(None) or () #Only select the explicit orphan-handlers
+                
+            if self._logger:
+                self._logger.debug("Received orphaned response '%(name)s' with %(callbacks)i callbacks" % {
+                 'name': response.name,
+                 'callbacks': len(callbacks),
+                })
+                
+            for callback in callbacks:
+                try:
+                    callback(response, self)
+                except Exception as e:
+                    (self._logger and self._logger.error or warnings.warn)("Exception occurred while processing orphaned response handler: response=%(response)r; handler='%(function)s'; exception: %(error)s; trace:\n%(trace)s" % {
+                     'response': response,
+                     'function': str(callback),
+                     'error': str(e),
+                     'trace': traceback.format_exc(),
+                    })
+                    
+            return True
+        return False
+        
     def _get_action_id(self):
         """
         Produces a session-unique int, suitable for passing to Asterisk as an ActionID.
