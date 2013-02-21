@@ -153,7 +153,13 @@ class Manager(object):
                     event_aggregate_cycle = 50
                     current_time = time.time()
                     with self._event_aggregates_lock:
-                        self._event_aggregates = [a for a in self._event_aggregates if a[0] > current_time]
+                        for (i, aggregate) in enumerate(self._event_aggregates):
+                            if aggregate[0] <= current_time: #Expired
+                                del self._event_aggregates[i]
+                                (self._logger and self._logger.warn or warnings.warn)("Aggregate '%(name)s' for action-ID '%(action-id)s' timed out before all events were gathered" % {
+                                 'name': aggregate[1].name,
+                                 'action-id': aggregate[1].action_id,
+                                })
                 else:
                     event_aggregate_cycle -= 1
                     
