@@ -532,11 +532,11 @@ class _MessageTemplate(object):
         """
         raise NotImplementedError("Names must be implemented by subclasses")
         
-class _Aggregate(_MessageTemplate, list):
+class _Aggregate(_MessageTemplate, dict):
     """
-    Provides an ordered collection of messages received from Asterisk as a multi-part list.
-    
-    All messages are exposed as items in this object.
+    Provides, as a dictionary, access to all events that make up the aggregation, keyed by
+    event-class. Repeatable event-types are exposed as lists, while others are direct references to
+    the event itself.
     """
     _name = None #The name of the aggregate-type
     _action_id = None #The action-ID associated with the aggregate, if any
@@ -544,14 +544,20 @@ class _Aggregate(_MessageTemplate, list):
     _error_message = None #A string that explains why validation failed, if it failed
     
     _aggregation_members = None #A tuple containing all classes that can be members of this aggregation
-    _aggregation_finaliser = None #The class that indicates that the aggregation is complete
+    _aggregation_finalisers = None #A tuplecontaining all class that must be received for the aggregation to be complete
+    _pending_finalisers = None #All finalisers yet to be received
     
     def __init__(self, action_id):
         """
         Associates the aggregate with an action-ID.
         """
         self._action_id = action_id
-        
+        self._pending_finalisers = set(self._aggregation_finalisers)
+        for i in self._aggregation_members:
+            self[i] = []
+        for i in self._aggregation_finalisers:
+            self[i] = None
+            
     def _evaluate_action_id(self, event):
         """
         If no action-ID is yet assigned to this aggregate, copy the value from the new `message`.
@@ -565,7 +571,7 @@ class _Aggregate(_MessageTemplate, list):
         The value returned indicates whether `event` was added.
         """
         if self._evaluate_action_id(event):
-            self.append(event)
+            self[type(event)].append(event)
             return True
         return False
         
@@ -576,7 +582,12 @@ class _Aggregate(_MessageTemplate, list):
         
         The value returned indicates whether finalisation succeeded.
         """
-        return self._evaluate_action_id(event)
+        if self._evaluate_action_id(event):
+            event_type = type(event)
+            self[event_type] = event
+            self._pending_finalisers.discard(event_type)
+            return len(self._pending_finalisers) == 0
+        return False
         
     def evaluate_event(self, event):
         """
@@ -590,7 +601,7 @@ class _Aggregate(_MessageTemplate, list):
         if event_type in self._aggregation_members:
             self._aggregate(event)
             return False
-        elif event_type is self._aggregation_finaliser:
+        elif event_type in self._aggregation_finalisers:
             return self._finalise(event)
         return None
         

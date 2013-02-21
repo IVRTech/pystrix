@@ -31,6 +31,8 @@ Authors:
 The events implemented by this module follow the definitions provided by
 http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
 """
+import re
+
 from ami import (_Aggregate, _Event)
 
 class AGIExec(_Event):
@@ -399,7 +401,7 @@ class PeerEntry(_Event):
       trusted for routing purposes. If not, packets are sent back to the last hop
     - 'VideoSupport': 'yes' or 'no'
     - 'ACL': 'yes' or 'no'
-    - 'Status': 'Unmonitored', 'OK (\d+ ms)'
+    - 'Status': 'Unmonitored', 'OK (\\d+ ms)'
     - 'RealtimeDevice': 'yes' or 'no'
     """
     def process(self):
@@ -409,6 +411,9 @@ class PeerEntry(_Event):
         
         Translates the 'Dynamic', 'Natsupport', 'VideoSupport', 'ACL', and 'RealtimeDevice' headers'
         values into bools.
+        
+        Translates 'Status' into the number of milliseconds since the peer was last seen or -2 if
+        unmonitored. -1 if parsing failed.
         """
         (headers, data) = _Event.process(self)
         
@@ -421,6 +426,14 @@ class PeerEntry(_Event):
                 
         for header in ('Dynamic', 'Natsupport', 'VideoSupport', 'ACL', 'RealtimeDevice'):
             headers[header] = headers.get(header) == 'yes'
+            
+        try:
+            if headers['Status'] == 'Unmonitored':
+                headers['Status'] = -2
+            else:
+                headers['Status'] = int(re.match(r'OK \((\d+) ms\)', headers['Status']).group(1))
+        except Exception:
+            headers['Status'] = -1
             
         return (headers, data)
 
@@ -810,23 +823,59 @@ class VarSet(_Event):
 
 class CoreShowChannels_Aggregate(_Aggregate):
     """
-    Emitted after all channels have been received by a CoreShowChannels request.
+    Emitted after all channels have been received in response to a CoreShowChannels request.
     
     Its members consist of CoreShowChannel events.
+    
+    It is finalised by CoreShowChannelsComplete.
     """
     _aggregation_members = (CoreShowChannel,)
-    _aggregation_finaliser = CoreShowChannelsComplete
+    _aggregation_finalisers = (CoreShowChannelsComplete,)
     
     def _finalise(self, event):
+        if not _Aggregate._finalise(event):
+            return False
+            
+        #The only finaliser is CoreShowChannelsComplete, so no testing is performed
         self._valid = event.process()[0]['ListItems'] == len(self)
         if not self._valid:
             self._error_message = "Expected %(event)i channel descriptions; received %(count)i" % {
              'event': event.process()[0]['ListItems'],
              'count': len(self),
             }
-        return self._evaluate_action_id(event)
+        return True
         
-#To enable this stuff, a list of aggregates should be created alongside the AMI core (an object within),
-#with every received event being thrown at every element in the list until one of them indicates that
-#processing occurred. An aggregate is added to the list whenever a corresponding request is made.
+class ParkedCalls_Aggregate(_Aggregate):
+    """
+    Emitted after all parked calls have been received in response to a ParkedCalls request.
+    
+    Its members consist of ParkedCall events.
+    
+    It is finalised by ParkedCallsComplete.
+    """
+    _aggregation_members = (ParkedCall,)
+    _aggregation_finalisers = (ParkedCallsComplete,)
+    
+class QueueStatus_Aggregate(_Aggregate):
+    """
+    Emitted after all queue properties have been received in response to a QueueStatus request.
+    
+    Its members consist of QueueParams, QueueMember, and QueueEntry events.
+    
+    It is finalised by QueueStatusComplete.
+    """
+    _aggregation_members = (QueueParams, QueueMember, QueueEntry,)
+    _aggregation_finalisers = (QueueStatusComplete,)
+    
+class SIPpeers_Aggregate(_Aggregate):
+    """
+    Emitted after all queue properties have been received in response to a SIPpeers request.
 
+    Its members consist of 'PeerEntry' events.
+    
+    It is finalised by PeerlistComplete.
+    """
+    _aggregation_members = (PeerEntry,)
+    _aggregation_finalisers = (PeerlistComplete,)
+    
+    

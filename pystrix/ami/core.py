@@ -179,6 +179,8 @@ class CoreShowChannels(_Request):
 
     Requires system
     """
+    _aggregates = (core_events.CoreShowChannels_Aggregate,)
+    
     def __init__(self):
         _Request.__init__(self, "CoreShowChannels")
         
@@ -780,6 +782,8 @@ class ParkedCalls(_Request):
     Any number of 'ParkedCall' events may be generated in response to this request, followed by one
     'ParkedCallsComplete'.
     """
+    _aggregates = (core_events.ParkedCalls_Aggregate,)
+    
     def __init__(self):
         _Request.__init__(self, "ParkedCalls")
 
@@ -799,8 +803,8 @@ class PauseMonitor(_Request):
         
 class Ping(_Request):
     """
-    Pings the AMI server. The response value has a 'RTT' attribute, which is the
-    number of seconds the trip took, or -1 in case of failure.
+    Pings the AMI server. The response value has a 'RTT' attribute, which is the number of seconds
+    the trip took, as a floating-point number, or -1 in case of failure.
     """
     _start_time = None #The time at which the ping message was built
     
@@ -974,6 +978,8 @@ class QueueStatus(_Request):
     Upon success, 'QueueParams', 'QueueMember', and 'QueueEntry' events will be generated, ending
     with 'QueueStatusComplete'.
     """
+    _aggregates = (core_events.QueueStatus_Aggregate,)
+    
     def __init__(self, queue=None):
         """
         Describes all queues in the system, unless `queue` is given, which limits the scope to one.
@@ -1089,6 +1095,8 @@ class SIPpeers(_Request):
 
     Requires system
     """
+    _aggregates = (core_events.SIPpeers_Aggregate,)
+    
     def __init__(self):
         _Request.__init__(self, "SIPpeers")
 
