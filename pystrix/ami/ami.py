@@ -69,20 +69,20 @@ class Manager(object):
     _connection = None #A connection to the Asterisk manager, realised as a `_SynchronisedSocket`
     _connection_lock = None #A means of preventing race conditions on the connection
     _debug = False #If True, development information is printed to console
+    _event_aggregates = None #A list of aggregates awaiting fulfillment
+    _event_aggregates_lock = None #A lock used to prevent race conditions on event aggregation
+    _event_aggregates_timeout = None #The amount of time to wait before considering an aggregate timed-out
     _event_callbacks = None #A dictionary of sets of event callbacks keyed by the string to match
     _event_callbacks_cls = None #A dictionary of tuples of classes and sets of event callbacks
     _event_callbacks_re = None #A dictionary of tuples of expressions and sets of event callbacks
     _event_callbacks_lock = None #A lock used to prevent race conditions on event callbacks
     _event_callbacks_thread = None #A thread used to process event callbacks
-    _event_aggregates = None #A list of aggregates awaiting fulfillment
-    #TODO: clean up aggregates when they time out
-    _event_aggregates_lock = None #A lock used to prevent race conditions on event aggregation
     _hostname = socket.gethostname() #The hostname of this system, used to prevent repeated calls through the C layer
     _message_reader = None #A thread that continuously collects messages from the Asterisk server
     _outstanding_requests = None #A set of ActionIDs sent to Asterisk, currently awaiting responses
     _logger = None #A logger that may be used to record warnings
     
-    def __init__(self, debug=False, logger=None):
+    def __init__(self, debug=False, logger=None, aggregate_timeout=5):
         """
         Sets up an environment for interacting with an Asterisk Management Interface.
 
@@ -91,6 +91,9 @@ class Manager(object):
 
         `logger` may be a logging.Logger object to use for logging problems in AMI threads. If not
         provided, problems will be emitted through the Python warnings interface.
+        
+        `aggregate_timeout` is the number of seconds to wait for aggregates to be fully assembled
+        before considering them timed-out.
 
         `debug` should only be turned on for library development.
         """
@@ -106,6 +109,7 @@ class Manager(object):
 
         self._event_aggregates = []
         self._event_aggregates_lock = threading.Lock()
+        self._event_aggregates_timeout = aggregate_timeout
 
         self._event_callbacks = {}
         self._event_callbacks_cls = {}
@@ -129,6 +133,7 @@ class Manager(object):
         If any callbacks throw exceptions, warnings are issued, but processing continues.
         """
         event_aggregates_complete = collections.deque()
+        event_aggregate_cycle = 0
         while self._alive:
             #Determine whether there's actually anything to read from
             message_reader = None
@@ -143,7 +148,15 @@ class Manager(object):
             sleep = not self._event_dispatcher_orhpaned_responses(message_reader) and sleep
             if sleep:
                 time.sleep(0.02)
-                
+                #Clean up old aggregates about once every second
+                if event_aggregate_cycle == 0:
+                    event_aggregate_cycle = 50
+                    current_time = time.time()
+                    with self._event_aggregates_lock:
+                        self._event_aggregates = [a for a in self._event_aggregates if a[0] > current_time]
+                else:
+                    event_aggregate_cycle -= 1
+                    
     def _event_dispatcher_events(self, message_reader, event_aggregates_complete):
         """
         Pulls events from the message-reader, then sends them to all registered callbacks. The
@@ -161,7 +174,7 @@ class Manager(object):
                 pass
             else: #Evaluate the new event against all pending aggregates
                 with self._event_aggregates_lock:
-                    for (i, aggregate) in enumerate(self._event_aggregates):
+                    for (i, (_, aggregate)) in enumerate(self._event_aggregates):
                         aggregation_result = aggregate.evaluate_result(event)
                         if aggregation_result is None: #Not relevant
                             continue
@@ -421,7 +434,7 @@ class Manager(object):
             if request.aggregate:
                 with self._event_aggregates_lock:
                     for aggregate_class in request.get_aggregate_classes():
-                        self._event_aggregates.append(aggregate_class(action_id))
+                        self._event_aggregates.append((time.time() + self._event_aggregates_timeout, aggregate_class(action_id)))
 
         start_time = time.time()
         timeout = start_time + request.timeout
