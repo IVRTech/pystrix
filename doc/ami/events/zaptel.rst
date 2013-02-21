@@ -14,8 +14,10 @@ Events
 ++++++
 
 .. autoclass:: ami.zaptel_events.ZapShowChannels
+    :show-inheritance:
     :members:
     
 .. autoclass:: ami.zaptel_events.ZapShowChannelsComplete
+    :show-inheritance:
     :members:
 

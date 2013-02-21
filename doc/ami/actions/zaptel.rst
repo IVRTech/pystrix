@@ -14,20 +14,26 @@ Actions
 +++++++
 
 .. autoclass:: ami.zaptel.ZapDNDoff
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.zaptel.ZapDNDon
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.zaptel.ZapDialOffhook
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.zaptel.ZapHangup
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.zaptel.ZapRestart
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.zaptel.ZapShowChannels
+    :show-inheritance:
     :members: __init__
 

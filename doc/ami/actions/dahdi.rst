@@ -13,20 +13,26 @@ Actions
 +++++++
 
 .. autoclass:: ami.dahdi.DAHDIDNDoff
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.dahdi.DAHDIDNDon
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.dahdi.DAHDIDialOffhook
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.dahdi.DAHDIHangup
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.dahdi.DAHDIRestart
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.dahdi.DAHDIShowChannels
+    :show-inheritance:
     :members: __init__
 

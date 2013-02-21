@@ -15,41 +15,54 @@ Actions
 +++++++
 
 .. autoclass:: ami.app_confbridge.ConfbridgeKick
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.app_confbridge.ConfbridgeList
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.app_confbridge.ConfbridgeListRooms
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.app_confbridge.ConfbridgeLock
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.app_confbridge.ConfbridgeUnlock
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.app_confbridge.ConfbridgeMoHOn
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.app_confbridge.ConfbridgeMoHOff
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.app_confbridge.ConfbridgeMute
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.app_confbridge.ConfbridgeUnmute
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.app_confbridge.ConfbridgePlayFile
+    :show-inheritance:
     :members: __init__
     
 .. autoclass:: ami.app_confbridge.ConfbridgeStartRecord
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.app_confbridge.ConfbridgeStopRecord
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.app_confbridge.ConfbridgeSetSingleVideoSrc
+    :show-inheritance:
     :members: __init__
 

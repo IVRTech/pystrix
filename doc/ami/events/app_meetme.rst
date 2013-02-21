@@ -14,8 +14,10 @@ Events
 ++++++
 
 .. autoclass:: ami.app_meetme_events.MeetmeJoin
+    :show-inheritance:
     :members:
 
 .. autoclass:: ami.app_meetme_events.MeetmeMute
+    :show-inheritance:
     :members:    
 

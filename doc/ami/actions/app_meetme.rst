@@ -14,11 +14,14 @@ Actions
 +++++++
 
 .. autoclass:: ami.app_meetme.MeetmeList
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.app_meetme.MeetmeMute
+    :show-inheritance:
     :members: __init__
 
 .. autoclass:: ami.app_meetme.MeetmeUnmute
+    :show-inheritance:
     :members: __init__
 
