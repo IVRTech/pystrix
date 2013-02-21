@@ -31,9 +31,9 @@ Authors:
 The events implemented by this module follow the definitions provided by
 http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
 """
-from ami import (_Aggregate, _Message)
+from ami import (_Aggregate, _Event)
 
-class AGIExec(_Message):
+class AGIExec(_Event):
     """
     Generated when an AGI script executes an arbitrary application.
     
@@ -51,7 +51,7 @@ class AGIExec(_Message):
         Translates the 'ResultCode' header's value into an int, setting it to `-1` if coercion
         fails.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         
         try:
             headers['ResultCode'] = int(headers['ResultCode'])
@@ -62,7 +62,7 @@ class AGIExec(_Message):
         
         return (headers, data)
         
-class ChannelUpdate(_Message):
+class ChannelUpdate(_Event):
     """
     Describes a change in a channel.
     
@@ -81,7 +81,7 @@ class ChannelUpdate(_Message):
     - 'UniqueID': An Asterisk-unique value
     """
     
-class CoreShowChannel(_Message):
+class CoreShowChannel(_Event):
     """
     Provides the definition of an active Asterisk channel.
     
@@ -117,7 +117,7 @@ class CoreShowChannel(_Message):
         Replaces the 'Duration' header's value with the number of seconds, as an int, or -1 if
         conversion fails.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         
         try:
             headers['ChannelState'] = int(headers['ChannelState'])
@@ -132,7 +132,7 @@ class CoreShowChannel(_Message):
             
         return (headers, data)
         
-class CoreShowChannelsComplete(_Message):
+class CoreShowChannelsComplete(_Event):
     """
     Indicates that all Asterisk channels have been listed.
     
@@ -143,7 +143,7 @@ class CoreShowChannelsComplete(_Message):
         """
         Translates the 'ListItems' header's value into an int, or -1 on failure.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         
         try:
             headers['ListItems'] = int(headers['ListItems'])
@@ -152,7 +152,7 @@ class CoreShowChannelsComplete(_Message):
             
         return (headers, data)
         
-class DBGetResponse(_Message):
+class DBGetResponse(_Event):
     """
     Provides the value requested from the database.
     
@@ -161,7 +161,7 @@ class DBGetResponse(_Message):
     - 'Val': The value being provided, represented as a string
     """
 
-class DTMF(_Message):
+class DTMF(_Event):
     """
     - 'Begin': 'Yes' or 'No', indicating whether this started or ended the DTMF press
     - 'Channel': The channel being described
@@ -175,7 +175,7 @@ class DTMF(_Message):
         """
         Translates 'Begin' and 'End' into booleans, and adds a 'Received':bool header.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         
         for header in ('Begin', 'End'):
             headers[header] = headers.get(header) == 'Yes'
@@ -183,14 +183,14 @@ class DTMF(_Message):
         
         return (headers, data)
         
-class FullyBooted(_Message):
+class FullyBooted(_Event):
     """
     Indicates that Asterisk is online.
     
     - 'Status': "Fully Booted"
     """
     
-class Hangup(_Message):
+class Hangup(_Event):
     """
     Indicates that a channel has been hung up.
     
@@ -207,14 +207,14 @@ class Hangup(_Message):
         """
         Translates the 'Cause' header's value into an int, setting it to `None` if coercion fails.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         try:
             headers['Cause'] = int(headers['Cause'])
         except Exception:
             headers['Cause'] = None
         return (headers, data)
 
-class HangupRequest(_Message):
+class HangupRequest(_Event):
     """
     Emitted when a request to terminate the call is received.
 
@@ -222,7 +222,7 @@ class HangupRequest(_Message):
     - 'Uniqueid': An Asterisk unique value
     """
 
-class MonitorStart(_Message):
+class MonitorStart(_Event):
     """
     Indicates that monitoring has begun.
     
@@ -230,7 +230,7 @@ class MonitorStart(_Message):
     - 'Uniqueid': An Asterisk unique value
     """
 
-class MonitorStop(_Message):
+class MonitorStop(_Event):
     """
     Indicates that monitoring has ceased.
     
@@ -238,7 +238,7 @@ class MonitorStop(_Message):
     - 'Uniqueid': An Asterisk unique value
     """
 
-class NewAccountCode(_Message):
+class NewAccountCode(_Event):
     """
     Indicates that the account-code associated with a channel has changed.
     
@@ -247,7 +247,7 @@ class NewAccountCode(_Message):
     - 'OldAccountCode': The old account code
     """
 
-class Newchannel(_Message):
+class Newchannel(_Event):
     """
     Indicates that a new channel has been created.
 
@@ -271,14 +271,14 @@ class Newchannel(_Message):
         Translates the 'ChannelState' header's value into an int, setting it to `None` if coercion
         fails.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         try:
             headers['ChannelState'] = int(headers['ChannelState'])
         except Exception:
             headers['ChannelState'] = None
         return (headers, data)
 
-class Newexten(_Message):
+class Newexten(_Event):
     """
     Emitted when a channel switches executing extensions.
 
@@ -291,7 +291,7 @@ class Newexten(_Message):
     - 'Uniqueid': An Asterisk unique value
     """
 
-class Newstate(_Message):
+class Newstate(_Event):
     """
     Indicates that a channel's state has changed.
 
@@ -314,14 +314,14 @@ class Newstate(_Message):
         Translates the 'ChannelState' header's value into an int, setting it to `None` if coercion
         fails.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         try:
             headers['ChannelState'] = int(headers['ChannelState'])
         except Exception:
             headers['ChannelState'] = None
         return (headers, data)
         
-class OriginateResponse(_Message):
+class OriginateResponse(_Event):
     """
     Describes the result of an Originate request.
     
@@ -337,14 +337,14 @@ class OriginateResponse(_Message):
         Sets the 'Reason' values to an int, one of the `ORIGINATE_RESULT` constants, with -1
         indicating failure.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         try:
             headers['Reason'] = int(headers.get('Reason'))
         except Exception:
             headers['Reason'] = -1
         return (headers, data)
         
-class ParkedCall(_Message):
+class ParkedCall(_Event):
     """
     Describes a parked call.
     
@@ -362,7 +362,7 @@ class ParkedCall(_Message):
         Translates the 'Timeout' header's value into an int, setting it to `None` if coercion
         fails, and leaving it absent if it wasn't present in the original response.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         timeout = headers.get('Timeout')
         if not timeout is None:
             try:
@@ -371,14 +371,14 @@ class ParkedCall(_Message):
                 headers['Timeout'] = None
         return (headers, data)
         
-class ParkedCallsComplete(_Message):
+class ParkedCallsComplete(_Event):
     """
     Indicates that all parked calls have been listed.
     
     - 'ActionID': The ID associated with the original request
     """
 
-class PeerEntry(_Message):
+class PeerEntry(_Event):
     """
     Describes a peer.
     
@@ -410,7 +410,7 @@ class PeerEntry(_Message):
         Translates the 'Dynamic', 'Natsupport', 'VideoSupport', 'ACL', and 'RealtimeDevice' headers'
         values into bools.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         
         ip_port = headers.get('IPport')
         if not ip_port is None:
@@ -424,14 +424,14 @@ class PeerEntry(_Message):
             
         return (headers, data)
 
-class PeerlistComplete(_Message):
+class PeerlistComplete(_Event):
     """
     Indicates that all peers have been listed.
     
     - 'ActionID': The ID associated with the original request
     """
 
-class QueueEntry(_Message):
+class QueueEntry(_Event):
     """
     Indicates that a call is waiting to be answered.
     
@@ -447,7 +447,7 @@ class QueueEntry(_Message):
         """
         Translates the 'Position' and 'Wait' headers' values into ints, setting them to -1 on error.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         for header in ('Position', 'Wait'):
             try:
                 headers[header] = int(headers.get(header))
@@ -455,7 +455,7 @@ class QueueEntry(_Message):
                 headers[header] = -1
         return (headers, data)
 
-class QueueMember(_Message):
+class QueueMember(_Event):
     """
     Describes a member of a queue.
     
@@ -481,7 +481,7 @@ class QueueMember(_Message):
         
         'Paused' is set to a bool.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         
         for header in ('CallsTaken', 'LastCall', 'Penalty', 'Status'):
             try:
@@ -494,7 +494,7 @@ class QueueMember(_Message):
         
         return (headers, data)
         
-class QueueMemberAdded(_Message):
+class QueueMemberAdded(_Event):
     """
     Indicates that a member was added to a queue.
     
@@ -519,7 +519,7 @@ class QueueMemberAdded(_Message):
         
         'Paused' is set to a bool.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         
         for header in ('CallsTaken', 'LastCall', 'Penalty', 'Status'):
             try:
@@ -532,7 +532,7 @@ class QueueMemberAdded(_Message):
         
         return (headers, data)
         
-class QueueMemberPaused(_Message):
+class QueueMemberPaused(_Event):
     """
     Indicates that the pause-state of a queue member was changed.
     
@@ -545,12 +545,12 @@ class QueueMemberPaused(_Message):
         """
         'Paused' is set to a bool.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         paused = headers.get('Paused')
         headers['Paused'] = paused and paused == '1'
         return (headers, data)
 
-class QueueMemberRemoved(_Message):
+class QueueMemberRemoved(_Event):
     """
     Indicates that a member was removed from a queue.
     
@@ -559,7 +559,7 @@ class QueueMemberRemoved(_Message):
     - 'Queue': The queue from which the member was removed
     """
     
-class QueueParams(_Message):
+class QueueParams(_Event):
     """
     Describes the attributes of a queue.
     
@@ -582,7 +582,7 @@ class QueueParams(_Message):
         Translates the 'ServiceLevel', 'ServiceLevelPerf', and 'Weight' values into
         floats, setting them to -1 on error.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         
         for header in ('Abandoned', 'Calls', 'Completed', 'Holdtime', 'Max'):
             try:
@@ -598,14 +598,14 @@ class QueueParams(_Message):
         
         return (headers, data)
         
-class QueueStatusComplete(_Message):
+class QueueStatusComplete(_Event):
     """
     Indicates that a QueueStatus request has completed.
     
     - 'ActionID': The ID associated with the original request
     """
 
-class Reload(_Message):
+class Reload(_Event):
     """
     Indicates that Asterisk's configuration was reloaded.
     
@@ -614,7 +614,7 @@ class Reload(_Message):
     - 'Status': 'Enabled'
     """
     
-class RTCPReceived(_Message):
+class RTCPReceived(_Event):
     """
     A Real Time Control Protocol message emitted by Asterisk when using an RTP-based channel,
     providing statistics on the quality of a connection, for the receiving leg.
@@ -642,7 +642,7 @@ class RTCPReceived(_Message):
         Splits 'From' into a tuple of IP:str and port:int, or sets it to `None` if the format is
         unknown.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         
         for header in ('HighestSequence', 'LastSR', 'PacketsLost', 'ReceptionReports', 'SequenceNumbercycles'):
             try:
@@ -665,7 +665,7 @@ class RTCPReceived(_Message):
             
         return (headers, data)
 
-class RTCPSent(_Message):
+class RTCPSent(_Event):
     """
     A Real Time Control Protocol message emitted by Asterisk when using an an RTP-based channel,
     providing statistics on the quality of a connection, for the sending leg.
@@ -694,7 +694,7 @@ class RTCPSent(_Message):
         Splits 'To' into a tuple of IP:str and port:int, or sets it to `None` if the format is
         unknown.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         
         for header in ('CumulativeLoss', 'SentOctets', 'SentPackets', 'SentRTP', 'TheirLastSR'):
             try:
@@ -717,7 +717,7 @@ class RTCPSent(_Message):
             
         return (headers, data)
 
-class Shutdown(_Message):
+class Shutdown(_Event):
     """
     Emitted when Asterisk shuts down.
     
@@ -728,14 +728,14 @@ class Shutdown(_Message):
         """
         'Restart' is set to a bool.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         
         restart = headers.get('Restart')
         headers['Restart'] = restart and restart == 'True'
         
         return (headers, data)
         
-class SoftHangupRequest(_Message):
+class SoftHangupRequest(_Event):
     """
     Emitted when a request to terminate the call is exchanged.
 
@@ -748,7 +748,7 @@ class SoftHangupRequest(_Message):
     - 'Uniqueid': An Asterisk unique value
     """
     
-class Status(_Message):
+class Status(_Event):
     """
     Describes the current status of a channel.
     
@@ -770,21 +770,21 @@ class Status(_Message):
         """
         Translates the 'Seconds' header's value into an int, setting it to -1 on error.
         """
-        (headers, data) = _Message.process(self)
+        (headers, data) = _Event.process(self)
         try:
             headers['Seconds'] = int(headers.get('Seconds'))
         except Exception:
             headers['Seconds'] = -1
         return (headers, data)
         
-class StatusComplete(_Message):
+class StatusComplete(_Event):
     """
     Indicates that all requested channel information has been provided.
     
     - 'ActionID': The ID associated with the original request
     """
 
-class UserEvent(_Message):
+class UserEvent(_Event):
     """
     Generated in response to the UserEvent request.
     
@@ -792,7 +792,7 @@ class UserEvent(_Message):
     - \*: Any key-value pairs supplied with the request, as strings
     """
 
-class VarSet(_Message):
+class VarSet(_Event):
     """
     Emitted when a variable is set, either globally or on a channel.
     
