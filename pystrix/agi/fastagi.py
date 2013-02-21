@@ -127,7 +127,7 @@ class FastAGIServer(_ThreadedTCPServer):
         Empties the list of script handlers, allowing it to be repopulated. The default handler is
         not cleared by this action; to clear it, call `register_script_handler(None, None)`.
         """
-        with self._script_handlers_lock as lock:
+        with self._script_handlers_lock:
             self._script_handlers = []
 
     def get_script_handler(self, script_path):
@@ -137,7 +137,7 @@ class FastAGIServer(_ThreadedTCPServer):
 
         `script_path` is the path received from Asterisk.
         """
-        with self._script_handlers_lock as lock:
+        with self._script_handlers_lock:
             for (regex, handler) in self._script_handlers:
                 match = None
                 if type(regex) in types.StringTypes:
@@ -164,7 +164,7 @@ class FastAGIServer(_ThreadedTCPServer):
         runtime. Setting the default handler to `None` disables the catch-all, which will typically
         make Asterisk just drop the call.
         """
-        with self._script_handlers_lock as lock:
+        with self._script_handlers_lock:
             if regex is None:
                 self._default_script_handler = handler
                 return
@@ -186,7 +186,7 @@ class FastAGIServer(_ThreadedTCPServer):
         to re-introduce handlers, consider using `clear_script_handlers()` and re-adding all
         handlers in the desired order.
         """
-        with self._script_handlers_lock as lock:
+        with self._script_handlers_lock:
             for (i, (old_regex, old_handler)) in enumerate(self._script_handlers):
                 if old_regex == regex:
                     self._script_handlers.remove(i)
