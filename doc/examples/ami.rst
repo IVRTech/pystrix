@@ -90,7 +90,7 @@ for information::
             #This sets up some event callbacks, so that interesting things, like calls being
             #established or torn down, will be processed by your application's logic. Of course,
             #since this is just an example, the same event will be registered using three different
-            #methods instead.
+            #methods.
 
             #The event that will be registered is 'FullyBooted', sent by Asterisk immediately after
             #connecting, to indicate that everything is online. What the following code does is
