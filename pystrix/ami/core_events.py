@@ -618,6 +618,54 @@ class QueueStatusComplete(_Event):
     - 'ActionID': The ID associated with the original request
     """
 
+class RegistryEntry(_Event):
+    """
+    Describes a SIP registration.
+    
+    - 'Domain': The domain in which the registration took place
+    - 'DomainPort': The port in use in the registration domain
+    - 'Host': The address of the host
+    - 'Port': The port in use on the host
+    - 'Refresh': The amount of time remaining until the registration will be renewed
+    - 'RegistrationTime': The time at which the registration was made, as a UNIX timestamp
+    - 'State': The current status of the registration
+    - 'Username': The username used for the registration
+    """
+    def process(self):
+        """
+        Translates the 'DomainPort', 'Port', 'Refresh', and 'RegistrationTime' values into ints,
+        setting them to -1 on error.
+        """
+        (headers, data) = _Event.process(self)
+        
+        for header in ('DomainPort', 'Port', 'Refresh', 'RegistrationTime'):
+            try:
+                headers[header] = int(headers.get(header))
+            except Exception:
+                headers[header] = -1
+                
+        return (headers, data)
+        
+class RegistrationsComplete(_Event):
+    """
+    Indicates that all registrations have been listed.
+    
+    - 'ActionID': The ID associated with the original request
+    - 'ListItems' : The number of items returned prior to this event
+    """
+    def process(self):
+        """
+        Translates the 'ListItems' header's value into an int, or -1 on failure.
+        """
+        (headers, data) = _Event.process(self)
+        
+        try:
+            headers['ListItems'] = int(headers['ListItems'])
+        except Exception:
+            headers['ListItems'] = -1
+            
+        return (headers, data)
+        
 class Reload(_Event):
     """
     Indicates that Asterisk's configuration was reloaded.
@@ -795,7 +843,20 @@ class StatusComplete(_Event):
     Indicates that all requested channel information has been provided.
     
     - 'ActionID': The ID associated with the original request
+    - 'Items': The number of items emitted prior to this event
     """
+    def process(self):
+        """
+        Translates the 'Items' header's value into an int, or -1 on failure.
+        """
+        (headers, data) = _Event.process(self)
+        
+        try:
+            headers['Items'] = int(headers['Items'])
+        except Exception:
+            headers['Items'] = -1
+            
+        return (headers, data)
 
 class UserEvent(_Event):
     """
@@ -815,7 +876,79 @@ class VarSet(_Event):
     - 'Variable': The name of the variable that was set
     """
 
+class VoicemailUserEntry(_Event):
+    """
+    Describes a voicemail user.
+    
+    - 'AttachMessage': "Yes", "No"
+	- 'AttachmentFormat': unknown
+	- 'CallOperator': "Yes", "No"
+	- 'CanReview': "Yes", "No"
+    - 'Callback': unknown
+    - 'DeleteMessage': "Yes", "No"
+    - 'Dialout': unknown
+    - 'Email': unknown
+    - 'ExitContext': The context to use when leaving the mailbox
+    - 'Fullname': unknown
+    - 'IMAPFlags': Any associated IMAP flags (IMAP only)
+	- 'IMAPPort': The associated IMAP port (IMAP only)
+	- 'IMAPServer': The associated IMAP server (IMAP only)
+	- 'IMAPUser': The associated IMAP username (IMAP only)
+	- 'Language': The language to use for voicemail prompts
+	- 'MailCommand': unknown
+	- 'MaxMessageCount': The maximum number of messages that can be stored
+	- 'MaxMessageLength': The maximum length of any particular message
+	- 'NewMessageCount': The number of unheard messages
+	- 'OldMessageCount': The number of previously heard messages (IMAP only)
+	- 'Pager': unknown
+    - 'SayCID': "Yes", "No"
+    - 'SayDurationMinimum': The minumum amount of time a message may be
+    - 'SayEnvelope': "Yes", "No"
+    - 'ServerEmail': unknown
+    - 'TimeZone': The timezone of the mailbox
+    - 'UniqueID': unknown
+	- 'VMContext': The associated Asterisk context
+	- 'VoiceMailbox': The associated mailbox
+	- 'VolumeGain': A floating-point value
+    """
+    def process(self):
+        """
+        Translates the 'MaxMessageCount', 'MaxMessageLength', 'NewMessageCount', 'OldMessageCount',
+        and 'SayDurationMinimum' values into ints, setting them to -1 on error.
 
+        Translates the 'VolumeGain' value into a float, setting it to None on error.
+        
+        Translates the 'AttachMessage', 'CallOperator', 'CanReview', 'DeleteMessage', 'SayCID', and
+        'SayEnvelope' values into booleans.
+        """
+        (headers, data) = _Event.process(self)
+        
+        header_list = ['MaxMessageCount', 'MaxMessageLength', 'NewMessageCount', 'SayDurationMinimum']
+        if 'OldMessageCount' in headers:
+            header_list.append('OldMessageCount')
+        for header in header_list:
+            try:
+                headers[header] = int(headers.get(header))
+            except Exception:
+                headers[header] = -1
+
+        try:
+            headers['VolumeGain'] = float(headers.get('VolumeGain'))
+        except Exception:
+            headers['VolumeGain'] = None
+
+        for header in ('AttachMessage', 'CallOperator', 'CanReview', 'DeleteMessage', 'SayCID', 'SayEnvelope'):
+            headers[header] = headers.get(header) == 'Yes'
+            
+        return (headers, data)
+    
+class VoicemailUserEntryComplete(_Event):
+    """
+    Indicates that all requested voicemail user definitions have been provided.
+    
+    - 'ActionID': The ID associated with the original request
+    """
+    
 #List-aggregation events
 ####################################################################################################
 #These define non-Asterisk-native event-types that collect multiple events (cases where multiple
@@ -878,4 +1011,37 @@ class SIPpeers_Aggregate(_Aggregate):
     _aggregation_members = (PeerEntry,)
     _aggregation_finalisers = (PeerlistComplete,)
     
+class SIPshowregistry_Aggregate(_Aggregate):
+    """
+    Emitted after all SIP registrants have been received in response to a SIPshowregistry request.
+    
+    Its members consist of RegistryEntry events.
+    
+    It is finalised by RegistrationsComplete.
+    """
+    _aggregation_members = (RegistryEntry,)
+    _aggregation_finalisers = (RegistrationsComplete,)
+    
+class Status_Aggregate(_Aggregate):
+    """
+    Emitted after all statuses have been received in response to a Status request.
+    
+    Its members consist of Status events.
+    
+    It is finalised by StatusComplete.
+    """
+    _aggregation_members = (Status,)
+    _aggregation_finalisers = (StatusComplete,)
+    
+class VoicemailUsersList_Aggregate(_Aggregate):
+    """
+    Emitted after all voicemail users have been received in response to a VoicemailUsersList
+    request.
+    
+    Its members consist of VoicemailUserEntry events.
+    
+    It is finalised by VoicemailUserEntryComplete.
+    """
+    _aggregation_members = (VoicemailUserEntry,)
+    _aggregation_finalisers = (VoicemailUserEntryComplete,)
     
