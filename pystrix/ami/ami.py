@@ -79,7 +79,7 @@ class Manager(object):
     _event_callbacks_thread = None #A thread used to process event callbacks
     _hostname = socket.gethostname() #The hostname of this system, used to prevent repeated calls through the C layer
     _message_reader = None #A thread that continuously collects messages from the Asterisk server
-    _outstanding_requests = None #A set of ActionIDs sent to Asterisk, currently awaiting responses
+    _outstanding_requests = None #A dictionary of ActionIDs sent to Asterisk, currently awaiting responses; values are a tuple of (events, pending_finalisers), if synchronous, and None otherwise
     _logger = None #A logger that may be used to record warnings
     
     def __init__(self, debug=False, logger=None, aggregate_timeout=5):
@@ -105,7 +105,7 @@ class Manager(object):
 
         self._connection_lock = threading.Lock()
 
-        self._outstanding_requests = set()
+        self._outstanding_requests = {}
 
         self._event_aggregates = []
         self._event_aggregates_lock = threading.Lock()
@@ -191,6 +191,8 @@ class Manager(object):
                             break
         
         if event:
+            self._process_outstanding_request_event(event) #Bind it to a request, if appropriate
+            
             event_name = event.name
             callbacks = []
             with self._event_callbacks_lock:
@@ -420,6 +422,7 @@ class Manager(object):
         - action_id: The 'ActionID' sent with this request
         - success: A boolean value indicating whether the request was met with success
         - time: The number of seconds, as a float, that the request took to be serviced
+        - events: A dictionary containing related events if the request is synchronous or None otherwise
         
         For forward-compatibility reasons, elements of the tuple should be accessed by name, rather
         than by index.
@@ -433,51 +436,114 @@ class Manager(object):
         if not self.is_connected():
             raise ManagerError("Not connected to an Asterisk manager")
             
+        (command, action_id) = request.build_request(action_id and str(action_id), self._get_host_action_id, **kwargs)
+        events = self._add_outstanding_request(action_id, request)
         with self._connection_lock:
-            (command, action_id) = request.build_request(action_id and str(action_id), self._get_host_action_id, **kwargs)
             self._connection.send_message(command)
-            self._outstanding_requests.add(action_id)
-            if request.aggregate:
-                with self._event_aggregates_lock:
-                    for aggregate_class in request.get_aggregate_classes():
-                        self._event_aggregates.append((time.time() + self._event_aggregates_timeout, aggregate_class(action_id)))
+            
+        if request.aggregate: #Set up aggregate-event generation
+            with self._event_aggregates_lock:
+                for aggregate_class in request.get_aggregate_classes():
+                    self._event_aggregates.append((time.time() + self._event_aggregates_timeout, aggregate_class(action_id)))
 
         start_time = time.time()
         timeout = start_time + request.timeout
+        response = None
         while time.time() < timeout:
-            with self._connection_lock:
-                response = self._message_reader.get_response(action_id)
-                if response:
-                    #TODO
-                    #if not response.get('Response') == 'Follows':
-                    #    No chance of there being any events
-                    events = None
-                    if request.synchronous:
-                        events = {}
-                        
-                    processed_response = request.process_response(response)
-                    return _Response(
-                     processed_response,
-                     response,
-                     request,
-                     action_id,
-                     hasattr(processed_response, 'success') and processed_response.success,
-                     time.time() - start_time,
-                     events
-                    )
+            if not response: #If blocking for event synchronisation, don't bother polling for the already-received response
+                with self._connection_lock:
+                    response = self._message_reader.get_response(action_id)
+                    if response:
+                        if not request.synchronous or not response.get('Response') == 'Follows':
+                            break #No chance of there being any events
+            else: #Synchronous processing
+                if self._check_outstanding_request_complete(action_id): #Not waiting for any more events
+                    break
             time.sleep(0.05)
+        else: #Timed out
+            if events:
+                events['timeout'] = True
+                
         self._serve_outstanding_request(action_id) #Get the ActionID out of circulation
-        return None
+        if response:
+            processed_response = request.process_response(response)
+            return _Response(
+                processed_response,
+                response,
+                request,
+                action_id,
+                hasattr(processed_response, 'success') and processed_response.success,
+                time.time() - start_time,
+                events
+            )
+        else:
+            return None
+
+    def _add_outstanding_request(self, action_id, request):
+        """
+        Beings tracking the given `action_id` to synchronise communication with Asterisk.
+        
+        If full event-synchronisation is requested, that's set up here, too.
+        
+        The value returned is the events-map, if one was set up.
+        """
+        with self._connection_lock:
+            if request.synchronous:
+                events = {'timeout': False}
+                (uniques, lists, finalisers) = request.get_synchronous_classes()
+                for c in uniques:
+                    events[c] = None
+                for c in lists:
+                    events[c] = []
+                for c in finalisers:
+                    events[c] = None
+                    
+                self._outstanding_requests[action_id] = (events, set(finalisers))
+                return events
+            else:
+                self._outstanding_requests[action_id] = None
+                return None
+                
+    def _check_outstanding_request_complete(self, action_id):
+        """
+        Yields a boolean value that indicates whether the indicated request has been fully served, in
+        terms of having received all expected requests if synchronised.
+        
+        If not synchronised or if the request isn't tracked, the value returned is True.
+        """
+        with self._connection_lock:
+            status = self._outstanding_requests.get(action_id)
+            if not status: #Undefined or not synchronous
+                return True
+            return not status[1] #True if all finalisers have been received
+
+    def _process_outstanding_request_event(self, event):
+        """
+        Checks the event against pending requests and adds it to the appropriate event-list, if one
+        exists, updating pending finalisers as needed.
+        """
+        with self._connection_lock:
+            status = self._outstanding_requests.get(event.action_id)
+            if status: #It's being tracked
+                event_type = type(event)
+                
+                status[1].discard(event_type) #Mark it as received if it's a finaliser
+                
+                value = status[0].get(event_type)
+                if type(value) is list: #If it's part of a list-type, add it to the collection
+                    value.append(event)
+                else: #Set it as the relevant entry
+                    status[0][event_type] = event
 
     def _serve_outstanding_request(self, action_id):
         """
         Returns `True` if the given `action_id` is waiting to be served and removes it from the
-        local set as a side-effect.
+        local dictionary as a side-effect.
         """
         with self._connection_lock:
             served = action_id in self._outstanding_requests
             if served:
-                self._outstanding_requests.discard(action_id)
+                del self._outstanding_requests[action_id]
             return served
             
     def unregister_callback(self, event, function):
