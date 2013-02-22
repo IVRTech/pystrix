@@ -9,7 +9,6 @@ in this section. Their usage is consistently a matter of instantiating a class, 
 
     core.rst
     dahdi.rst
-    zaptel.rst
     app_confbridge.rst
     app_meetme.rst
     
