@@ -103,6 +103,8 @@ class DAHDIShowChannels_Aggregate(_Aggregate):
     
     It is finalised by DAHDIShowChannelsComplete.
     """
+    _name = "DAHDIShowChannels_Aggregate"
+    
     _aggregation_members = (DAHDIShowChannels,)
     _aggregation_finalisers = (DAHDIShowChannelsComplete,)
     

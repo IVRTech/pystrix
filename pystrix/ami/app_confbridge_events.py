@@ -197,6 +197,8 @@ class ConfbridgeList_Aggregate(_Aggregate):
     
     It is finalised by ConfbridgeListComplete.
     """
+    _name = "ConfbridgeList_Aggregate"
+    
     _aggregation_members = (ConfbridgeList,)
     _aggregation_finalisers = (ConfbridgeListComplete,)
     
@@ -213,6 +215,8 @@ class ConfbridgeListRooms_Aggregate(_Aggregate):
     
     It is finalised by ConfbridgeListRoomsComplete.
     """
+    _name = "ConfbridgeListRooms_Aggregate"
+    
     _aggregation_members = (ConfbridgeListRooms,)
     _aggregation_finalisers = (ConfbridgeListCompleteRooms,)
     

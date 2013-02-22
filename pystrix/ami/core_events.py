@@ -974,6 +974,8 @@ class CoreShowChannels_Aggregate(_Aggregate):
     
     It is finalised by CoreShowChannelsComplete.
     """
+    _name = "CoreShowChannels_Aggregate"
+    
     _aggregation_members = (CoreShowChannel,)
     _aggregation_finalisers = (CoreShowChannelsComplete,)
     
@@ -989,6 +991,8 @@ class ParkedCalls_Aggregate(_Aggregate):
     
     It is finalised by ParkedCallsComplete.
     """
+    _name = "ParkedCalls_Aggregate"
+    
     _aggregation_members = (ParkedCall,)
     _aggregation_finalisers = (ParkedCallsComplete,)
     
@@ -1004,6 +1008,8 @@ class QueueStatus_Aggregate(_Aggregate):
     
     It is finalised by QueueStatusComplete.
     """
+    _name = "QueueStatus_Aggregate"
+    
     _aggregation_members = (QueueParams, QueueMember, QueueEntry,)
     _aggregation_finalisers = (QueueStatusComplete,)
     
@@ -1015,6 +1021,8 @@ class SIPpeers_Aggregate(_Aggregate):
     
     It is finalised by PeerlistComplete.
     """
+    _name = "SIPpeers_Aggregate"
+    
     _aggregation_members = (PeerEntry,)
     _aggregation_finalisers = (PeerlistComplete,)
     
@@ -1030,6 +1038,8 @@ class SIPshowregistry_Aggregate(_Aggregate):
     
     It is finalised by RegistrationsComplete.
     """
+    _name = "SIPshowregistry_Aggregate"
+    
     _aggregation_members = (RegistryEntry,)
     _aggregation_finalisers = (RegistrationsComplete,)
     
@@ -1045,6 +1055,8 @@ class Status_Aggregate(_Aggregate):
     
     It is finalised by StatusComplete.
     """
+    _name = "Status_Aggregate"
+    
     _aggregation_members = (Status,)
     _aggregation_finalisers = (StatusComplete,)
     
@@ -1061,6 +1073,8 @@ class VoicemailUsersList_Aggregate(_Aggregate):
     
     It is finalised by VoicemailUserEntryComplete.
     """
+    _name = "VoicemailUsersList_Aggregate"
+    
     _aggregation_members = (VoicemailUserEntry,)
     _aggregation_finalisers = (VoicemailUserEntryComplete,)
     
