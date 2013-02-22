@@ -186,6 +186,8 @@ class ConfbridgeStartRecord(_Request):
     Asterisk-generated identification data that can be discarded and "?" is the room ID. The
     'Variable' key must be "MIXMONITOR_FILENAME", with the 'Value' key holding the file's path.
     """
+    _synchronous_events_finalising = (core_events.VarSet,)
+    
     def __init__(self, conference, filename=None):
         """
         `conference` is the room to be recorded, and `filename`, optional, is the path,
@@ -204,6 +206,8 @@ class ConfbridgeStopRecord(_Request):
     it, match its 'Channel' key against "ConfBridgeRecorder/conf-?-...", where "..." is
     Asterisk-generated identification data that can be discarded and "?" is the room ID.
     """
+    _synchronous_events_finalising = (core_events.Hangup,)
+    
     def __init__(self, conference):
         """
         `conference` is the room being recorded.
