@@ -994,7 +994,8 @@ class CoreShowChannels_Aggregate(_Aggregate):
     _aggregation_finalisers = (CoreShowChannelsComplete,)
     
     def _finalise(self, event):
-        return _Aggregate._finalise(event, count_header='ListItems')
+        self._check_list_items_count('ListItems')
+        return _Aggregate._finalise(event)
         
 class ParkedCalls_Aggregate(_Aggregate):
     """
@@ -1008,7 +1009,8 @@ class ParkedCalls_Aggregate(_Aggregate):
     _aggregation_finalisers = (ParkedCallsComplete,)
     
     def _finalise(self, event):
-        return _Aggregate._finalise(event, count_header='Total')
+        self._check_list_items_count('Total')
+        return _Aggregate._finalise(event)
         
 class QueueStatus_Aggregate(_Aggregate):
     """
@@ -1033,7 +1035,8 @@ class SIPpeers_Aggregate(_Aggregate):
     _aggregation_finalisers = (PeerlistComplete,)
     
     def _finalise(self, event):
-        return _Aggregate._finalise(event, count_header='ListItems')
+        self._check_list_items_count('ListItems')
+        return _Aggregate._finalise(event)
         
 class SIPshowregistry_Aggregate(_Aggregate):
     """
@@ -1047,7 +1050,8 @@ class SIPshowregistry_Aggregate(_Aggregate):
     _aggregation_finalisers = (RegistrationsComplete,)
     
     def _finalise(self, event):
-        return _Aggregate._finalise(event, count_header='ListItems')
+        self._check_list_items_count('ListItems')
+        return _Aggregate._finalise(event)
         
 class Status_Aggregate(_Aggregate):
     """
@@ -1061,7 +1065,8 @@ class Status_Aggregate(_Aggregate):
     _aggregation_finalisers = (StatusComplete,)
     
     def _finalise(self, event):
-        return _Aggregate._finalise(event, count_header='Items')
+        self._check_list_items_count('Items')
+        return _Aggregate._finalise(event)
         
 class VoicemailUsersList_Aggregate(_Aggregate):
     """
