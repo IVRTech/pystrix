@@ -50,3 +50,14 @@ Events
     :show-inheritance:
     :members:
     
+Aggregate Events
+++++++++++++++++
+
+.. autoclass:: ami.app_confbridge_events.ConfbridgeList_Aggregate
+    :show-inheritance:
+    :members:
+    
+.. autoclass:: ami.app_confbridge_events.ConfbridgeListRooms_Aggregate
+    :show-inheritance:
+    :members:
+    

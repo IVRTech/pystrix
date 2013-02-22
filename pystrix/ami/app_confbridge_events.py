@@ -32,7 +32,7 @@ Authors:
 The events implemented by this module follow the definitions provided by
 http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
 """
-from ami import _Event
+from ami import (_Aggregate, _Event)
     
 class ConfbridgeEnd(_Event):
     """
@@ -112,6 +112,8 @@ class ConfbridgeListRooms(_Event):
     """
     Describes a ConfBridge room.
     
+    And, yes, it's plural in Asterisk, too.
+    
     - 'Conference' : The room's identifier
     - 'Locked' : 'Yes' or 'No'
     - 'Marked' : The number of marked users
@@ -179,4 +181,42 @@ class ConfbridgeTalking(_Event):
         headers['TalkingStatus'] = headers.get('TalkingStatus') == 'on'
         
         return (headers, data)
+        
+        
+#List-aggregation events
+####################################################################################################
+#These define non-Asterisk-native event-types that collect multiple events (cases where multiple
+#events are generated in response to a single action) and emit the bundle as a single message.
+
+class ConfbridgeList_Aggregate(_Aggregate):
+    """
+    Emitted after all conference participants have been received in response to a ConfbridgeList
+    request.
+    
+    Its members consist of ConfbridgeList events.
+    
+    It is finalised by ConfbridgeListComplete.
+    """
+    _aggregation_members = (ConfbridgeList,)
+    _aggregation_finalisers = (ConfbridgeListComplete,)
+    
+    def _finalise(self, event):
+        self._check_list_items_count('ListItems')
+        return _Aggregate._finalise(event)
+        
+class ConfbridgeListRooms_Aggregate(_Aggregate):
+    """
+    Emitted after all conference rooms have been received in response to a ConfbridgeListRooms
+    request.
+    
+    Its members consist of ConfbridgeListRooms events.
+    
+    It is finalised by ConfbridgeListRoomsComplete.
+    """
+    _aggregation_members = (ConfbridgeListRooms,)
+    _aggregation_finalisers = (ConfbridgeListCompleteRooms,)
+    
+    def _finalise(self, event):
+        self._check_list_items_count('ListItems')
+        return _Aggregate._finalise(event)
         
