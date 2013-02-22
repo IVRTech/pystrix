@@ -47,6 +47,8 @@ class MeetmeList(_Request):
     per https://issues.asterisk.org/jira/browse/ASTERISK-16812
     """
     _aggregates = (app_meetme_events.MeetmeList_Aggregate,)
+    _synchronous_events_list = (app_meetme_events.MeetmeList,)
+    _synchronous_events_finalising = (app_meetme_events.MeetmeListComplete,)
     
     def __init__(self, conference=None):
         """
@@ -64,6 +66,8 @@ class MeetmeListRooms(_Request):
     end.
     """
     _aggregates = (app_meetme_events.MeetmeListRooms_Aggregate,)
+    _synchronous_events_list = (app_meetme_events.MeetmeListRooms,)
+    _synchronous_events_finalising = (app_meetme_events.MeetmeListRoomsComplete,)
     
     def __init__(self):
         _Request.__init__(self, 'MeetmeListRooms')
