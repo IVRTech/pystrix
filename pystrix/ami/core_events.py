@@ -378,7 +378,20 @@ class ParkedCallsComplete(_Event):
     Indicates that all parked calls have been listed.
     
     - 'ActionID': The ID associated with the original request
+    - 'Total' : The number of items returned prior to this event
     """
+    def process(self):
+        """
+        Translates the 'Total' header's value into an int, or -1 on failure.
+        """
+        (headers, data) = _Event.process(self)
+        
+        try:
+            headers['Total'] = int(headers['Total'])
+        except Exception:
+            headers['Total'] = -1
+            
+        return (headers, data)
 
 class PeerEntry(_Event):
     """
@@ -442,7 +455,20 @@ class PeerlistComplete(_Event):
     Indicates that all peers have been listed.
     
     - 'ActionID': The ID associated with the original request
+    - 'ListItems' : The number of items returned prior to this event
     """
+    def process(self):
+        """
+        Translates the 'ListItems' header's value into an int, or -1 on failure.
+        """
+        (headers, data) = _Event.process(self)
+        
+        try:
+            headers['ListItems'] = int(headers['ListItems'])
+        except Exception:
+            headers['ListItems'] = -1
+            
+        return (headers, data)
 
 class QueueEntry(_Event):
     """
@@ -966,6 +992,9 @@ class CoreShowChannels_Aggregate(_Aggregate):
     """
     _aggregation_members = (CoreShowChannel,)
     _aggregation_finalisers = (CoreShowChannelsComplete,)
+    
+    def _finalise(self, event):
+        return _Aggregate._finalise(event, count_header='ListItems')
         
 class ParkedCalls_Aggregate(_Aggregate):
     """
@@ -978,6 +1007,9 @@ class ParkedCalls_Aggregate(_Aggregate):
     _aggregation_members = (ParkedCall,)
     _aggregation_finalisers = (ParkedCallsComplete,)
     
+    def _finalise(self, event):
+        return _Aggregate._finalise(event, count_header='Total')
+        
 class QueueStatus_Aggregate(_Aggregate):
     """
     Emitted after all queue properties have been received in response to a QueueStatus request.
@@ -1000,6 +1032,9 @@ class SIPpeers_Aggregate(_Aggregate):
     _aggregation_members = (PeerEntry,)
     _aggregation_finalisers = (PeerlistComplete,)
     
+    def _finalise(self, event):
+        return _Aggregate._finalise(event, count_header='ListItems')
+        
 class SIPshowregistry_Aggregate(_Aggregate):
     """
     Emitted after all SIP registrants have been received in response to a SIPshowregistry request.
@@ -1011,6 +1046,9 @@ class SIPshowregistry_Aggregate(_Aggregate):
     _aggregation_members = (RegistryEntry,)
     _aggregation_finalisers = (RegistrationsComplete,)
     
+    def _finalise(self, event):
+        return _Aggregate._finalise(event, count_header='ListItems')
+        
 class Status_Aggregate(_Aggregate):
     """
     Emitted after all statuses have been received in response to a Status request.
@@ -1022,6 +1060,9 @@ class Status_Aggregate(_Aggregate):
     _aggregation_members = (Status,)
     _aggregation_finalisers = (StatusComplete,)
     
+    def _finalise(self, event):
+        return _Aggregate._finalise(event, count_header='Items')
+        
 class VoicemailUsersList_Aggregate(_Aggregate):
     """
     Emitted after all voicemail users have been received in response to a VoicemailUsersList
