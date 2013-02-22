@@ -20,3 +20,10 @@ Events
     :show-inheritance:
     :members:
 
+Aggregate Events
+++++++++++++++++
+
+.. autoclass:: ami.dahdi_events.DAHDIShowChannels_Aggregate
+    :show-inheritance:
+    :members:
+
