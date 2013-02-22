@@ -1,4 +1,4 @@
-Core
+asterisk "asyncagi"Core
 ====
 
 Asterisk provides a rich assortment of information-carrying events by default, the standard set of
@@ -14,6 +14,10 @@ Events
 ++++++
 
 .. autoclass:: ami.core_events.AGIExec
+    :show-inheritance:
+    :members:
+
+.. autoclass:: ami.core_events.AsyncAGI
     :show-inheritance:
     :members:
 

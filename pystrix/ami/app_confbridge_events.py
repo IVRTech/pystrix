@@ -218,7 +218,7 @@ class ConfbridgeListRooms_Aggregate(_Aggregate):
     _name = "ConfbridgeListRooms_Aggregate"
     
     _aggregation_members = (ConfbridgeListRooms,)
-    _aggregation_finalisers = (ConfbridgeListCompleteRooms,)
+    _aggregation_finalisers = (ConfbridgeListRoomsComplete,)
     
     def _finalise(self, event):
         self._check_list_items_count('ListItems')
