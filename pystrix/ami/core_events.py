@@ -88,7 +88,6 @@ class CoreShowChannel(_Event):
     Provides the definition of an active Asterisk channel.
     
     - 'AccountCode': The account code associated with the channel
-    - 'ActionID': The ID associated with the original request
     - 'Application': The application currently being executed by the channel
     - 'ApplicationData': The arguments provided to the application
     - 'BridgedChannel': The channel to which this channel is connected, if any
@@ -138,7 +137,6 @@ class CoreShowChannelsComplete(_Event):
     """
     Indicates that all Asterisk channels have been listed.
     
-    - 'ActionID': The ID associated with the original request
     - 'ListItems' : The number of items returned prior to this event
     """
     def process(self):
@@ -350,7 +348,6 @@ class ParkedCall(_Event):
     """
     Describes a parked call.
     
-    - 'ActionID': The ID associated with the original request
     - 'CallerID': The ID of the caller, ".+?" <.+?>
     - 'CallerIDName' (optional): The name of the caller, on supporting channels
     - 'Channel': The channel of the parked call
@@ -377,7 +374,6 @@ class ParkedCallsComplete(_Event):
     """
     Indicates that all parked calls have been listed.
     
-    - 'ActionID': The ID associated with the original request
     - 'Total' : The number of items returned prior to this event
     """
     def process(self):
@@ -397,7 +393,6 @@ class PeerEntry(_Event):
     """
     Describes a peer.
     
-    - 'ActionID': The ID associated with the original request
     - 'ChannelType': The type of channel being described.
     
      - 'SIP'
@@ -454,7 +449,6 @@ class PeerlistComplete(_Event):
     """
     Indicates that all peers have been listed.
     
-    - 'ActionID': The ID associated with the original request
     - 'ListItems' : The number of items returned prior to this event
     """
     def process(self):
@@ -474,7 +468,6 @@ class QueueEntry(_Event):
     """
     Indicates that a call is waiting to be answered.
     
-    - 'ActionID' (optional): The ID associated with the original request, if a response
     - 'Channel': The channel of the inbound call
     - 'CallerID': The (often) numeric ID of the caller
     - 'CallerIDName' (optional): The friendly name of the caller on supporting channels
@@ -498,7 +491,6 @@ class QueueMember(_Event):
     """
     Describes a member of a queue.
     
-    - 'ActionID' (optional): The ID associated with the original request, if a response
     - 'CallsTaken': The number of calls received by this member
     - 'LastCall': The UNIX timestamp of the last call taken, or 0 if none
     - 'Location': The interface in the queue
@@ -603,7 +595,6 @@ class QueueParams(_Event):
     Describes the attributes of a queue.
     
     - 'Abandoned': The number of calls that have gone unanswered
-    - 'ActionID' (optional): The ID associated with the original request, if a response
     - 'Calls': The number of current calls in the queue
     - 'Completed': The number of completed calls
     - 'Holdtime': ?
@@ -640,8 +631,6 @@ class QueueParams(_Event):
 class QueueStatusComplete(_Event):
     """
     Indicates that a QueueStatus request has completed.
-    
-    - 'ActionID': The ID associated with the original request
     """
 
 class RegistryEntry(_Event):
@@ -676,7 +665,6 @@ class RegistrationsComplete(_Event):
     """
     Indicates that all registrations have been listed.
     
-    - 'ActionID': The ID associated with the original request
     - 'ListItems' : The number of items returned prior to this event
     """
     def process(self):
@@ -840,7 +828,6 @@ class Status(_Event):
     Describes the current status of a channel.
     
     - 'Account': The billing account associated with the channel; may be empty
-    - 'ActionID': The ID associated with the original request
     - 'Channel': The channel being described
     - 'CallerID': The ID of the caller, ".+?" <.+?>
     - 'CallerIDNum': The (often) numeric component of the CallerID
@@ -868,7 +855,6 @@ class StatusComplete(_Event):
     """
     Indicates that all requested channel information has been provided.
     
-    - 'ActionID': The ID associated with the original request
     - 'Items': The number of items emitted prior to this event
     """
     def process(self):
@@ -888,7 +874,6 @@ class UserEvent(_Event):
     """
     Generated in response to the UserEvent request.
     
-    - 'ActionID': The ID associated with the original request
     - \*: Any key-value pairs supplied with the request, as strings
     """
 
@@ -973,8 +958,6 @@ class VoicemailUserEntryComplete(_Event):
     Indicates that all requested voicemail user definitions have been provided.
     
     No, its name is not a typo; it's really "Entry" in Asterisk's code.
-    
-    - 'ActionID': The ID associated with the original request
     """
     
     
