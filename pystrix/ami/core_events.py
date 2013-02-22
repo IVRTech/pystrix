@@ -64,6 +64,13 @@ class AGIExec(_Event):
         
         return (headers, data)
         
+class AsyncAGI(_Event):
+    """
+    Generated when an AGI request is processed.
+    
+    - All fields currently unknown
+    """
+    
 class ChannelUpdate(_Event):
     """
     Describes a change in a channel.

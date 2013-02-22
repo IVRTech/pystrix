@@ -403,7 +403,7 @@ class ListCategories(_Request):
         `filename` is the name of the file, with extension, to be read.
         """
         _Request.__init__(self, 'ListCategories')
-        self['Filename'] = filenameasterisk hangup event
+        self['Filename'] = filename
         
 
 class LocalOptimizeAway(_Request):
