@@ -575,20 +575,14 @@ class _Aggregate(_MessageTemplate, dict):
             return True
         return False
         
-    def _finalise(self, event, count_header=None):
+    def _finalise(self, event):
         """
         Finalises this aggregate, if appropriate, performing any additional checks as needed, based
         on the properties of the `event`.
         
-        `count_header` identifies the header-item to check to validate the number of received
-        entries.
-        
         The value returned indicates whether finalisation succeeded.
         """
         if self._evaluate_action_id(event):
-            if count_header and self._valid:
-                self._check_list_items_count(event, count_header)
-                
             event_type = type(event)
             self[event_type] = event
             self._pending_finalisers.discard(event_type)
@@ -598,6 +592,9 @@ class _Aggregate(_MessageTemplate, dict):
     def _check_list_items_count(self, event, count_header):
         """
         Most finalisers have a count-property, so check it to assert validity.
+        
+        `count_header` identifies the header-item to check to validate the number of received
+        entries.
         """
         event = event.process()[0]
         list_items_count = event.get(count_header)
