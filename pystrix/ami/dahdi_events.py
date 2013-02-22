@@ -31,29 +31,82 @@ Authors:
 The events implemented by this module follow the definitions provided by
 http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
 """
-from ami import _Event
+from ami import (_Aggregate, _Event)
 
 class DAHDIShowChannels(_Event):
     """
     Describes the current state of a DAHDI channel.
     
-    - 'ActionID': The ID associated with the original request
-    - 'Channel': The channel being described
-    - 'Context': The context associated with the channel
+    Yes, the event's name is pluralised.
+    
+    - 'AccountCode': unknown (not present if the DAHDI channel is down)
+    - 'Alarm': unknown
+    - 'Channel': The channel being described (not present if the DAHDI channel is down)
+    - 'Context': The Asterisk context associated with the channel
+    - 'DAHDIChannel': The ID of the DAHDI channel
+    - 'Description': unknown
     - 'DND': 'Disabled' or 'Enabled'
+    - 'Signalling': A lexical description of the current signalling state
+    - 'SignallingCode': A numeric description of the current signalling state
+    - 'Uniqueid': unknown (not present if the DAHDI channel is down)
     """
     def process(self):
         """
         Translates the 'DND' header's value into a bool.
+        
+        Translates the 'DAHDIChannel' and 'SignallingCode' headers' values into ints, or -1 on
+        failure.
         """
         (headers, data) = _Event.process(self)
+        
         headers['DND'] = headers.get('DND') == 'Enabled'
+        
+        for header in ('DAHDIChannel', 'SignallingCode'):
+            try:
+                headers[header] = int(headers.get(header))
+            except Exception:
+                headers[header] = -1
+                
         return (headers, data)
 
 class DAHDIShowChannelsComplete(_Event):
     """
     Indicates that all DAHDI channels have been described.
     
-    - 'ActionID': The ID associated with the original request
+    - 'Items': The number of items returned prior to this event
     """
+    def process(self):
+        """
+        Translates the 'Items' header's value into an int, or -1 on failure.
+        """
+        (headers, data) = _Event.process(self)
+        
+        try:
+            headers['Items'] = int(headers['Items'])
+        except Exception:
+            headers['Items'] = -1
+            
+        return (headers, data)
+        
+        
+#List-aggregation events
+####################################################################################################
+#These define non-Asterisk-native event-types that collect multiple events (cases where multiple
+#events are generated in response to a single action) and emit the bundle as a single message.
 
+class DAHDIShowChannels_Aggregate(_Aggregate):
+    """
+    Emitted after all DAHDI channels have been enumerated in response to a DAHDIShowChannels
+    request.
+    
+    Its members consist of DAHDIShowChannels events.
+    
+    It is finalised by DAHDIShowChannelsComplete.
+    """
+    _aggregation_members = (DAHDIShowChannels,)
+    _aggregation_finalisers = (DAHDIShowChannelsComplete,)
+    
+    def _finalise(self, event):
+        self._check_list_items_count('Items')
+        return _Aggregate._finalise(event)
+        
