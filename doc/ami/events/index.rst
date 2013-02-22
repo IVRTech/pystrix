@@ -10,7 +10,6 @@ a matter of registering a callback handler for an event with
 
     core.rst
     dahdi.rst
-    zaptel.rst
     app_confbridge.rst
     app_meetme.rst
     
