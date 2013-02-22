@@ -94,6 +94,8 @@ class DAHDIShowChannels(_Request):
     'DAHDIShowChannels' events, ending with a 'DAHDIShowChannelsComplete' event.
     """
     _aggregates = (dahdi_events.DAHDIShowChannels_Aggregate,)
+    _synchronous_events_list = (dahdi_events.DAHDIShowChannels,)
+    _synchronous_events_finalising = (dahdi_events.DAHDIShowChannelsComplete,)
     
     def __init__(self, dahdi_channel=None):
         _Request.__init__(self, 'DAHDIShowChannels')
