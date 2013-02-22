@@ -34,6 +34,7 @@ The requests implemented by this module follow the definitions provided by
 https://wiki.asterisk.org/
 """
 from ami import (_Request, ManagerError)
+import dahdi_events
 
 class DAHDIDNDoff(_Request):
     """
@@ -92,6 +93,8 @@ class DAHDIShowChannels(_Request):
     Provides the current status of all (or one) DAHDI channels through a series of
     'DAHDIShowChannels' events, ending with a 'DAHDIShowChannelsComplete' event.
     """
+    _aggregates = (dahdi_events.DAHDIShowChannels_Aggregate,)
+    
     def __init__(self, dahdi_channel=None):
         _Request.__init__(self, 'DAHDIShowChannels')
         if not dahdi_channel is None:
