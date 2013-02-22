@@ -799,6 +799,7 @@ class _Request(dict):
     aggregate = False #Only has an effect on certain types of requests; will result in an aggregate-event being generated after a list of independent events
     synchronous = False #If True, requests will block until all response events have been collected; these events will appear in a `response` dictionary-attribute
     timeout = 5 #The number of seconds to wait before considering this request timed out; may be a float
+    
     _aggregates = () #A tuple containing all aggregate-types associated with this request
     _synchronous_events_unique = () #A tuple containing all unique events associatable with this request
     _synchronous_events_list = () #A tuple containing all list-type events associatable with this request
