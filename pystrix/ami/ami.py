@@ -454,8 +454,8 @@ class Manager(object):
                 with self._connection_lock:
                     response = self._message_reader.get_response(action_id)
                     if response:
-                        if not request.synchronous or not response.get('Response') == 'Follows':
-                            break #No chance of there being any events
+                        if not request.synchronous:
+                            break #No events to watch for
             else: #Synchronous processing
                 if self._check_outstanding_request_complete(action_id): #Not waiting for any more events
                     break
