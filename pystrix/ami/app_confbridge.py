@@ -35,6 +35,7 @@ The requests and events implemented by this module follow the definitions provid
 https://wiki.asterisk.org/
 """
 from ami import (_Request, ManagerError)
+import core_events
 import app_confbridge_events
 
 class ConfbridgeKick(_Request):
@@ -56,6 +57,8 @@ class ConfbridgeList(_Request):
     A series of 'ConfbridgeList' events follow, with one 'ConfbridgeListComplete' event at the end.
     """
     _aggregates = (app_confbridge_events.ConfbridgeList_Aggregate,)
+    _synchronous_events_list = (app_confbridge_events.ConfbridgeList,)
+    _synchronous_events_finalising = (app_confbridge_events.ConfbridgeListComplete,)
     
     def __init__(self, conference):
         """
@@ -72,6 +75,8 @@ class ConfbridgeListRooms(_Request):
     the end.
     """
     _aggregates = (app_confbridge_events.ConfbridgeListRooms_Aggregate,)
+    _synchronous_events_list = (app_confbridge_events.ConfbridgeListRooms,)
+    _synchronous_events_finalising = (app_confbridge_events.ConfbridgeListRoomsComplete,)
     
     def __init__(self):
         _Request.__init__(self, 'ConfbridgeListRooms')
