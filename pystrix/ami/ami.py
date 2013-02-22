@@ -448,13 +448,15 @@ class Manager(object):
 
         start_time = time.time()
         timeout = start_time + request.timeout
-        response = None
+        response = processed_response = success = None
         while time.time() < timeout:
             if not response: #If blocking for event synchronisation, don't bother polling for the already-received response
                 with self._connection_lock:
                     response = self._message_reader.get_response(action_id)
                     if response:
-                        if not request.synchronous:
+                        processed_response = request.process_response(response)
+                        success = hasattr(processed_response, 'success') and processed_response.success
+                        if not request.synchronous or not success:
                             break #No events to watch for
             else: #Synchronous processing
                 if self._check_outstanding_request_complete(action_id): #Not waiting for any more events
@@ -466,13 +468,12 @@ class Manager(object):
                 
         self._serve_outstanding_request(action_id) #Get the ActionID out of circulation
         if response:
-            processed_response = request.process_response(response)
             return _Response(
                 processed_response,
                 response,
                 request,
                 action_id,
-                hasattr(processed_response, 'success') and processed_response.success,
+                success,
                 time.time() - start_time,
                 events
             )
