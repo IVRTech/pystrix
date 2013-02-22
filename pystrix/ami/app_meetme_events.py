@@ -43,6 +43,119 @@ class MeetmeJoin(_Event):
     - 'Usernum' : The bridge-specific participant ID assigned to the channel
     """
 
+class MeetmeList(_Event):
+    """
+    Describes a participant in a Meetme room.
+    
+    - 'Admin' : 'Yes' or 'No'
+    - 'CallerIDNum' : The (often) numeric address of the participant
+    - 'CallerIDName' (optional) : The name of the participant on supporting channels
+    - 'Channel' : The Asterisk channel in use by the participant
+    - 'Conference' : The room's identifier
+    - 'ConnectedLineNum' : unknown
+    - 'ConnectedLineName' : unknown
+    - 'MarkedUser' : 'Yes' or 'No'
+    - 'Muted' : "By admin", "By self", "No"
+    - 'Role' : "Listen only", "Talk only", "Talk and listen"
+    - 'Talking' : 'Yes', 'No', or 'Not monitored'
+    - 'UserNumber' : The ID of the participant in the conference
+    """
+    def process(self):
+        """
+        Translates the 'Admin' and 'MarkedUser' headers' values into bools.
+        
+        Translates the 'Talking' header's value into a bool, or `None` if not monitored.
+        
+        Translates the 'UserNumber' header's value into an int, or -1 on failure.
+        """
+        (headers, data) = _Event.process(self)
+        
+        for header in ('Admin', 'MarkedUser'):
+            headers[header] = headers.get(header) == 'Yes'
+            
+        talking = headers.get('Talking')
+        if talking == 'Yes':
+            headers['Talking'] = True
+        elif talking == 'No':
+            headers['Talking'] = False
+        else:
+            headers['Talking'] = None
+            
+        try:
+            headers['UserNumber'] = int(headers.get('UserNumber'))
+        except Exception:
+            headers['UserNumber'] = -1
+            
+        return (headers, data)
+
+class MeetmeListComplete(_Event):
+    """
+    Indicates that all participants in a Meetme query have been enumerated.
+    
+    - 'ListItems' : The number of items returned prior to this event
+    """
+    def process(self):
+        """
+        Translates the 'ListItems' header's value into an int, or -1 on failure.
+        """
+        (headers, data) = _Event.process(self)
+        
+        try:
+            headers['ListItems'] = int(headers['ListItems'])
+        except Exception:
+            headers['ListItems'] = -1
+            
+        return (headers, data)
+
+class MeetmeListRooms(_Event):
+    """
+    Describes a Meetme room.
+    
+    And, yes, it's plural in Asterisk, too.
+    
+    - 'Activity' : The duration of the conference
+    - 'Conference' : The room's identifier
+    - 'Creation' : 'Dynamic' or 'Static'
+    - 'Locked' : 'Yes' or 'No'
+    - 'Marked' : The number of marked users, but not as an integer: 'N/A' or %.4d
+    - 'Parties' : The number of participants
+    """
+    def process(self):
+        """
+        Translates the 'Parties' header's value into an int, or -1 on failure.
+        
+        Translates the 'Locked' header's value into a bool.
+        """
+        (headers, data) = _Event.process(self)
+        
+        try:
+            headers['Parties'] = int(headers['Parties'])
+        except Exception:
+            headers['Parties'] = -1
+                
+        headers['Locked'] = headers.get('Locked') == 'Yes'
+        
+        return (headers, data)
+
+class MeetmeListRoomsComplete(_Event):
+    """
+    Indicates that all Meetme rooms have been enumerated.
+    
+    - 'ListItems' : The number of items returned prior to this event
+    """
+    def process(self):
+        """
+        Translates the 'ListItems' header's value into an int, or -1 on failure.
+        """
+        (headers, data) = _Event.process(self)
+        
+        try:
+            headers['ListItems'] = int(headers['ListItems'])
+        except Exception:
+            headers['ListItems'] = -1
+            
+        return (headers, data)
+
 class MeetmeMute(_Event):
     """
     Indicates that a user has been muted in a Meetme bridge.
@@ -62,4 +175,40 @@ class MeetmeMute(_Event):
         headers['Status'] = headers.get('Status') == 'on'
         
         return (headers, data)
+        
+        
+#List-aggregation events
+####################################################################################################
+#These define non-Asterisk-native event-types that collect multiple events (cases where multiple
+#events are generated in response to a single action) and emit the bundle as a single message.
+
+class MeetmeList_Aggregate(_Aggregate):
+    """
+    Emitted after all participants have been received in response to a MeetmeList request.
+    
+    Its members consist of MeetmeList events.
+    
+    It is finalised by MeetmeListComplete.
+    """
+    _aggregation_members = (MeetmeList,)
+    _aggregation_finalisers = (MeetmeListComplete,)
+    
+    def _finalise(self, event):
+        self._check_list_items_count('ListItems')
+        return _Aggregate._finalise(event)
+        
+class MeetmeListRooms_Aggregate(_Aggregate):
+    """
+    Emitted after all participants have been received in response to a MeetmeListRooms request.
+    
+    Its members consist of MeetmeListRooms events.
+    
+    It is finalised by MeetmeListRoomsComplete.
+    """
+    _aggregation_members = (MeetmeListRooms,)
+    _aggregation_finalisers = (MeetmeListRoomsComplete,)
+    
+    def _finalise(self, event):
+        self._check_list_items_count('ListItems')
+        return _Aggregate._finalise(event)
         

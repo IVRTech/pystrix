@@ -17,6 +17,10 @@ Actions
     :show-inheritance:
     :members: __init__
 
+.. autoclass:: ami.app_meetme.MeetmeListRooms
+    :show-inheritance:
+    :members: __init__
+
 .. autoclass:: ami.app_meetme.MeetmeMute
     :show-inheritance:
     :members: __init__

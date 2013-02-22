@@ -35,6 +35,7 @@ The requests and events implemented by this module follow the definitions provid
 http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
 """
 from ami import (_Request, ManagerError)
+import app_meetme_events
 
 class MeetmeList(_Request):
     """
@@ -45,6 +46,8 @@ class MeetmeList(_Request):
     Note that if no conferences are active, the response will indicate that it was not successful,
     per https://issues.asterisk.org/jira/browse/ASTERISK-16812
     """
+    _aggregates = (app_meetme_events.MeetmeList_Aggregate,)
+    
     def __init__(self, conference=None):
         """
         `conference` is the optional identifier of the bridge.
@@ -53,6 +56,18 @@ class MeetmeList(_Request):
         if not conference is None:
             self['Conference'] = conference
             
+class MeetmeListRooms(_Request):
+    """
+    Lists all conferences.
+
+    A series of 'MeetmeListRooms' events follow, with one 'MeetmeListRoomsComplete' event at the
+    end.
+    """
+    _aggregates = (app_meetme_events.MeetmeListRooms_Aggregate,)
+    
+    def __init__(self):
+        _Request.__init__(self, 'MeetmeListRooms')
+        
 class MeetmeMute(_Request):
     """
     Mutes a participant in a Meetme bridge.

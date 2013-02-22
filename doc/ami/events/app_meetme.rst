@@ -17,7 +17,26 @@ Events
     :show-inheritance:
     :members:
 
+.. autoclass:: ami.app_meetme_events.MeetmeList
+    :show-inheritance:
+    :members:
+
+.. autoclass:: ami.app_meetme_events.MeetmeListRooms
+    :show-inheritance:
+    :members:
+
 .. autoclass:: ami.app_meetme_events.MeetmeMute
     :show-inheritance:
     :members:    
 
+Aggregate Events
+++++++++++++++++
+
+.. autoclass:: ami.app_meetme_events.MeetmeList_Aggregate
+    :show-inheritance:
+    :members:
+    
+.. autoclass:: ami.app_meetme_events.MeetmeListRooms_Aggregate
+    :show-inheritance:
+    :members:
+    
