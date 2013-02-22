@@ -95,6 +95,8 @@ class AGI(_Request):
     
     Requires call
     """
+    _synchronous_events_finalising = (core_events.AsyncAGI,)
+    
     def __init__(self, channel, command, command_id=None):
         """
         `channel` is the call in which to execute `command`, the value passed to the AGI dialplan
@@ -180,6 +182,8 @@ class CoreShowChannels(_Request):
     Requires system
     """
     _aggregates = (core_events.CoreShowChannels_Aggregate,)
+    _synchronous_events_list = (core_events.CoreShowChannel,)
+    _synchronous_events_finalising = (core_events.CoreShowChannelsComplete,)
     
     def __init__(self):
         _Request.__init__(self, "CoreShowChannels")
@@ -370,6 +374,8 @@ class Hangup(_Request):
     
     Requires call
     """
+    _synchronous_events_finalising = (core_events.Hangup,)
+    
     def __init__(self, channel):
         """
         `channel` is the ID of the channel to be hung up.
@@ -397,7 +403,8 @@ class ListCategories(_Request):
         `filename` is the name of the file, with extension, to be read.
         """
         _Request.__init__(self, 'ListCategories')
-        self['Filename'] = filename
+        self['Filename'] = filenameasterisk hangup event
+        
 
 class LocalOptimizeAway(_Request):
     """
@@ -783,6 +790,8 @@ class ParkedCalls(_Request):
     'ParkedCallsComplete'.
     """
     _aggregates = (core_events.ParkedCalls_Aggregate,)
+    _synchronous_events_list = (core_events.ParkedCall,)
+    _synchronous_events_finalising = (core_events.ParkedCallsComplete,)
     
     def __init__(self):
         _Request.__init__(self, "ParkedCalls")
@@ -853,6 +862,8 @@ class QueueAdd(_Request):
 
     Requires agent
     """
+    _synchronous_events_finalising = (core_events.QueueMemberAdded,)
+    
     def __init__(self, interface, queue, membername=None, penalty=0, paused=False):
         """
         Adds the device identified by `interface` to the given `queue`.
@@ -963,6 +974,8 @@ class QueueRemove(_Request):
 
     Requires agent
     """
+    _synchronous_events_finalising = (core_events.QueueMemberRemoved,)
+    
     def __init__(self, interface, queue):
         """
         Removes the device identified by `interface` from the given `queue`.
@@ -979,6 +992,8 @@ class QueueStatus(_Request):
     with 'QueueStatusComplete'.
     """
     _aggregates = (core_events.QueueStatus_Aggregate,)
+    _synchronous_events_list = (core_events.QueueParams, core_events.QueueMember, core_events.QueueEntry,)
+    _synchronous_events_finalising = (core_events.QueueStatusComplete,)
     
     def __init__(self, queue=None):
         """
@@ -1096,6 +1111,8 @@ class SIPpeers(_Request):
     Requires system
     """
     _aggregates = (core_events.SIPpeers_Aggregate,)
+    _synchronous_events_list = (core_events.PeerEntry,)
+    _synchronous_events_finalising = (core_events.PeerlistComplete,)
     
     def __init__(self):
         _Request.__init__(self, "SIPpeers")
@@ -1218,6 +1235,8 @@ class SIPshowregistry(_Request):
     Requires system
     """
     _aggregates = (core_events.SIPshowregistry_Aggregate,)
+    _synchronous_events_list = (core_events.RegistryEntry,)
+    _synchronous_events_finalising = (core_events.RegistrationsComplete,)
     
     def __init__(self):
         _Request.__init__(self, "SIPshowregistry")
@@ -1231,6 +1250,8 @@ class Status(_Request):
     Requires call
     """
     _aggregates = (core_events.Status_Aggregate,)
+    _synchronous_events_list = (core_events.Status,)
+    _synchronous_events_finalising = (core_events.StatusComplete,)
     
     def __init__(self, channel):
         """
@@ -1320,6 +1341,8 @@ class UserEvent(_Request):
     
     Requires user
     """
+    _synchronous_events_finalising = (core_events.UserEvent,)
+    
     def __init__(self, **kwargs):
         """
         Any keyword-arguments passed will be present in the generated event, making this usable as a
@@ -1339,6 +1362,8 @@ class VoicemailUsersList(_Request):
     Requires system (probably)
     """
     _aggregates = (core_events.VoicemailUsersList_Aggregate,)
+    _synchronous_events_list = (core_events.VoicemailUserEntry,)
+    _synchronous_events_finalising = (core_events.VoicemailUserEntryComplete,)
     
     def __init__(self):
         _Request.__init__(self, 'VoicemailUsersList')
