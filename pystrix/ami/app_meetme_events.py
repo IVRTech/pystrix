@@ -190,6 +190,8 @@ class MeetmeList_Aggregate(_Aggregate):
     
     It is finalised by MeetmeListComplete.
     """
+    _name = "MeetmeList_Aggregate"
+    
     _aggregation_members = (MeetmeList,)
     _aggregation_finalisers = (MeetmeListComplete,)
     
@@ -205,6 +207,8 @@ class MeetmeListRooms_Aggregate(_Aggregate):
     
     It is finalised by MeetmeListRoomsComplete.
     """
+    _name = "MeetmeListRooms_Aggregate"
+    
     _aggregation_members = (MeetmeListRooms,)
     _aggregation_finalisers = (MeetmeListRoomsComplete,)
     
