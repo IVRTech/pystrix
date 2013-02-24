@@ -51,7 +51,7 @@ _EOL_FAKE = ('\n\r\n', '\r\r\n') #End-of-line patterns that indicate data, not h
 _EOC_INDICATOR = re.compile(r'Response:\s*Follows\s*$') #A regular expression that matches response headers that indicate the payload is attached
 
 _Response = collections.namedtuple('Response', [
- 'result', 'response', 'request', 'action_id', 'success', 'time', 'events',
+ 'result', 'response', 'request', 'action_id', 'success', 'time', 'events', 'events_timeout',
 ]) #A container for responses to requests.
 
 RESPONSE_GENERIC = 'Generic Response' #A header-value provided as a surrogate for unidentifiable responses
@@ -423,6 +423,7 @@ class Manager(object):
         - success: A boolean value indicating whether the request was met with success
         - time: The number of seconds, as a float, that the request took to be serviced
         - events: A dictionary containing related events if the request is synchronous or None otherwise
+        - events_timeout: Whether the request timed out while waiting for events
         
         For forward-compatibility reasons, elements of the tuple should be accessed by name, rather
         than by index.
@@ -449,6 +450,7 @@ class Manager(object):
         start_time = time.time()
         timeout = start_time + request.timeout
         response = processed_response = success = None
+        events_timeout = False
         while time.time() < timeout:
             if not response: #If blocking for event synchronisation, don't bother polling for the already-received response
                 with self._connection_lock:
@@ -463,9 +465,8 @@ class Manager(object):
                     break
             time.sleep(0.05)
         else: #Timed out
-            if events:
-                events['timeout'] = True
-                
+            events_timeout = True
+            
         self._serve_outstanding_request(action_id) #Get the ActionID out of circulation
         if response:
             return _Response(
@@ -475,7 +476,8 @@ class Manager(object):
                 action_id,
                 success,
                 time.time() - start_time,
-                events
+                events,
+                events_timeout
             )
         else:
             return None
@@ -490,7 +492,7 @@ class Manager(object):
         """
         with self._connection_lock:
             if request.synchronous:
-                events = {'timeout': False}
+                events = {}
                 (uniques, lists, finalisers) = request.get_synchronous_classes()
                 for c in uniques:
                     events[c] = None
