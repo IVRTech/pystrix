@@ -447,8 +447,8 @@ class Manager(object):
             with self._event_aggregates_lock:
                 for aggregate_class in request.get_aggregate_classes():
                     self._event_aggregates.append((time.time() + self._event_aggregates_timeout, aggregate_class(action_id)))
-                    if self._logger:
-                        self._logger.debug("Started building aggregate-event '%(event)s' for action-ID '%(action-id)s'" % {
+                    if self._debug:
+                        (self._logger and self._logger.debug or warnings.warn)("Started building aggregate-event '%(event)s' for action-ID '%(action-id)s'" % {
                          'event': _EVENT_REGISTRY_REV.get(aggregate_class_),
                          'action-id': action_id,
                         })
@@ -473,11 +473,10 @@ class Manager(object):
         else: #Timed out
             if request.synchronous:
                 events_timeout = True
-                if self._logger:
-                    self._logger.warn("Timed out while collecting events for synchronised action-ID '%(action-id)s'" % {
-                     'action-id': action_id,
-                    })
-                    
+                (self._logger and self._logger.warn or warnings.warn)("Timed out while collecting events for synchronised action-ID '%(action-id)s'" % {
+                 'action-id': action_id,
+                })
+                
         self._serve_outstanding_request(action_id) #Get the ActionID out of circulation
         if response:
             return _Response(
@@ -491,10 +490,9 @@ class Manager(object):
                 events_timeout
             )
         else:
-            if self._logger:
-                self._logger.warn("Timed out while waiting for response for action-ID '%(action-id)s'" % {
-                 'action-id': action_id,
-                })
+            (self._logger and self._logger.warn or warnings.warn)("Timed out while waiting for response for action-ID '%(action-id)s'" % {
+             'action-id': action_id,
+            })
             return None
 
     def _add_outstanding_request(self, action_id, request):
