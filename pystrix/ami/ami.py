@@ -626,8 +626,8 @@ class _Aggregate(_MessageTemplate, dict):
     _valid = True #Indicates whether the aggregate's contents are consistent with Asterisk's protocol
     _error_message = None #A string that explains why validation failed, if it failed
     
-    _aggregation_members = None #A tuple containing all classes that can be members of this aggregation
-    _aggregation_finalisers = None #A tuplecontaining all class that must be received for the aggregation to be complete
+    _aggregation_members = () #A tuple containing all classes that can be members of this aggregation
+    _aggregation_finalisers = () #A tuplecontaining all class that must be received for the aggregation to be complete
     _pending_finalisers = None #All finalisers yet to be received
     
     def __init__(self, action_id):
@@ -636,10 +636,12 @@ class _Aggregate(_MessageTemplate, dict):
         """
         self._action_id = action_id
         self._pending_finalisers = set(self._aggregation_finalisers)
-        for i in self._aggregation_members:
-            self[i] = []
-        for i in self._aggregation_finalisers:
-            self[i] = None
+        
+        global _EVENT_REGISTRY_REV
+        for c in self._aggregation_members:
+            self[c] = self[_EVENT_REGISTRY_REV.get(c)] = []
+        for c in self._aggregation_finalisers:
+            self[c] = self[_EVENT_REGISTRY_REV.get(c)] None
             
     def _evaluate_action_id(self, event):
         """
@@ -654,7 +656,7 @@ class _Aggregate(_MessageTemplate, dict):
         The value returned indicates whether `event` was added.
         """
         if self._evaluate_action_id(event):
-            self[type(event)].append(event)
+            self[type(event)].append(event) #Lists are shared between class-object and string elements
             return True
         return False
         
@@ -667,7 +669,7 @@ class _Aggregate(_MessageTemplate, dict):
         """
         if self._evaluate_action_id(event):
             event_type = type(event)
-            self[event_type] = event
+            self[event_type] = self[_EVENT_REGISTRY_REV.get(event_type)] = event
             self._pending_finalisers.discard(event_type)
             return len(self._pending_finalisers) == 0
         return False
