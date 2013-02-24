@@ -505,14 +505,15 @@ class Manager(object):
         """
         with self._connection_lock:
             if request.synchronous:
+                global _EVENT_REGISTRY_REV
                 events = {}
                 (uniques, lists, finalisers) = request.get_synchronous_classes()
                 for c in uniques:
-                    events[c] = None
+                    events[c] = events[_EVENT_REGISTRY_REV.get(c)] = None
                 for c in lists:
-                    events[c] = []
+                    events[c] = events[_EVENT_REGISTRY_REV.get(c)] = []
                 for c in finalisers:
-                    events[c] = None
+                    events[c] = events[_EVENT_REGISTRY_REV.get(c)] = None
                     
                 self._outstanding_requests[action_id] = (events, set(finalisers))
                 return events
@@ -547,9 +548,9 @@ class Manager(object):
                 
                 value = status[0].get(event_type)
                 if type(value) is list: #If it's part of a list-type, add it to the collection
-                    value.append(event)
-                else: #Set it as the relevant entry
-                    status[0][event_type] = event
+                    value.append(event) #No need to add it to both the named and class-type value, since they share the same list
+                else: #Set it as the relevant entry, for both the class-def and named keys
+                    status[0][event_type] = status[0][_EVENT_REGISTRY_REV.get(event_type)] = event
 
     def _serve_outstanding_request(self, action_id):
         """
