@@ -641,7 +641,7 @@ class _Aggregate(_MessageTemplate, dict):
         for c in self._aggregation_members:
             self[c] = self[_EVENT_REGISTRY_REV.get(c)] = []
         for c in self._aggregation_finalisers:
-            self[c] = self[_EVENT_REGISTRY_REV.get(c)] None
+            self[c] = self[_EVENT_REGISTRY_REV.get(c)] = None
             
     def _evaluate_action_id(self, event):
         """

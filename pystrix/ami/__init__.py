@@ -61,5 +61,5 @@ for module in (
         _EVENT_REGISTRY[event] = class_object
         _EVENT_REGISTRY_REV[class_object] = event
 del _EVENT_REGISTRY
-def _EVENT_REGISTRY_REV
+del _EVENT_REGISTRY_REV
 
