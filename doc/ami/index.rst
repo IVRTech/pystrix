@@ -143,7 +143,8 @@ the system, with members that are worth knowing about.
         emitted in response. If not, this is `None`.
         
         The dictionary will contain references to either the events themselves or lists of events,
-        depending on what is appropriate, keyed by the event's class.
+        depending on what is appropriate, keyed by the event's class-object and its friendly name
+        as a string, like `pystrix.ami.core_events.CoreShowChannels` and "CoreShowChannels".
         
     .. attribute:: events_timeout
     
