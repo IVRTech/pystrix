@@ -145,8 +145,10 @@ the system, with members that are worth knowing about.
         The dictionary will contain references to either the events themselves or lists of events,
         depending on what is appropriate, keyed by the event's class.
         
-        Additionally, the dictionary will contain a boolean value keyed under the string "timeout",
-        indicating whether any events were still unreceived when the response was returned.
+    .. attribute:: events_timeout
+    
+        A boolean value indicating whether any events were still unreceived when the response was
+        returned. This is meaningful only if the reqyest had `synchronous` set.
         
     .. attribute:: response
     
