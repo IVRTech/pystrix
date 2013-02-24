@@ -449,7 +449,7 @@ class Manager(object):
                     self._event_aggregates.append((time.time() + self._event_aggregates_timeout, aggregate_class(action_id)))
                     if self._debug:
                         (self._logger and self._logger.debug or warnings.warn)("Started building aggregate-event '%(event)s' for action-ID '%(action-id)s'" % {
-                         'event': _EVENT_REGISTRY_REV.get(aggregate_class_),
+                         'event': _EVENT_REGISTRY_REV.get(aggregate_class),
                          'action-id': action_id,
                         })
 
