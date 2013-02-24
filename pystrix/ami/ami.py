@@ -68,7 +68,7 @@ class Manager(object):
     _action_id_lock = None #A lock used to prevent race conditions on ActionIDs
     _connection = None #A connection to the Asterisk manager, realised as a `_SynchronisedSocket`
     _connection_lock = None #A means of preventing race conditions on the connection
-    _debug = False #If True, development information is printed to console
+    _debug = False #If True, development information is emitted along the normal logging stream
     _event_aggregates = None #A list of aggregates awaiting fulfillment
     _event_aggregates_lock = None #A lock used to prevent race conditions on event aggregation
     _event_aggregates_timeout = None #The amount of time to wait before considering an aggregate timed-out
@@ -939,9 +939,11 @@ class _MessageReader(threading.Thread):
                     event_class = _EVENT_REGISTRY.get(message.name)
                     if event_class:
                         message.__class__ = event_class
-                    elif self._manager._debug:
-                        print("Unknown event received: " + repr(message))
-                        
+                    else:
+                        message.__class__ = _Event
+                        if self._manager._debug:
+                            (self._manager._logger and self._manager._logger.warn or warnings.warn)("Unknown event received: " + repr(message))
+                            
                     self.event_queue.put(message)
                 else: #It's an orphaned response
                     self.response_queue.put(message)
