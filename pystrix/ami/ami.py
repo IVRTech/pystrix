@@ -43,6 +43,7 @@ import types
 import warnings
 
 _EVENT_REGISTRY = {} #Meant to be internally managed only, this provides mappings from event-class-names to the classes, to enable type-mutation
+_EVENT_REGISTRY_REV = {} #Provides the friendly names of events as strings, keyed by class object
 
 _EOC = '--END COMMAND--' #A string used by Asterisk to mark the end of some of its responses.
 _EOL = '\r\n' #Asterisk uses CRLF linebreaks to mark the ends of its lines.
@@ -446,6 +447,11 @@ class Manager(object):
             with self._event_aggregates_lock:
                 for aggregate_class in request.get_aggregate_classes():
                     self._event_aggregates.append((time.time() + self._event_aggregates_timeout, aggregate_class(action_id)))
+                    if self._logger:
+                        self._logger.debug("Started building aggregate-event '%(event)s' for action-ID '%(action-id)s'" % {
+                         'event': _EVENT_REGISTRY_REV.get(aggregate_class_),
+                         'action-id': action_id,
+                        })
 
         start_time = time.time()
         timeout = start_time + request.timeout

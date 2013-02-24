@@ -51,12 +51,15 @@ import dahdi_events
 import app_confbridge_events
 import app_meetme_events
 
-from ami import _EVENT_REGISTRY
+from ami import (_EVENT_REGISTRY, _EVENT_REGISTRY_REV)
 for module in (
  core_events, dahdi_events,
  app_confbridge_events, app_meetme_events,
 ):
     for event in (e for e in dir(module) if not e.startswith('_')):
-        _EVENT_REGISTRY[event] = getattr(module, event)
+        class_object = getattr(module, event)
+        _EVENT_REGISTRY[event] = class_object
+        _EVENT_REGISTRY_REV[class_object] = event
 del _EVENT_REGISTRY
+def _EVENT_REGISTRY_REV
 
