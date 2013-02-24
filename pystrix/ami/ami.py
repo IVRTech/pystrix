@@ -471,8 +471,13 @@ class Manager(object):
                     break
             time.sleep(0.05)
         else: #Timed out
-            events_timeout = True
-            
+            if request.synchronous:
+                events_timeout = True
+                if self._logger:
+                    self._logger.warn("Timed out while collecting events for synchronised action-ID '%(action-id)s'" % {
+                     'action-id': action_id,
+                    })
+                    
         self._serve_outstanding_request(action_id) #Get the ActionID out of circulation
         if response:
             return _Response(
@@ -486,6 +491,10 @@ class Manager(object):
                 events_timeout
             )
         else:
+            if self._logger:
+                self._logger.warn("Timed out while waiting for response for action-ID '%(action-id)s'" % {
+                 'action-id': action_id,
+                })
             return None
 
     def _add_outstanding_request(self, action_id, request):
