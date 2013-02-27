@@ -109,6 +109,6 @@ class DAHDIShowChannels_Aggregate(_Aggregate):
     _aggregation_finalisers = (DAHDIShowChannelsComplete,)
     
     def _finalise(self, event):
-        self._check_list_items_count('Items')
-        return _Aggregate._finalise(event)
+        self._check_list_items_count(event, 'Items')
+        return _Aggregate._finalise(self, event)
         
