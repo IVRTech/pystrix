@@ -42,5 +42,5 @@ Authors:
 import agi
 import ami
 
-VERSION = '0.9.5'
+VERSION = '0.9.6'
 
