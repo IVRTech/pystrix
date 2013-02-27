@@ -203,8 +203,8 @@ class ConfbridgeList_Aggregate(_Aggregate):
     _aggregation_finalisers = (ConfbridgeListComplete,)
     
     def _finalise(self, event):
-        self._check_list_items_count('ListItems')
-        return _Aggregate._finalise(event)
+        self._check_list_items_count(event, 'ListItems')
+        return _Aggregate._finalise(self, event)
         
 class ConfbridgeListRooms_Aggregate(_Aggregate):
     """
@@ -221,6 +221,6 @@ class ConfbridgeListRooms_Aggregate(_Aggregate):
     _aggregation_finalisers = (ConfbridgeListRoomsComplete,)
     
     def _finalise(self, event):
-        self._check_list_items_count('ListItems')
-        return _Aggregate._finalise(event)
+        self._check_list_items_count(event, 'ListItems')
+        return _Aggregate._finalise(self, event)
         

@@ -179,10 +179,14 @@ class Manager(object):
                 event = message_reader.event_queue.get_nowait()
             except Queue.Empty:
                 pass
-            else: #Evaluate the new event against all pending aggregates
+            else:
+                #Bind it to a request, if appropriate
+                self._process_outstanding_request_event(event)
+                
+                #Evaluate the new event against all pending aggregates
                 with self._event_aggregates_lock:
                     for (i, (_, aggregate)) in enumerate(self._event_aggregates):
-                        aggregation_result = aggregate.evaluate_result(event)
+                        aggregation_result = aggregate.evaluate_event(event)
                         if aggregation_result is None: #Not relevant
                             continue
                         else:
@@ -192,8 +196,6 @@ class Manager(object):
                             break
         
         if event:
-            self._process_outstanding_request_event(event) #Bind it to a request, if appropriate
-            
             event_name = event.name
             callbacks = set()
             with self._event_callbacks_lock:
@@ -521,10 +523,18 @@ class Manager(object):
                 self._outstanding_requests[action_id] = None
                 return None
                 
+    def _check_outstanding_request(self, action_id):
+        """
+        Yields a boolean value that indicates whether the indicated request is still awaiting a
+        response.
+        """
+        with self._connection_lock:
+            return action_id in self._outstanding_requests
+            
     def _check_outstanding_request_complete(self, action_id):
         """
-        Yields a boolean value that indicates whether the indicated request has been fully served, in
-        terms of having received all expected requests if synchronised.
+        Yields a boolean value that indicates whether the indicated request has been fully served,
+        in terms of having received all expected requests if synchronised.
         
         If not synchronised or if the request isn't tracked, the value returned is True.
         """
@@ -684,7 +694,7 @@ class _Aggregate(_MessageTemplate, dict):
         event = event.process()[0]
         list_items_count = event.get(count_header)
         if list_items_count is not None:
-            items_count = sum(len(i) for i in self.values() if type(i) == list)
+            items_count = sum(len(v) for (k, v) in self.items() if type(v) is list and isinstance(k, str))
             self._valid = list_items_count == items_count
             if not self._valid:
                 self._error_message = "Expected %(event)i list-items; received %(count)i" % {
@@ -921,7 +931,7 @@ class _MessageReader(threading.Thread):
         """
         with self._served_requests_lock:
             response = self._served_requests.get(action_id)
-            if not response is None:
+            if response is not None:
                 del self._served_requests[action_id]
             return response
             
@@ -944,13 +954,7 @@ class _MessageReader(threading.Thread):
                 break #Nothing can be reported, but the socket died, so there's no point in running
             else:
                 action_id = message.get(KEY_ACTIONID)
-                if action_id is not None and self._manager._serve_outstanding_request(action_id):
-                    with self._served_requests_lock:
-                        if not action_id in self._served_requests:
-                            self._served_requests[action_id] = message
-                        else: #If there's already an associated response, treat this one as orphaned to avoid data-loss
-                            self.response_queue.put(message)
-                elif KEY_EVENT in message:
+                if KEY_EVENT in message:
                     #See if the event has a corresponding subclass and mutate it if it does
                     event_class = _EVENT_REGISTRY.get(message.name)
                     if event_class:
@@ -961,6 +965,12 @@ class _MessageReader(threading.Thread):
                             (self._manager._logger and self._manager._logger.warn or warnings.warn)("Unknown event received: " + repr(message))
                             
                     self.event_queue.put(message)
+                elif action_id is not None and self._manager._check_outstanding_request(action_id):
+                    with self._served_requests_lock:
+                        if action_id not in self._served_requests:
+                            self._served_requests[action_id] = message
+                        else: #If there's already an associated response, treat this one as orphaned to avoid data-loss
+                            self.response_queue.put(message)
                 else: #It's an orphaned response
                     self.response_queue.put(message)
                     
