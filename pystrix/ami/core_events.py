@@ -1,6 +1,6 @@
 """
 pystrix.ami.core_events
-=======
+=======================
 
 Provides defnitions and filtering rules for events that may be raised by Asterisk.
 
