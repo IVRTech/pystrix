@@ -146,7 +146,7 @@ class Manager(object):
                 
             #Emit events, sleeping if nothing was sent during this cycle
             sleep = not self._event_dispatcher_events(message_reader, event_aggregates_complete)
-            sleep = not self._event_dispatcher_orhpaned_responses(message_reader) and sleep
+            sleep = not self._event_dispatcher_orphaned_responses(message_reader) and sleep
             if sleep:
                 time.sleep(0.02)
                 #Clean up old aggregates about once every second
@@ -195,7 +195,7 @@ class Manager(object):
             self._process_outstanding_request_event(event) #Bind it to a request, if appropriate
             
             event_name = event.name
-            callbacks = []
+            callbacks = set()
             with self._event_callbacks_lock:
                 callbacks.update(self._event_callbacks.get(event_name) or ()) #Start with exact matches, if any
                 callbacks.update(self._event_callbacks.get('') or ()) #Add the universal handlers, if any
