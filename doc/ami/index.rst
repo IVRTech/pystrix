@@ -84,7 +84,7 @@ the system, with members that are worth knowing about.
 .. autoclass:: ami.ami._Event
     :show-inheritance:
     
-    .. method:: process
+    .. automethod:: ami.ami._Event.process
     
 .. autoclass:: ami.ami._Message
     :show-inheritance:
