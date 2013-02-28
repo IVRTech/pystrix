@@ -682,7 +682,7 @@ class _Aggregate(_MessageTemplate, dict):
         Indicates whether the aggregate's action-ID matches that of the event.
         """
         return self._action_id == event.action_id
-                
+        
     def _aggregate(self, event):
         """
         Adds the `event` to this aggregate, if appropriate, inheriting properties as necessary.
