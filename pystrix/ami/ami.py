@@ -567,6 +567,13 @@ class Manager(object):
                 self._outstanding_requests[action_id] = None
                 return None
                 
+    def _check_outstanding_request_exists(self, action_id):
+        """
+        Yields a boolean value that indicates whether the indicated request exists.
+        """
+        with self._connection_lock:
+            return action_id in self._outstanding_requests
+            
     def _check_outstanding_request_complete(self, action_id):
         """
         Yields a boolean value that indicates whether the indicated request has been fully served,
@@ -982,9 +989,9 @@ class _MessageReader(threading.Thread):
                             (self._manager._logger and self._manager._logger.warn or warnings.warn)("Unknown event received: " + repr(message))
                             
                     self.event_queue.put(message)
-                elif action_id is not None and self._manager._check_outstanding_request(action_id):
+                elif action_id is not None:
                     with self._served_requests_lock:
-                        if action_id not in self._served_requests:
+                        if action_id not in self._served_requests and self._manager._check_outstanding_request_exists(action_id):
                             self._served_requests[action_id] = message
                         else: #If there's already an associated response, treat this one as orphaned to avoid data-loss
                             self.response_queue.put(message)
