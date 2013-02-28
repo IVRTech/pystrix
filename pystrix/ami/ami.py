@@ -71,6 +71,7 @@ _CALLBACK_TYPE_ORPHANED = 3 #Identifies a callback-definition for orphaned respo
 class Manager(object):
     _alive = True #False when this manager object is ready to be disposed of
     _action_id = None #The ActionID last sent to Asterisk
+    _action_id_random_token = None #A randomly generated token, used to help avoid conflicts when multiple AMI connections are in use
     _action_id_lock = None #A lock used to prevent race conditions on ActionIDs
     _connection = None #A connection to the Asterisk manager, realised as a `_SynchronisedSocket`
     _connection_lock = None #A means of preventing race conditions on the connection
@@ -105,6 +106,16 @@ class Manager(object):
         self._logger = logger
         
         self._action_id = 0
+        action_id_random_token = []
+        for i in range(5):
+            if random.random() < 0.25: #Append a digit
+                action_id_random_token.append(chr(random.randint(48, 57)))
+            else:
+                if random.random() < 0.5: #Append a upper-case letter
+                    action_id_random_token.append(chr(random.randint(65, 90)))
+                else: #Append a lower-case letter
+                    action_id_random_token.append(chr(random.randint(97, 122)))
+        self._action_id_random_token = ''.join(action_id_random_token)
         self._action_id_lock = threading.Lock()
 
         self._connection_lock = threading.Lock()
@@ -273,10 +284,12 @@ class Manager(object):
 
     def _get_host_action_id(self):
         """
-        Generates a host-qualified ActionID as a string, for greater resolution.
+        Generates a host-qualified, random-token-augmented ActionID as a string, for greater
+        identifiability.
         """
-        return '%(hostname)s-%(id)08x' % {
+        return '%(hostname)s-%(random)s-%(id)08x' % {
          'hostname': self._hostname,
+         'random': self._action_id_random_token,
          'id': self._get_action_id(),
         }
 
