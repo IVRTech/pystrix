@@ -193,8 +193,9 @@ class Manager(object):
                 pass
             else:
                 #Bind it to a request, if appropriate
-                self._process_outstanding_request_event(event)
-                
+                if self._process_outstanding_request_event(event):
+                    return #Synchronous requests do not generate asynchronous events
+                    
                 #Evaluate the new event against all pending aggregates
                 with self._event_aggregates_lock:
                     for (i, (_, aggregate)) in enumerate(self._event_aggregates):
@@ -488,7 +489,7 @@ class Manager(object):
         with self._connection_lock:
             self._connection.send_message(command)
             
-        if request.aggregate: #Set up aggregate-event generation
+        if request.aggregate and not request.synchronous: #Set up aggregate-event generation
             with self._event_aggregates_lock:
                 for aggregate_class in request.get_aggregate_classes():
                     self._event_aggregates.append((time.time() + self._event_aggregates_timeout, aggregate_class(action_id)))
@@ -566,14 +567,6 @@ class Manager(object):
                 self._outstanding_requests[action_id] = None
                 return None
                 
-    def _check_outstanding_request(self, action_id):
-        """
-        Yields a boolean value that indicates whether the indicated request is still awaiting a
-        response.
-        """
-        with self._connection_lock:
-            return action_id in self._outstanding_requests
-            
     def _check_outstanding_request_complete(self, action_id):
         """
         Yields a boolean value that indicates whether the indicated request has been fully served,
@@ -586,11 +579,20 @@ class Manager(object):
             if not status: #Undefined or not synchronous
                 return True
             return not status[1] #True if all finalisers have been received
+            
+    def _check_outstanding_request_synchronised(self, action_id):
+        """
+        Yeilds a boolean value indicating whether the indicated `action_id` is associated with a
+        synchronised request.
+        """
+        return self._check_outstanding_request_complete(action_id)
 
     def _process_outstanding_request_event(self, event):
         """
         Checks the event against pending requests and adds it to the appropriate event-list, if one
         exists, updating pending finalisers as needed.
+        
+        The value returned indicates whether the event was bound to an action.
         """
         with self._connection_lock:
             status = self._outstanding_requests.get(event.action_id)
@@ -604,6 +606,8 @@ class Manager(object):
                     value.append(event) #No need to add it to both the named and class-type value, since they share the same list
                 else: #Set it as the relevant entry, for both the class-def and named keys
                     status[0][event_type] = status[0][_EVENT_REGISTRY_REV.get(event_type)] = event
+                return True
+        return False
 
     def _serve_outstanding_request(self, action_id):
         """
