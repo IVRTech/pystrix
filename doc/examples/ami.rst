@@ -5,7 +5,6 @@ A simple, if verbose, AMI implementation is provided below, demonstrating how to
 with MD5-based authentication, how to connect callback handlers for events, and how to send requests
 for information::
 
-    import re
     import time
     
     import pystrix
@@ -89,27 +88,24 @@ for information::
         def _register_callbacks(self):
             #This sets up some event callbacks, so that interesting things, like calls being
             #established or torn down, will be processed by your application's logic. Of course,
-            #since this is just an example, the same event will be registered using three different
+            #since this is just an example, the same event will be registered using two different
             #methods.
 
             #The event that will be registered is 'FullyBooted', sent by Asterisk immediately after
             #connecting, to indicate that everything is online. What the following code does is
-            #register three different callback handlers for this event using three different
-            #match-methods: string comparison, regular expression, and class-match. String-matching
-            #and class-resolution are equally performant, so choose whichever you think looks
-            #better.
+            #register two different callback-handlers for this event using two different
+            #match-methods: string comparison and class-match. String-matching and class-resolution
+            #are roughly equal in performance, so choose whichever you think looks better.
             self._manager.register_callback('FullyBooted', self._handle_string_event)
-            self._manager.register_callback(re.compile("Fully\w+"), self._handle_regex_event)
             self._manager.register_callback(pystrix.ami.core_events.FullyBooted, self._handle_class_event)
-            #Now, when 'FullyBooted' is received, all three handlers will be invoked in arbitrary
-            #order. A single handler will not be invoked more than once for a single event, even if
-            #registered using different qualifiers.
+            #Now, when 'FullyBooted' is received, both handlers will be invoked in the order in which
+            #they were registered.
 
-            #A catch-all handler can be set using the empty string as a qualifier, causing it to
+            #A catch-all-handler can be set using the empty string as a qualifier, causing it to
             #receive every event emitted by Asterisk, which may be useful for debugging purposes.
             self._manager.register_callback('', self._handle_event)
 
-            #Additionally, an orphan handler may be provided using the special qualifier None,
+            #Additionally, an orphan-handler may be provided using the special qualifier None,
             #causing any responses not associated with a request to be received. This should only
             #apply to glitches in pre-production versions of Asterisk or requests that timed out
             #while waiting for a response, which is also indicative of glitchy behaviour. This
@@ -133,9 +129,6 @@ for information::
         def _handle_class_event(self, event, manager):
             print "Recieved class event: %s" % event.name
 
-        def _handle_regex_event(self, event, manager):
-            print "Recieved regex event: %s" % event.name
-            
         def is_alive(self):
             return not self._kill_flag
             
