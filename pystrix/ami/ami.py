@@ -63,6 +63,10 @@ KEY_ACTIONID = 'ActionID' #The key used to hold the ActionID of a request, for m
 KEY_EVENT = 'Event' #The key used to hold the event-name of a response
 KEY_RESPONSE = 'Response' #The key used to hold the event-name of a request
 
+_CALLBACK_TYPE_REFERENCE = 1 #Identifies a callback-definition as an event-reference
+_CALLBACK_TYPE_UNIVERSAL = 2 #Identifies a callback-definition as universal
+_CALLBACK_TYPE_ORPHANED = 3 #Identifies a callback-definition for orphaned responses
+
 class Manager(object):
     _alive = True #False when this manager object is ready to be disposed of
     _action_id = None #The ActionID last sent to Asterisk
@@ -73,9 +77,7 @@ class Manager(object):
     _event_aggregates = None #A list of aggregates awaiting fulfillment
     _event_aggregates_lock = None #A lock used to prevent race conditions on event aggregation
     _event_aggregates_timeout = None #The amount of time to wait before considering an aggregate timed-out
-    _event_callbacks = None #A dictionary of sets of event callbacks keyed by the string to match
-    _event_callbacks_cls = None #A dictionary of tuples of classes and sets of event callbacks
-    _event_callbacks_re = None #A dictionary of tuples of expressions and sets of event callbacks
+    _event_callbacks = None #A list of tuples of type-identifiers, match-criteria, and callback functions
     _event_callbacks_lock = None #A lock used to prevent race conditions on event callbacks
     _event_callbacks_thread = None #A thread used to process event callbacks
     _hostname = socket.gethostname() #The hostname of this system, used to prevent repeated calls through the C layer
@@ -112,9 +114,7 @@ class Manager(object):
         self._event_aggregates_lock = threading.Lock()
         self._event_aggregates_timeout = aggregate_timeout
 
-        self._event_callbacks = {}
-        self._event_callbacks_cls = {}
-        self._event_callbacks_re = {}
+        self._event_callbacks = []
         self._event_callbacks_lock = threading.Lock()
         self._event_callbacks_thread = threading.Thread(target=self._event_dispatcher)
         self._event_callbacks_thread.daemon = True
@@ -197,17 +197,12 @@ class Manager(object):
         
         if event:
             event_name = event.name
-            callbacks = set()
+            callbacks = None
+            global _CALLBACK_TYPE_REFERENCE
+            global _CALLBACK_TYPE_UNIVERSAL
             with self._event_callbacks_lock:
-                callbacks.update(self._event_callbacks.get(event_name) or ()) #Start with exact matches, if any
-                callbacks.update(self._event_callbacks.get('') or ()) #Add the universal handlers, if any
-                for (pattern, functions) in self._event_callbacks_re.items(): #Add all regular expression matches
-                    if pattern.match(event_name):
-                        callbacks.update(functions)
-                for (cls, functions) in self._event_callbacks_cls.items(): #Add all class matches
-                    if type(event) == cls:
-                        callbacks.update(functions)
-
+                callbacks = [c for (t, e, c) in self._event_callbacks if (t == _CALLBACK_TYPE_REFERENCE and event_name == e) or (t == _CALLBACK_TYPE_UNIVERSAL)]
+                
             if self._logger:
                 self._logger.debug("Received event '%(name)s' with %(callbacks)i callbacks" % {
                  'name': event_name,
@@ -241,8 +236,9 @@ class Manager(object):
             
         if response:
             callbacks = None
+            global _CALLBACK_TYPE_ORPHANED
             with self._event_callbacks_lock:
-                callbacks = self._event_callbacks.get(None) or () #Only select the explicit orphan-handlers
+                callbacks = [c for (t, e, c) in self._event_callbacks if t == _CALLBACK_TYPE_ORPHANED]
                 
             if self._logger:
                 self._logger.debug("Received orphaned response '%(name)s' with %(callbacks)i callbacks" % {
@@ -370,40 +366,73 @@ class Manager(object):
         monitor = threading.Thread(target=_monitor_connection, name='pystrix-ami-monitor')
         monitor.daemon = True
         monitor.start()
-
+        
+    def _compile_callback_definition(self, event, function):
+        """
+        Provides a triple of type, match-criteria, and callback for the given event-identifier and
+        function.
+        """
+        if isinstance(event, types.StringTypes):
+            if not event:
+                return (_CALLBACK_TYPE_UNIVERSAL, None, function)
+            return (_CALLBACK_TYPE_REFERENCE, event, function)
+        elif isinstance(event, types.TypeType):
+            event_name = _EVENT_REGISTRY_REV.get(event)
+            if event_name:
+                return (_CALLBACK_TYPE_REFERENCE, event_name, function)
+        elif event is None:
+            return (_CALLBACK_TYPE_ORPHANED, None, function)
+            
+        raise ValueError("Attempted to build callback definition using an unsupported identifier")
+        
     def register_callback(self, event, function):
         """
-        Registers an Asterisk event with the name `event`, which may be a string for exact matches,
-        a compiled regular expression to be matched with the 'match' function against the name, or
-        a reference to the specific event class.
+        Registers a callback for an Asterisk event identified by `event`, which may be a string for
+        exact matches or a reference to the specific event class.
 
-        `function` is the callable to be invoked with the event `_Message` and a reference to the
-        manager object as two positional arguments.
-
-        Registering the same function twice for the same event or two events that have overlapping
-        regular expressions is effectively a no-op. When the callbacks are invoked, each function
-        will be called at most once per event.
+        `function` is the callable to be invoked whenever a matching `_Event` is emitted; it must
+        accept the positional arguments "event" and "manager", with "event" being the `_Event`
+        object and "manager" being a reference to generating instance of this class.
+        
+        Registering the same function twice for the same event will unset the first callback,
+        placing the new one at the end of the list.
 
         Registering against the special event `None` will cause the given function to receive all
         responses not associated with a request, which normally shouldn't exist, but may be observed
         in practice. Events will not be included.
 
-        Registering against the emptry string will cause the given function to receive every event,
+        Registering against the empty string will cause the given function to receive every event,
         suitable for logging purposes.
 
-        Callbacks are not guaranteed to be executed in any particular order.
+        Callbacks are executed in the order in which they were registered.
+        """
+        callback_definition = self._compile_callback_definition(event, function)
+        self._unregister_callback(callback_definition)
+        with self._event_callbacks_lock:
+            self._event_callbacks.append(callback_definition)
+            
+    def _unregister_callback(self, definition):
+        """
+        Removes the indicated callback from the list of those registered, if a match is found.
+        
+        The value returned indicates whether anything was removed.
         """
         with self._event_callbacks_lock:
-            callbacks_dict = self._event_callbacks
-            if not event is None and not isinstance(event, types.StringType): #Regular expression or class
-                if isinstance(event, (types.ClassType, types.TypeType)):
-                    callbacks_dict = self._event_callbacks_cls
-                else:
-                    callbacks_dict = self._event_callbacks_re
-            callbacks = callbacks_dict.get(event, set())
-            callbacks.add(function)
-            callbacks_dict[event] = callbacks
-            
+            for (i, d) in enumerate(self._event_callbacks):
+                if definition == d:
+                    del self._event_callbacks[i]
+                    return True
+        return False
+        
+    def unregister_callback(self, event, function):
+        """
+        Unregisters a previously bound callback.
+        
+        A boolean value is returned, indicating whether anything was removed.
+        """
+        callback_definition = self._compile_callback_definition(event, function)
+        return self._unregister_callback(callback_definition)
+        
     def send_action(self, request, action_id=None, **kwargs):
         """
         Sends a command, contained in `request`, a `_Request`, to the Asterisk manager, referred to
@@ -572,30 +601,7 @@ class Manager(object):
             if served:
                 del self._outstanding_requests[action_id]
             return served
-            
-    def unregister_callback(self, event, function):
-        """
-        Unregisters an Asterisk event with the name `event`, which may be a string for exact
-        matches, a compiled regular expression to be matched with the 'match' function against the
-        name, or a reference to the event's class. If a regular expression, it must be the same
-        object passed in to register the event.
-        
-        `function` is the callable previously associated with the event. It must be the same object.
 
-        If the same function was registered under two different event qualifiers, only the one being
-        deregistered will be removed.
-        """
-        with self._event_callbacks_lock:
-            callbacks_dict = self._event_callbacks
-            if not event is None and not isinstance(event, types.StringType): #Regular expression or class
-                if isinstance(event, (types.ClassType, types.TypeType)):
-                    callbacks_dict = self._event_callbacks_cls
-                else:
-                    callbacks_dict = self._event_callbacks_re
-            callbacks = callbacks_dict.get(event)
-            if callbacks:
-                callbacks.discard(function)
-                
 class _MessageTemplate(object):
     """
     An abstract base-class for all message-types, including aggregates.
@@ -694,7 +700,7 @@ class _Aggregate(_MessageTemplate, dict):
         event = event.process()[0]
         list_items_count = event.get(count_header)
         if list_items_count is not None:
-            items_count = sum(len(v) for (k, v) in self.items() if type(v) is list and isinstance(k, str))
+            items_count = sum(len(v) for (k, v) in self.items() if type(v) is list and isinstance(k, types.StringType))
             self._valid = list_items_count == items_count
             if not self._valid:
                 self._error_message = "Expected %(event)i list-items; received %(count)i" % {
