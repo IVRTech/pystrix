@@ -95,11 +95,11 @@ for information::
             #connecting, to indicate that everything is online. What the following code does is
             #register two different callback-handlers for this event using two different
             #match-methods: string comparison and class-match. String-matching and class-resolution
-            #are roughly equal in performance, so choose whichever you think looks better.
+            #are equal in performance, so choose whichever you think looks better.
             self._manager.register_callback('FullyBooted', self._handle_string_event)
             self._manager.register_callback(pystrix.ami.core_events.FullyBooted, self._handle_class_event)
-            #Now, when 'FullyBooted' is received, both handlers will be invoked in the order in which
-            #they were registered.
+            #Now, when 'FullyBooted' is received, both handlers will be invoked in the order in
+            #which they were registered.
 
             #A catch-all-handler can be set using the empty string as a qualifier, causing it to
             #receive every event emitted by Asterisk, which may be useful for debugging purposes.
