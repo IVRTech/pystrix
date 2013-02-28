@@ -84,10 +84,11 @@ class Manager(object):
     _event_callbacks_thread = None #A thread used to process event callbacks
     _hostname = socket.gethostname() #The hostname of this system, used to prevent repeated calls through the C layer
     _message_reader = None #A thread that continuously collects messages from the Asterisk server
+    _orphaned_response_timeout = None #The number of seconds to hold on to request-responses before considering them to be timed-out
     _outstanding_requests = None #A dictionary of ActionIDs sent to Asterisk, currently awaiting responses; values are a tuple of (events, pending_finalisers), if synchronous, and None otherwise
     _logger = None #A logger that may be used to record warnings
     
-    def __init__(self, debug=False, logger=None, aggregate_timeout=5):
+    def __init__(self, debug=False, logger=None, aggregate_timeout=5, orphaned_response_timeout=5):
         """
         Sets up an environment for interacting with an Asterisk Management Interface.
 
@@ -99,6 +100,10 @@ class Manager(object):
         
         `aggregate_timeout` is the number of seconds to wait for aggregates to be fully assembled
         before considering them timed-out.
+        
+        `orphaned_response_timeout` is the number of seconds to wait for responses to requests to be
+        collected before considering them timed out. (This should never happen, but a guarantee must
+        be made that the buffer can stay clean)
 
         `debug` should only be turned on for library development.
         """
@@ -121,6 +126,7 @@ class Manager(object):
         self._connection_lock = threading.Lock()
 
         self._outstanding_requests = {}
+        self._orphaned_response_timeout = orphaned_response_timeout
 
         self._event_aggregates = []
         self._event_aggregates_lock = threading.Lock()
@@ -320,7 +326,7 @@ class Manager(object):
         with self._connection_lock:
             self._connection = _SynchronisedSocket(host=host, port=port, timeout=timeout)
             
-            self._message_reader = _MessageReader(self)
+            self._message_reader = _MessageReader(self, self._orphaned_response_timeout)
             self._message_reader.start()
             
     def disconnect(self):
@@ -507,11 +513,11 @@ class Manager(object):
             if not response: #If blocking for event synchronisation, don't bother polling for the already-received response
                 with self._connection_lock:
                     response = self._message_reader.get_response(action_id)
-                    if response:
-                        processed_response = request.process_response(response)
-                        success = hasattr(processed_response, 'success') and processed_response.success
-                        if not request.synchronous or not success:
-                            break #No events to watch for
+                if response:
+                    processed_response = request.process_response(response)
+                    success = hasattr(processed_response, 'success') and processed_response.success
+                    if not request.synchronous or not success:
+                        break #No events to watch for
             else: #Synchronous processing
                 if self._check_outstanding_request_complete(action_id): #Not waiting for any more events
                     break
@@ -567,13 +573,6 @@ class Manager(object):
                 self._outstanding_requests[action_id] = None
                 return None
                 
-    def _check_outstanding_request_exists(self, action_id):
-        """
-        Yields a boolean value that indicates whether the indicated request exists.
-        """
-        with self._connection_lock:
-            return action_id in self._outstanding_requests
-            
     def _check_outstanding_request_complete(self, action_id):
         """
         Yields a boolean value that indicates whether the indicated request has been fully served,
@@ -931,21 +930,39 @@ class _MessageReader(threading.Thread):
     response_queue = None #A queue containing orphaned or unparented responses from Asterisk
     _alive = True #False when this thread has been killed
     _manager = None #A reference to the manager instance that serves as the parent of this thread
+    _orphaned_response_timeout = None #The number of seconds to hold on to request-responses before considering them to be timed-out
     _served_requests = None #A dictionary of responses from Asterisk, keyed by ActionID
     _served_requests_lock = None #A means of preventing race conditions from affecting the served-request set
 
-    def __init__(self, manager):
+    def __init__(self, manager, orphaned_response_timeout):
         threading.Thread.__init__(self)
         self.daemon = True
         self.name = 'pystrix-ami-message-reader'
         
         self._manager = manager
+        self._orphaned_response_timeout = orphaned_response_timeout
 
         self.event_queue = Queue.Queue()
         self.response_queue = Queue.Queue()
         self._served_requests = {}
         self._served_requests_lock = threading.Lock()
-
+        
+    def _clean_orphaned_responses(self):
+        """
+        Ensures that old responses are moved to the orphaned queue, even though they should never
+        exist.
+        """
+        current_time = time.time()
+        with self._served_requests_lock:
+            expired_action_ids = []
+            for (action_id, (response, timeout)) in self._served_requests.items():
+                if timeout <= current_time:
+                    expired_action_ids.append(action_id)
+                    self.response_queue.put(response) #Move it to the queue
+                    
+            for action_id in expired_action_ids:
+                del self._served_requests[action_id]
+                
     def kill(self):
         self._alive = False
 
@@ -957,7 +974,8 @@ class _MessageReader(threading.Thread):
             response = self._served_requests.get(action_id)
             if response is not None:
                 del self._served_requests[action_id]
-            return response
+                return response[0]
+            return None
             
     def run(self):
         """
@@ -990,9 +1008,10 @@ class _MessageReader(threading.Thread):
                             
                     self.event_queue.put(message)
                 elif action_id is not None:
+                    self._clean_orphaned_responses()
                     with self._served_requests_lock:
-                        if action_id not in self._served_requests and self._manager._check_outstanding_request_exists(action_id):
-                            self._served_requests[action_id] = message
+                        if action_id not in self._served_requests:
+                            self._served_requests[action_id] = (message, time.time() + self._orphaned_response_timeout)
                         else: #If there's already an associated response, treat this one as orphaned to avoid data-loss
                             self.response_queue.put(message)
                 else: #It's an orphaned response
