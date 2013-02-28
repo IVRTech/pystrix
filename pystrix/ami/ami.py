@@ -34,6 +34,7 @@ Authors:
 import abc
 import collections
 import Queue
+import random
 import re
 import socket
 import threading
@@ -661,7 +662,7 @@ class _Aggregate(_MessageTemplate, dict):
             
     def _evaluate_action_id(self, event):
         """
-        If no action-ID is yet assigned to this aggregate, copy the value from the new `message`.
+        Indicates whether the aggregate's action-ID matches that of the event.
         """
         return self._action_id == event.action_id
                 
