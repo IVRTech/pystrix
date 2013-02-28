@@ -580,13 +580,6 @@ class Manager(object):
                 return True
             return not status[1] #True if all finalisers have been received
             
-    def _check_outstanding_request_synchronised(self, action_id):
-        """
-        Yeilds a boolean value indicating whether the indicated `action_id` is associated with a
-        synchronised request.
-        """
-        return self._check_outstanding_request_complete(action_id)
-
     def _process_outstanding_request_event(self, event):
         """
         Checks the event against pending requests and adds it to the appropriate event-list, if one
