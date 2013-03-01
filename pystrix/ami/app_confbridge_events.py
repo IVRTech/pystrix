@@ -33,6 +33,7 @@ The events implemented by this module follow the definitions provided by
 http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
 """
 from ami import (_Aggregate, _Event)
+import generic_transforms
     
 class ConfbridgeEnd(_Event):
     """
