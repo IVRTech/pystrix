@@ -71,9 +71,6 @@ class MeetmeList(_Event):
         """
         (headers, data) = _Event.process(self)
         
-        for header in ('Admin', 'MarkedUser'):
-            headers[header] = headers.get(header) == 'Yes'
-            
         talking = headers.get('Talking')
         if talking == 'Yes':
             headers['Talking'] = True
@@ -81,11 +78,9 @@ class MeetmeList(_Event):
             headers['Talking'] = False
         else:
             headers['Talking'] = None
-            
-        try:
-            headers['UserNumber'] = int(headers.get('UserNumber'))
-        except Exception:
-            headers['UserNumber'] = -1
+        
+        generic_transforms.to_bool(headers, ('Admin', 'MarkedUser',), truth_value='Yes')
+        generic_transforms.to_int(headers, ('UserNumber',), -1)
             
         return (headers, data)
 
@@ -101,11 +96,8 @@ class MeetmeListComplete(_Event):
         """
         (headers, data) = _Event.process(self)
         
-        try:
-            headers['ListItems'] = int(headers['ListItems'])
-        except Exception:
-            headers['ListItems'] = -1
-            
+        generic_transforms.to_int(headers, ('ListItems',), -1)
+        
         return (headers, data)
 
 class MeetmeListRooms(_Event):
@@ -129,12 +121,8 @@ class MeetmeListRooms(_Event):
         """
         (headers, data) = _Event.process(self)
         
-        try:
-            headers['Parties'] = int(headers['Parties'])
-        except Exception:
-            headers['Parties'] = -1
-                
-        headers['Locked'] = headers.get('Locked') == 'Yes'
+        generic_transforms.to_bool(headers, ('Locked',), truth_value='Yes')
+        generic_transforms.to_int(headers, ('Parties',), -1)
         
         return (headers, data)
 
@@ -150,11 +138,8 @@ class MeetmeListRoomsComplete(_Event):
         """
         (headers, data) = _Event.process(self)
         
-        try:
-            headers['ListItems'] = int(headers['ListItems'])
-        except Exception:
-            headers['ListItems'] = -1
-            
+        generic_transforms.to_int(headers, ('ListItems',), -1)
+        
         return (headers, data)
 
 class MeetmeMute(_Event):
@@ -173,7 +158,7 @@ class MeetmeMute(_Event):
         """
         (headers, data) = _Event.process(self)
         
-        headers['Status'] = headers.get('Status') == 'on'
+        generic_transforms.to_bool(headers, ('Status',), truth_value='on')
         
         return (headers, data)
         

@@ -85,8 +85,7 @@ class ConfbridgeList(_Event):
         """
         (headers, data) = _Event.process(self)
         
-        for header in ('Admin', 'MarkedUser'):
-            headers[header] = headers.get(header) == 'Yes'
+        generic_transforms.to_bool(headers, ('Admin', 'MarkedUser',), truth_value='Yes')
             
         return (headers, data)
 
@@ -102,11 +101,8 @@ class ConfbridgeListComplete(_Event):
         """
         (headers, data) = _Event.process(self)
         
-        try:
-            headers['ListItems'] = int(headers['ListItems'])
-        except Exception:
-            headers['ListItems'] = -1
-            
+        generic_transforms.to_int(headers, ('ListItems',), -1)
+        
         return (headers, data)
         
 class ConfbridgeListRooms(_Event):
@@ -128,13 +124,8 @@ class ConfbridgeListRooms(_Event):
         """
         (headers, data) = _Event.process(self)
         
-        for header in ('Marked', 'Parties'):
-            try:
-                headers[header] = int(headers[header])
-            except Exception:
-                headers[header] = -1
-                
-        headers['Locked'] = headers.get('Locked') == 'Yes'
+        generic_transforms.to_bool(headers, ('Locked',), truth_value='Yes')
+        generic_transforms.to_int(headers, ('Marked', 'Parties',), -1)
         
         return (headers, data)
 
@@ -150,11 +141,8 @@ class ConfbridgeListRoomsComplete(_Event):
         """
         (headers, data) = _Event.process(self)
         
-        try:
-            headers['ListItems'] = int(headers['ListItems'])
-        except Exception:
-            headers['ListItems'] = -1
-            
+        generic_transforms.to_int(headers, ('ListItems',), -1)
+        
         return (headers, data)
         
 class ConfbridgeStart(_Event):
@@ -179,7 +167,7 @@ class ConfbridgeTalking(_Event):
         """
         (headers, data) = _Event.process(self)
         
-        headers['TalkingStatus'] = headers.get('TalkingStatus') == 'on'
+        generic_transforms.to_bool(headers, ('TalkingStatus',), truth_value='on')
         
         return (headers, data)
         
