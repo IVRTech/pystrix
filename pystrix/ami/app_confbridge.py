@@ -37,6 +37,7 @@ https://wiki.asterisk.org/
 from ami import (_Request, ManagerError)
 import core_events
 import app_confbridge_events
+import generic_transforms
 
 class ConfbridgeKick(_Request):
     """
