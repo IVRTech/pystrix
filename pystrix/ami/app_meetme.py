@@ -36,6 +36,7 @@ http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
 """
 from ami import (_Request, ManagerError)
 import app_meetme_events
+import generic_transforms
 
 class MeetmeList(_Request):
     """

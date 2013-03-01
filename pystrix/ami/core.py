@@ -43,6 +43,7 @@ import types
 
 from ami import (_Request, ManagerError)
 import core_events
+import generic_transforms
 
 AUTHTYPE_MD5 = 'MD5' #Uses MD5 authentication when logging into AMI
 
@@ -484,12 +485,7 @@ class MailboxCount(_Request):
         Converts the message-counts into integers.
         """
         response = _Request.process_response(self, response)
-        for messages in ('NewMessages', 'OldMessages'):
-            msgs = self.get(messages)
-            if msgs is not None and msgs.isdigit():
-                self[messages] = int(msgs)
-            else:
-                self[messages] = -1
+        generic_transforms.to_int(response, ('NewMessages', 'OldMessages',), -1)
         return response
         
 class MailboxStatus(_Request):
@@ -509,11 +505,7 @@ class MailboxStatus(_Request):
         Converts the waiting-message-count into an integer.
         """
         response = _Request.process_response(self, response)
-        messages = self.get('Waiting')
-        if messages is not None and messages.isdigit():
-            self['Waiting'] = int(messages)
-        else:
-            self['Waiting'] = -1
+        generic_transforms.to_int(response, ('Waiting',), -1)
         return response
 
 class MixMonitorMute(_Request):
@@ -1204,25 +1196,14 @@ class SIPshowpeer(_Request):
         """
         response = _Request.process_response(self, response)
         
-        for header in (
+        generic_transforms.to_bool(response, (
          'ACL', 'Dynamic', 'MD5SecretExist', 'SecretExist', 'SIP-CanReinvite', 'SIP-PromiscRedir',
          'SIP-UserPhone', 'SIP-VideoSupport',
-        ):
-            response[header] = response.get(header) == 'Y'
-            
-        response['SIP-AuthInsecure'] = response.get('SIP-AuthInsecure') == 'yes'
+        ), truth_value='Y')
+        generic_transforms.to_bool(response, ('SIP-AuthInsecure',), truth_value='yes')
+        generic_transforms.to_int(response, ('Address-Port',), -1)
+        generic_transforms.to_int(response, ('MaxCallBR', 'RegExpire'), -1, preprocess=(lambda x:x.split()[0]))
         
-        try:
-            response['Address-Port'] = int(response.get('Address-Port'))
-        except Exception:
-            response['Address-Port'] = -1
-        
-        for header in ('MaxCallBR', 'RegExpire'):
-            try:
-                response[header] = int(response.get(header).split()[0])
-            except Exception:
-                response[header] = -1
-                
         return response
         
 class SIPshowregistry(_Request):

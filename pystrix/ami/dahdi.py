@@ -35,6 +35,7 @@ https://wiki.asterisk.org/
 """
 from ami import (_Request, ManagerError)
 import dahdi_events
+import generic_transforms
 
 class DAHDIDNDoff(_Request):
     """

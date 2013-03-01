@@ -28,4 +28,20 @@ Authors:
 
 - Neil Tallim <flan@uguu.ca>
 """
-
+def to_int(dictionary, keys, failure_value, preprocess=(lambda x:x)):
+    for key in keys:
+        try:
+            dictionary[key] = int(preprocess(dictionary.get(key)))
+        else:
+            dictionary[key] = failure_value
+            
+def to_bool(dictionary, keys, truth_value=None, truth_function=(lambda x:bool(x)), preprocess=(lambda x:x)):
+    for key in keys:
+        try:
+            if truth_values:
+                dictionary[key] = dictionary[key] == truth_value
+            else:
+                dictionary[key] = truth_function(preprocess(dictionary.get(key)))
+        else:
+            dictionary[key] = False
+            
