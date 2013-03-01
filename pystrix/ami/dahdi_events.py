@@ -32,6 +32,7 @@ The events implemented by this module follow the definitions provided by
 http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
 """
 from ami import (_Aggregate, _Event)
+import generic_transforms
 
 class DAHDIShowChannels(_Event):
     """
@@ -59,13 +60,8 @@ class DAHDIShowChannels(_Event):
         """
         (headers, data) = _Event.process(self)
         
-        headers['DND'] = headers.get('DND') == 'Enabled'
-        
-        for header in ('DAHDIChannel', 'SignallingCode'):
-            try:
-                headers[header] = int(headers.get(header))
-            except Exception:
-                headers[header] = -1
+        generic_transforms.to_bool(headers, ('DND',), truth_value='Enabled')
+        generic_transforms.to_int(headers, ('DAHDIChannel', 'SignallingCode',), -1)
                 
         return (headers, data)
 
@@ -81,11 +77,8 @@ class DAHDIShowChannelsComplete(_Event):
         """
         (headers, data) = _Event.process(self)
         
-        try:
-            headers['Items'] = int(headers['Items'])
-        except Exception:
-            headers['Items'] = -1
-            
+        generic_transforms.to_int(headers, ('Items',), -1)
+        
         return (headers, data)
         
         
