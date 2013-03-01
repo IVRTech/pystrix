@@ -56,12 +56,8 @@ class AGIExec(_Event):
         """
         (headers, data) = _Event.process(self)
         
-        try:
-            headers['ResultCode'] = int(headers['ResultCode'])
-        except Exception:
-            headers['ResultCode'] = -1
-            
-        headers['Result'] = headers.get('Result') == 'Success'
+        generic_transforms.to_bool(headers, ('Result',), truth_value='Success')
+        generic_transforms.to_int(headers, ('ResultCode',), -1)
         
         return (headers, data)
         
@@ -129,16 +125,13 @@ class CoreShowChannel(_Event):
         (headers, data) = _Event.process(self)
         
         try:
-            headers['ChannelState'] = int(headers['ChannelState'])
-        except Exception:
-            headers['ChannelState'] = None
-            
-        try:
             (h, m, s) = (int(v) for v in headers['Duration'].split(':'))
             headers['Duration'] = s + m * 60 + h * 60 * 60
         except Exception:
             headers['Duration'] = -1
             
+        generic_transforms.to_int(headers, ('ChannelState',), None)
+        
         return (headers, data)
         
 class CoreShowChannelsComplete(_Event):
@@ -153,11 +146,8 @@ class CoreShowChannelsComplete(_Event):
         """
         (headers, data) = _Event.process(self)
         
-        try:
-            headers['ListItems'] = int(headers['ListItems'])
-        except Exception:
-            headers['ListItems'] = -1
-            
+        generic_transforms.to_int(headers, ('ListItems',), -1)
+        
         return (headers, data)
         
 class DBGetResponse(_Event):
@@ -185,9 +175,8 @@ class DTMF(_Event):
         """
         (headers, data) = _Event.process(self)
         
-        for header in ('Begin', 'End'):
-            headers[header] = headers.get(header) == 'Yes'
         headers['Received'] = headers.get('Direction') == 'Received'
+        generic_transforms.to_bool(headers, ('Begin', 'End',), truth_value='Yes')
         
         return (headers, data)
         
@@ -216,10 +205,7 @@ class Hangup(_Event):
         Translates the 'Cause' header's value into an int, setting it to `None` if coercion fails.
         """
         (headers, data) = _Event.process(self)
-        try:
-            headers['Cause'] = int(headers['Cause'])
-        except Exception:
-            headers['Cause'] = None
+        generic_transforms.to_int(headers, ('Cause',), None)
         return (headers, data)
 
 class HangupRequest(_Event):
@@ -280,10 +266,7 @@ class Newchannel(_Event):
         fails.
         """
         (headers, data) = _Event.process(self)
-        try:
-            headers['ChannelState'] = int(headers['ChannelState'])
-        except Exception:
-            headers['ChannelState'] = None
+        generic_transforms.to_int(headers, ('ChannelState',), None)
         return (headers, data)
 
 class Newexten(_Event):
@@ -323,10 +306,7 @@ class Newstate(_Event):
         fails.
         """
         (headers, data) = _Event.process(self)
-        try:
-            headers['ChannelState'] = int(headers['ChannelState'])
-        except Exception:
-            headers['ChannelState'] = None
+        generic_transforms.to_int(headers, ('ChannelState',), None)
         return (headers, data)
         
 class OriginateResponse(_Event):
@@ -346,10 +326,7 @@ class OriginateResponse(_Event):
         indicating failure.
         """
         (headers, data) = _Event.process(self)
-        try:
-            headers['Reason'] = int(headers.get('Reason'))
-        except Exception:
-            headers['Reason'] = -1
+        generic_transforms.to_int(headers, ('Reason',), -1)
         return (headers, data)
         
 class ParkedCall(_Event):
@@ -370,12 +347,8 @@ class ParkedCall(_Event):
         fails, and leaving it absent if it wasn't present in the original response.
         """
         (headers, data) = _Event.process(self)
-        timeout = headers.get('Timeout')
-        if not timeout is None:
-            try:
-                headers['Timeout'] = int(timeout)
-            except Exception:
-                headers['Timeout'] = None
+        if 'Timeout' in headers:
+            generic_transforms.to_int(headers, ('Timeout',), None)
         return (headers, data)
         
 class ParkedCallsComplete(_Event):
@@ -389,12 +362,7 @@ class ParkedCallsComplete(_Event):
         Translates the 'Total' header's value into an int, or -1 on failure.
         """
         (headers, data) = _Event.process(self)
-        
-        try:
-            headers['Total'] = int(headers['Total'])
-        except Exception:
-            headers['Total'] = -1
-            
+        generic_transforms.to_int(headers, ('Total',), -1)
         return (headers, data)
 
 class PeerEntry(_Event):
@@ -433,16 +401,6 @@ class PeerEntry(_Event):
         """
         (headers, data) = _Event.process(self)
         
-        ip_port = headers.get('IPport')
-        if not ip_port is None:
-            try:
-                headers['IPport'] = int(ip_port)
-            except Exception:
-                headers['IPport'] = None
-                
-        for header in ('Dynamic', 'Natsupport', 'VideoSupport', 'ACL', 'RealtimeDevice'):
-            headers[header] = headers.get(header) == 'yes'
-            
         try:
             if headers['Status'] == 'Unmonitored':
                 headers['Status'] = -2
@@ -451,6 +409,11 @@ class PeerEntry(_Event):
         except Exception:
             headers['Status'] = -1
             
+        if 'IPport' in headers:
+            generic_transforms.to_int(headers, ('IPPort',), None)
+            
+        generic_transforms.to_bool(headers, ('Dynamic', 'Natsupport', 'VideoSupport', 'ACL', 'RealtimeDevice'), truth_value='yes')
+        
         return (headers, data)
 
 class PeerlistComplete(_Event):
@@ -464,12 +427,7 @@ class PeerlistComplete(_Event):
         Translates the 'ListItems' header's value into an int, or -1 on failure.
         """
         (headers, data) = _Event.process(self)
-        
-        try:
-            headers['ListItems'] = int(headers['ListItems'])
-        except Exception:
-            headers['ListItems'] = -1
-            
+        generic_transforms.to_int(headers, ('ListItems',), -1)
         return (headers, data)
 
 class QueueEntry(_Event):
@@ -488,11 +446,7 @@ class QueueEntry(_Event):
         Translates the 'Position' and 'Wait' headers' values into ints, setting them to -1 on error.
         """
         (headers, data) = _Event.process(self)
-        for header in ('Position', 'Wait'):
-            try:
-                headers[header] = int(headers.get(header))
-            except Exception:
-                headers[header] = -1
+        generic_transforms.to_int(headers, ('Position', 'Wait',), -1)
         return (headers, data)
 
 class QueueMember(_Event):
@@ -521,16 +475,8 @@ class QueueMember(_Event):
         'Paused' is set to a bool.
         """
         (headers, data) = _Event.process(self)
-        
-        for header in ('CallsTaken', 'LastCall', 'Penalty', 'Status'):
-            try:
-                headers[header] = int(headers.get(header))
-            except Exception:
-                headers[header] = -1
-                
-        paused = headers.get('Paused')
-        headers['Paused'] = paused and paused == '1'
-        
+        generic_transforms.to_bool(headers, ('Paused',), truth_value='1')
+        generic_transforms.to_int(headers, ('CallsTaken', 'LastCall', 'Penalty', 'Status',), -1)
         return (headers, data)
         
 class QueueMemberAdded(_Event):
@@ -559,16 +505,8 @@ class QueueMemberAdded(_Event):
         'Paused' is set to a bool.
         """
         (headers, data) = _Event.process(self)
-        
-        for header in ('CallsTaken', 'LastCall', 'Penalty', 'Status'):
-            try:
-                headers[header] = int(headers.get(header))
-            except Exception:
-                headers[header] = -1
-                
-        paused = headers.get('Paused')
-        headers['Paused'] = paused and paused == '1'
-        
+        generic_transforms.to_bool(headers, ('Paused',), truth_value='1')
+        generic_transforms.to_int(headers, ('CallsTaken', 'LastCall', 'Penalty', 'Status',), -1)
         return (headers, data)
         
 class QueueMemberPaused(_Event):
@@ -585,8 +523,7 @@ class QueueMemberPaused(_Event):
         'Paused' is set to a bool.
         """
         (headers, data) = _Event.process(self)
-        paused = headers.get('Paused')
-        headers['Paused'] = paused and paused == '1'
+        generic_transforms.to_bool(headers, ('Paused',), truth_value='1')
         return (headers, data)
 
 class QueueMemberRemoved(_Event):
@@ -621,19 +558,8 @@ class QueueParams(_Event):
         floats, setting them to -1 on error.
         """
         (headers, data) = _Event.process(self)
-        
-        for header in ('Abandoned', 'Calls', 'Completed', 'Holdtime', 'Max'):
-            try:
-                headers[header] = int(headers.get(header))
-            except Exception:
-                headers[header] = -1
-                
-        for header in ('ServiceLevel', 'ServiceLevelPerf', 'Weight'):
-            try:
-                headers[header] = float(headers.get(header))
-            except Exception:
-                headers[header] = -1
-        
+        generic_transforms.to_int(headers, ('Abandoned', 'Calls', 'Completed', 'Holdtime', 'Max',), -1)
+        generic_transforms.to_float(headers, ('ServiceLevel', 'ServiceLevelPref', 'Weight',), -1)
         return (headers, data)
         
 class QueueStatusComplete(_Event):
@@ -660,13 +586,7 @@ class RegistryEntry(_Event):
         setting them to -1 on error.
         """
         (headers, data) = _Event.process(self)
-        
-        for header in ('DomainPort', 'Port', 'Refresh', 'RegistrationTime'):
-            try:
-                headers[header] = int(headers.get(header))
-            except Exception:
-                headers[header] = -1
-                
+        generic_transforms.to_int(headers, ('DomainPort', 'Port', 'Refresh', 'RegistrationTime',), -1)
         return (headers, data)
         
 class RegistrationsComplete(_Event):
@@ -680,12 +600,7 @@ class RegistrationsComplete(_Event):
         Translates the 'ListItems' header's value into an int, or -1 on failure.
         """
         (headers, data) = _Event.process(self)
-        
-        try:
-            headers['ListItems'] = int(headers['ListItems'])
-        except Exception:
-            headers['ListItems'] = -1
-            
+        generic_transforms.to_int(headers, ('ListItems',), -1)
         return (headers, data)
         
 class Reload(_Event):
@@ -727,25 +642,16 @@ class RTCPReceived(_Event):
         """
         (headers, data) = _Event.process(self)
         
-        for header in ('HighestSequence', 'LastSR', 'PacketsLost', 'ReceptionReports', 'SequenceNumbercycles'):
-            try:
-                headers[header] = int(headers.get(header))
-            except Exception:
-                headers[header] = -1
-
-        headers['DLSR'] = (headers.get('DSLR') or '').split(' ', 1)[0]
-        for header in ('DLSR', 'FractionLost', 'IAJitter'):
-            try:
-                headers[header] = float(headers.get(header))
-            except Exception:
-                headers[header] = -1
-
-        to = headers.get('From')
-        if to and ':' in to:
-            headers['From'] = tuple(to.rsplit(':', 1))
+        _from = headers.get('From')
+        if _from and ':' in _from:
+            headers['From'] = tuple(_from.rsplit(':', 1))
         else:
             headers['From'] = None
             
+        generic_transforms.to_int(headers, ('HighestSequence', 'LastSR', 'PacketsLost', 'ReceptionReports', 'SequenceNumberCycles',), -1)
+        headers['DLSR'] = (headers.get('DSLR') or '').split(' ', 1)[0]
+        generic_transforms.to_float(headers, ('DLSR', 'FractionLost', 'IAJitter',), -1)
+        
         return (headers, data)
 
 class RTCPSent(_Event):
@@ -779,24 +685,16 @@ class RTCPSent(_Event):
         """
         (headers, data) = _Event.process(self)
         
-        for header in ('CumulativeLoss', 'SentOctets', 'SentPackets', 'SentRTP', 'TheirLastSR'):
-            try:
-                headers[header] = int(headers.get(header))
-            except Exception:
-                headers[header] = -1
-
-        headers['DLSR'] = (headers.get('DSLR') or '').split(' ', 1)[0]
-        for header in ('DLSR', 'FractionLost', 'IAJitter', 'SentNTP'):
-            try:
-                headers[header] = float(headers.get(header))
-            except Exception:
-                headers[header] = -1
-
         to = headers.get('To')
         if to and ':' in to:
             headers['To'] = tuple(to.rsplit(':', 1))
         else:
             headers['To'] = None
+            
+        generic_transforms.to_bool(headers, ('Result',), truth_value='Success')
+        generic_transforms.to_int(headers, ('CumulativeLoss', 'SentOctets', 'SentPackets', 'SentRTP', 'TheirLastSR',), -1)
+        headers['DLSR'] = (headers.get('DSLR') or '').split(' ', 1)[0]
+        generic_transforms.to_float(headers, ('DLSR', 'FractionLost', 'IAJitter', 'SentNTP',), -1)
             
         return (headers, data)
 
@@ -812,10 +710,7 @@ class Shutdown(_Event):
         'Restart' is set to a bool.
         """
         (headers, data) = _Event.process(self)
-        
-        restart = headers.get('Restart')
-        headers['Restart'] = restart and restart == 'True'
-        
+        generic_transforms.to_bool(headers, ('Restart',), truth_value='True')
         return (headers, data)
         
 class SoftHangupRequest(_Event):
@@ -853,10 +748,7 @@ class Status(_Event):
         Translates the 'Seconds' header's value into an int, setting it to -1 on error.
         """
         (headers, data) = _Event.process(self)
-        try:
-            headers['Seconds'] = int(headers.get('Seconds'))
-        except Exception:
-            headers['Seconds'] = -1
+        generic_transforms.to_int(headers, ('Seconds',), -1)
         return (headers, data)
         
 class StatusComplete(_Event):
@@ -870,12 +762,7 @@ class StatusComplete(_Event):
         Translates the 'Items' header's value into an int, or -1 on failure.
         """
         (headers, data) = _Event.process(self)
-        
-        try:
-            headers['Items'] = int(headers['Items'])
-        except Exception:
-            headers['Items'] = -1
-            
+        generic_transforms.to_int(headers, ('Items',), -1)
         return (headers, data)
 
 class UserEvent(_Event):
@@ -942,23 +829,13 @@ class VoicemailUserEntry(_Event):
         """
         (headers, data) = _Event.process(self)
         
+        generic_transforms.to_bool(headers, ('AttachMessage', 'CallOperator', 'CanReview', 'DeleteMessage', 'SayCID', 'SayEnvelope',), truth_value='Yes')
         header_list = ['MaxMessageCount', 'MaxMessageLength', 'NewMessageCount', 'SayDurationMinimum']
         if 'OldMessageCount' in headers:
             header_list.append('OldMessageCount')
-        for header in header_list:
-            try:
-                headers[header] = int(headers.get(header))
-            except Exception:
-                headers[header] = -1
-
-        try:
-            headers['VolumeGain'] = float(headers.get('VolumeGain'))
-        except Exception:
-            headers['VolumeGain'] = None
-
-        for header in ('AttachMessage', 'CallOperator', 'CanReview', 'DeleteMessage', 'SayCID', 'SayEnvelope'):
-            headers[header] = headers.get(header) == 'Yes'
-            
+        generic_transforms.to_int(headers, header_list, -1)
+        generic_transforms.to_float(headers, ('VolumeGain',), None)
+        
         return (headers, data)
     
 class VoicemailUserEntryComplete(_Event):
