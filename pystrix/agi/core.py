@@ -295,14 +295,15 @@ class Exec(_Action):
     check_hangup = False
     
     def __init__(self, application, options=()):
+        self._application = application
         options = ','.join((str(o or '') for o in options))
-        _Action.__init__(self, 'EXEC', application, (options and quote(options)) or '')
+        _Action.__init__(self, 'EXEC', self._application, (options and quote(options)) or '')
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
         if result.value == '-2':
             raise AGIAppError("Unable to execute application '%(application)r'" % {
-             'application': application,
+             'application': self._application,
             }, response.items)
         return response.raw[7:] #Everything after 'result='
         
