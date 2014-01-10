@@ -26,10 +26,11 @@ GNU Lesser General Public License along with this program. If not, see
 <http://www.gnu.org/licenses/>.
 
 (C) Ivrnet, inc., 2011
+(C) Neil Tallim <flan@uguu.ca>, 2014
 
 Authors:
 
-- Neil Tallim <n.tallim@ivrnet.com>
+- Neil Tallim <flan@uguu.ca>
 """
 import abc
 import collections
@@ -68,6 +69,23 @@ _CALLBACK_TYPE_REFERENCE = 1 #Identifies a callback-definition as an event-refer
 _CALLBACK_TYPE_UNIVERSAL = 2 #Identifies a callback-definition as universal
 _CALLBACK_TYPE_ORPHANED = 3 #Identifies a callback-definition for orphaned responses
 
+def _format_socket_error(exception):
+    """
+    Ensures that, regardless of the form that a `socket.error` takes, it is
+    formatted into a readable string.
+    
+    @param str exception: The `socket.error` to be formatted.
+    @return str: A nicely formatted summary of the exception.
+    """
+    try:
+        (errno, message) = exception
+        return "[%(errno)i] %(error)s" % {
+         'errno': errno,
+         'error': message,
+        }
+    except Exception:
+        return str(exception)
+        
 class Manager(object):
     _alive = True #False when this manager object is ready to be disposed of
     _action_id = None #The ActionID last sent to Asterisk
@@ -1108,11 +1126,10 @@ class _SynchronisedSocket(object):
                     line = self._socket_file.readline()
                 except socket.timeout:
                     return None
-                except socket.error as (errno, message):
+                except socket.error as e:
                     self._close()
-                    raise ManagerSocketError("Connection to Asterisk manager broken while reading data: [%(errno)i] %(error)s" % {
-                     'errno': errno,
-                     'error': message,
+                    raise ManagerSocketError("Connection to Asterisk manager broken while reading data: %(error)s" % {
+                     'error': _format_socket_error(e),
                     })
                 except AttributeError:
                     raise ManagerSocketError("Local socket no longer defined, caused by system shutdown and blocking I/O")
@@ -1143,11 +1160,10 @@ class _SynchronisedSocket(object):
         with self._socket_write_lock:
             try:
                 self._socket.sendall(message)
-            except socket.error as (errno, reason):
+            except socket.error as e:
                 self._close()
-                raise ManagerSocketError("Connection to Asterisk manager broken while writing data: [%(errno)i] %(error)s" % {
-                 'errno': errno,
-                 'error': message,
+                raise ManagerSocketError("Connection to Asterisk manager broken while writing data: %(error)s" % {
+                 'error': _format_socket_error(e),
                 })
                 
     def _connect(self, host, port):
@@ -1161,26 +1177,26 @@ class _SynchronisedSocket(object):
             self._socket.settimeout(self._timeout)
             self._socket.connect((host, port))
             self._socket_file = self._socket.makefile()
-        except socket.error as (errno, reason):
-            raise ManagerSocketError("Connection to Asterisk manager could not be established: [%(errno)i] %(reason)s" % {
-             'errno': errno,
-             'reason': reason,
+        except socket.error as e:
+            self._socket.close()
+            raise ManagerSocketError("Connection to Asterisk manager could not be established: %(error)s" % {
+             'error': _format_socket_error(e),
             })
         self._connected = True
 
         #Pop the greeting off the head of the pipe and set the version information
         try:
             line = self._socket_file.readline()
-        except socket.error as (errno, reason):
-            raise ManagerSocketError("Connection to Asterisk manager broken while reading greeting: [%(errno)i] %(reason)s" % {
-             'errno': errno,
-             'reason': reason,
+        except socket.error as e:
+            self._socket.close()
+            raise ManagerSocketError("Connection to Asterisk manager broken while reading greeting: %(error)s" % {
+             'error': _format_socket_error(e),
             })
         else:
             if '/' in line:
                 (self._asterisk_name, self._asterisk_version) = (token.strip() for token in line.split('/', 1))
                 
-
+                
 #Exceptions
 ###############################################################################
 class Error(Exception):
