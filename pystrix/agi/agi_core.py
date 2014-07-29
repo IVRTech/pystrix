@@ -42,7 +42,7 @@ _Response = collections.namedtuple('Response', ('items', 'code', 'raw'))
 _ValueData = collections.namedtuple('ValueData', ('value', 'data'))
 
 _RE_CODE = re.compile(r'(^\d+)\s*(.+)') #Matches Asterisk's response-code lines
-_RE_KV = re.compile(r'(?P<key>\w+)=(?P<value>[^\s]+)(?:\s+\((?P<data>.*)\))?') #Matches Asterisk's key-value response-pairs
+_RE_KV = re.compile(r'(?P<key>\w+)=(?P<value>[^\s]+)?(?:\s+\((?P<data>.*)\))?') #Matches Asterisk's key-value response-pairs
 
 _RESULT_KEY = 'result'
 
@@ -144,7 +144,7 @@ class _AGI(object):
         if code == 200:
             raw = m.group(2) #The entire line, excluding the code
             for (key, value, data) in _RE_KV.findall(m.group(2)):
-                response[key] = _ValueData(value, data)
+                response[key] = _ValueData(value or '', data)
                 
             if not _RESULT_KEY in response: #Must always be present.
                 raise AGINoResultError("Asterisk did not provide a '%(result-key)s' key-value pair" % {
