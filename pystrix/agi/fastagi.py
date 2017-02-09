@@ -189,7 +189,7 @@ class FastAGIServer(_ThreadedTCPServer):
         with self._script_handlers_lock:
             for (i, (old_regex, old_handler)) in enumerate(self._script_handlers):
                 if old_regex == regex:
-                    self._script_handlers.remove(i)
+                    self._script_handlers.pop(i)
                     break
 
 class FastAGI(_AGI):
