@@ -1,0 +1,5 @@
+dist/
+pystrix.egg-info/
+doc/
+*.pyc
+.idea/
