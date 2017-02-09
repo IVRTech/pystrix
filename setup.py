@@ -4,11 +4,10 @@ Deployment script for pystrix.
 """
 __author__ = 'Neil Tallim'
 
-from distutils.core import setup
 
 from pystrix import VERSION
 
-from setuptools import setup, find_packages
+from setuptools import setup
 import os
 
 CLASSIFIERS = [
