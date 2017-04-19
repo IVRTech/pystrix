@@ -46,17 +46,16 @@ Credits
 =======
 
 `Ivrnet, inc. <http://www.ivrnet.com/>`_
-
-  * Initial development of pystrix was funded by Ivrnet
-  * Ivrnet is a software-as-a-service company that develops and operates intelligent software applications, delivered through traditional phone networks and over the Internet. These applications facilitate automated interaction, personalized communication between people, mass communication for disseminating information to thousands of people concurrently, and personalized communication between people and automated systems. Ivrnet's applications are accessible through nearly any form of communication technology, at any time, from anywhere in North America, via voice, phone, fax, email, texting, and the Internet.
+ * Initial development of pystrix was funded by Ivrnet
+ * Ivrnet is a software-as-a-service company that develops and operates intelligent software applications, delivered through traditional phone networks and over the Internet. These applications facilitate automated interaction, personalized communication between people, mass communication for disseminating information to thousands of people concurrently, and personalized communication between people and automated systems. Ivrnet's applications are accessible through nearly any form of communication technology, at any time, from anywhere in North America, via voice, phone, fax, email, texting, and the Internet.
 
 `Neil Tallim <http://uguu.ca/>`_
-  * Development lead
-  * Programming
+ * Development lead
+ * Programming
 
 Other contributions
 -------------------
 
 **Marta Solano**
-  * Some bug solving
-  * Pip package maintenance
+ * Some bug solving
+ * Pip package maintenance
