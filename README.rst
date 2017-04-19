@@ -9,7 +9,7 @@ Overview
 pystrix runs on `Python <http://python.org/>`_ 2.6+ (intended to be compatible with Python 3.x with the 2to3 script), on any platform. It's targeted at Asterisk 1.10+ and provides a rich, easy-to-extend set of bindings for AGI, FastAGI, and AMI.
 
 ================
-Release schedule
+Release Schedule
 ================
 
 The current code in the repository correspond to version **1.0.0** of the package.  When a bug is found and fixed a new version of the package will be generated in order to keep it updated and as bug-free as possible.
@@ -21,6 +21,22 @@ History
 =======
 
 After some research, we found that what was available was either incompatible with the architecture model we needed to work with `Twisted <http://www.twistedmatrix.org/>`_, (while excellent for a great many things, isn't always the right choice), was targeting an outdated version of Asterisk, or had a very rigid, monolithic design. Identifying the `pyst <http://pyst.sourceforge.net/>`_ and `py-asterisk <http://code.google.com/p/py-asterisk/>`_ packages as being similar, but structurally incompatible, to what we wanted, pyst was chosen as the basis for this project, with a full rewrite of its AGI and AMI systems to provide a uniform-looking, highly modular design that incorporates logic and ideas from py-asterisk. The end result is a package that should satisfy anyone who was looking at either of its ancestors and that should be easier to extend as Asterisk continues to evolve.
+
+============
+Installation
+============
+
+* From pip 
+
+    .. code:: bash
+    
+        $ pip install pystrix
+        
+* From github
+
+    .. code:: bash
+    
+        $ pip install -e git://github.com/marsoguti/pystrix.git#egg=master
 
 =====
 Usage
