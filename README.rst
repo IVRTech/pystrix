@@ -28,15 +28,15 @@ Installation
 
 * From pip 
 
-    .. code:: bash
-    
-        $ pip install pystrix
+.. code:: bash
+
+    $ pip install pystrix
         
 * From github
 
-    .. code:: bash
-    
-        $ pip install -e git://github.com/marsoguti/pystrix.git#egg=master
+.. code:: bash
+
+    $ pip install -e git://github.com/marsoguti/pystrix.git#egg=pystrix
 
 =====
 Usage
