@@ -42,5 +42,5 @@ Authors:
 import agi
 import ami
 
-VERSION = '0.9.8'
+VERSION = '1.0.0'
 COPYRIGHT = '2013, Neil Tallim <flan@uguu.ca>'

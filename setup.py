@@ -15,17 +15,17 @@ CLASSIFIERS = [
     'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
     'Operating System :: OS Independent',
     'Programming Language :: Python',
-    'Programming Language :: Python :: 2.7',
+    'Programming Language :: Python :: 2.6+',
     'Topic :: Communications :: Telephony'
 ]
 
-README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
+README = open(os.path.join(os.path.dirname(__file__), 'README.rst')).read()
 
 # allow setup.py to be run from any path
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
-    author='Marta S.',
+    author='Marta Solano',
     author_email='marsoguti@gmail.com',
     name='pystrix',
     version=VERSION,

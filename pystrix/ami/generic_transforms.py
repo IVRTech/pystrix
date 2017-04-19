@@ -30,7 +30,7 @@ Authors:
 """
 def to_bool(dictionary, keys, truth_value=None, truth_function=(lambda x:bool(x)), preprocess=(lambda x:x)):
     for key in keys:
-        if truth_values:
+        if truth_value:
             dictionary[key] = dictionary.get(key) == truth_value
         else:
             try:

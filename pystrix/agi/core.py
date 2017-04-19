@@ -31,21 +31,23 @@ Authors:
 
 - Neil Tallim <n.tallim@ivrnet.com>
 """
+import time
+
 from agi_core import (
- _Action,
- quote,
- _RESULT_KEY,
- AGIAppError,
+    _Action,
+    quote,
+    _RESULT_KEY,
+    AGIAppError,
 )
 
-CHANNEL_DOWN_AVAILABLE = 0 #Channel is down and available
-CHANNEL_DOWN_RESERVED = 1 #Channel is down and reserved
-CHANNEL_OFFHOOK = 2 #Channel is off-hook
-CHANNEL_DIALED = 3 #A destination address has been specified
-CHANNEL_ALERTING = 4 #The channel is locally ringing
-CHANNEL_REMOTE_ALERTING = 5 #The channel is remotely ringing
-CHANNEL_UP = 6 #The channel is connected
-CHANNEL_BUSY = 7 #The channel is in a busy, non-conductive state
+CHANNEL_DOWN_AVAILABLE = 0  # Channel is down and available
+CHANNEL_DOWN_RESERVED = 1  # Channel is down and reserved
+CHANNEL_OFFHOOK = 2  # Channel is off-hook
+CHANNEL_DIALED = 3  # A destination address has been specified
+CHANNEL_ALERTING = 4  # The channel is locally ringing
+CHANNEL_REMOTE_ALERTING = 5  # The channel is remotely ringing
+CHANNEL_UP = 6  # The channel is connected
+CHANNEL_BUSY = 7  # The channel is in a busy, non-conductive state
 
 FORMAT_SLN = 'sln'
 FORMAT_G723 = 'g723'
@@ -66,7 +68,8 @@ TDD_ON = 'on'
 TDD_OFF = 'off'
 TDD_MATE = 'mate'
 
-#Functions
+
+# Functions
 ###############################################################################
 def _convert_to_char(value, items):
     """
@@ -77,8 +80,9 @@ def _convert_to_char(value, items):
         return chr(int(value))
     except ValueError:
         raise AGIAppError("Unable to convert Asterisk result to DTMF character: %(value)r" % {
-         'value': value,
+            'value': value,
         }, items)
+
 
 def _convert_to_int(items):
     """
@@ -91,6 +95,7 @@ def _convert_to_int(items):
     else:
         return -1
 
+
 def _process_digit_list(digits):
     """
     Ensures that digit-lists are processed uniformly.
@@ -100,7 +105,7 @@ def _process_digit_list(digits):
     return quote(digits)
 
 
-#Classes
+# Classes
 ###############################################################################
 class Answer(_Action):
     """
@@ -111,8 +116,10 @@ class Answer(_Action):
     `AGIAppError` is raised on failure, most commonly because the connection
     could not be established.
     """
+
     def __init__(self):
         _Action.__init__(self, 'ANSWER')
+
 
 class ChannelStatus(_Action):
     """
@@ -139,6 +146,7 @@ class ChannelStatus(_Action):
     `AGIAppError` is raised on failure, most commonly because the channel is
     in a hung-up state.
     """
+
     def __init__(self, channel=None):
         _Action.__init__(self, 'CHANNEL STATUS', (channel and quote(channel)) or None)
 
@@ -147,10 +155,12 @@ class ChannelStatus(_Action):
         try:
             return int(result.value)
         except ValueError:
-            raise AGIAppError("'%(result-key)s' key-value pair received from Asterisk contained a non-numeric value: %(value)r" % {
-             'result-key': _RESULT_KEY,
-             'value': result.value,
-            }, response.items)
+            raise AGIAppError(
+                "'%(result-key)s' key-value pair received from Asterisk contained a non-numeric value: %(value)r" % {
+                    'result-key': _RESULT_KEY,
+                    'value': result.value,
+                }, response.items)
+
 
 class ControlStreamFile(_Action):
     """
@@ -176,18 +186,20 @@ class ControlStreamFile(_Action):
     `AGIAppError` is raised on failure, most commonly because the channel was
     hung-up.
     """
+
     def __init__(self, filename, escape_digits='', sample_offset=0, forward='', rewind='', pause=''):
         escape_digits = _process_digit_list(escape_digits)
         _Action.__init__(self, 'CONTROL STREAM FILE', quote(filename),
-         quote(escape_digits), quote(sample_offset),
-         quote(forward), quote(rewind), quote(pause)
-        )
+                         quote(escape_digits), quote(sample_offset),
+                         quote(forward), quote(rewind), quote(pause)
+                         )
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
         if not result.value == '0':
             return _convert_to_char(result.value, response.items)
         return None
+
 
 class DatabaseDel(_Action):
     """
@@ -198,16 +210,20 @@ class DatabaseDel(_Action):
     `AGIDBError` is raised if the key could not be removed, which usually indicates that it
     didn't exist in the first place.
     """
+
     def __init__(self, family, key):
         _Action.__init__(self, 'DATABASE DEL', quote(family), quote(key))
+        self.family = family
+        self.key = key
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
         if result.value == '0':
             raise AGIDBError("Unable to delete from database: family=%(family)r, key=%(key)r" % {
-             'family': family,
-             'key': key,
+                'family': self.family,
+                'key': self.key,
             }, response.items)
+
 
 class DatabaseDeltree(_Action):
     """
@@ -218,18 +234,22 @@ class DatabaseDeltree(_Action):
     `AGIDBError` is raised if the family (or keytree) could not be removed, which usually
     indicates that it didn't exist in the first place.
     """
+
     def __init__(self, family, keytree=None):
         _Action.__init__(self,
-         'DATABASE DELTREE', quote(family), (keytree and quote(keytree) or None)
-        )
+                         'DATABASE DELTREE', quote(family), (keytree and quote(keytree) or None)
+                         )
+        self.family = family
+        self.keytree = keytree
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
         if result.value == '0':
             raise AGIDBError("Unable to delete family from database: family=%(family)r, keytree=%(keytree)r" % {
-             'family': family,
-             'keytree': keytree or '<unspecified>',
+                'family': self.family,
+                'keytree': self.keytree or '<unspecified>',
             }, response.items)
+
 
 class DatabaseGet(_Action):
     """
@@ -241,25 +261,28 @@ class DatabaseGet(_Action):
     occurs.
     """
     check_hangup = False
-    
+
     def __init__(self, family, key):
         _Action.__init__(self, 'DATABASE GET', quote(family), quote(key))
+        self.family = family
+        self.key = key
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
         if result.value == '0':
             raise AGIDBError("Key not found in database: family=%(family)r, key=%(key)r" % {
-             'family': family,
-             'key': key,
+                'family': self.family,
+                'key': self.key,
             }, response.items)
         elif result.value == '1':
             return result.data
-            
+
         raise AGIDBError("Unable to query database: family=%(family)r, key=%(key)r, result=%(result)r" % {
-         'family': family,
-         'key': key,
-         'result': result.value,
+            'family': self.family,
+            'key': self.key,
+            'result': result.value,
         }, response.items)
+
 
 class DatabasePut(_Action):
     """
@@ -270,17 +293,22 @@ class DatabasePut(_Action):
     `AGIDBError` is raised if the key could not be inserted or if some other database problem
     occurs.
     """
+
     def __init__(self, family, key, value):
         _Action.__init__(self, 'DATABASE PUT', quote(family), quote(key), quote(value))
+        self.family = family
+        self.key = key
+        self.value = value
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
         if result.value == '0':
             raise AGIDBError("Unable to store value in database: family=%(family)r, key=%(key)r, value=%(value)r" % {
-             'family': family,
-             'key': key,
-             'value': value,
+                'family': self.family,
+                'key': self.key,
+                'value': self.value,
             }, response.items)
+
 
 class Exec(_Action):
     """
@@ -293,7 +321,7 @@ class Exec(_Action):
     `AGIAppError` is raised if the application could not be executed.
     """
     check_hangup = False
-    
+
     def __init__(self, application, options=()):
         self._application = application
         options = ','.join((str(o or '') for o in options))
@@ -303,10 +331,11 @@ class Exec(_Action):
         result = response.items.get(_RESULT_KEY)
         if result.value == '-2':
             raise AGIAppError("Unable to execute application '%(application)r'" % {
-             'application': self._application,
+                'application': self._application,
             }, response.items)
-        return response.raw[7:] #Everything after 'result='
-        
+        return response.raw[7:]  # Everything after 'result='
+
+
 class GetData(_Action):
     """
     See also `ControlStreamFile`, `GetOption`, `StreamFile`.
@@ -328,14 +357,16 @@ class GetData(_Action):
     `AGIAppError` is raised on failure, most commonly because no keys, aside from '#', were
     entered.
     """
+
     def __init__(self, filename, timeout=2000, max_digits=255):
         _Action.__init__(self,
-         'GET DATA', quote(filename), quote(timeout), quote(max_digits)
-        )
+                         'GET DATA', quote(filename), quote(timeout), quote(max_digits)
+                         )
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
         return (result.value, result.data == 'timeout')
+
 
 class GetFullVariable(_Action):
     """
@@ -347,7 +378,7 @@ class GetFullVariable(_Action):
     `AGIAppError` is raised on failure.
     """
     check_hangup = False
-    
+
     def __init__(self, variable):
         _Action.__init__(self, 'GET FULL VARIABLE', quote(variable))
 
@@ -356,6 +387,7 @@ class GetFullVariable(_Action):
         if result.value == '1':
             return result.data
         return None
+
 
 class GetOption(_Action):
     """
@@ -379,12 +411,13 @@ class GetOption(_Action):
     `AGIAppError` is raised on failure, most commonly because the channel was
     hung-up.
     """
+
     def __init__(self, filename, escape_digits='', timeout=2000):
         escape_digits = _process_digit_list(escape_digits)
         _Action.__init__(self,
-         'GET OPTION', quote(filename),
-         quote(escape_digits), quote(timeout)
-        )
+                         'GET OPTION', quote(filename),
+                         quote(escape_digits), quote(timeout)
+                         )
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
@@ -393,6 +426,7 @@ class GetOption(_Action):
             offset = _convert_to_int(response.items)
             return (dtmf_character, offset)
         return None
+
 
 class GetVariable(_Action):
     """
@@ -404,7 +438,7 @@ class GetVariable(_Action):
     `AGIAppError` is raised on failure.
     """
     check_hangup = False
-    
+
     def __init__(self, variable):
         _Action.__init__(self, 'GET VARIABLE', quote(variable))
 
@@ -414,14 +448,17 @@ class GetVariable(_Action):
             return result.data
         return None
 
+
 class Hangup(_Action):
     """
     Hangs up this channel or, if `channel` is set, the named channel.
 
     `AGIAppError` is raised on failure.
     """
+
     def __init__(self, channel=None):
         _Action.__init__(self, 'HANGUP', (channel and quote(channel) or None))
+
 
 class Noop(_Action):
     """
@@ -433,8 +470,10 @@ class Noop(_Action):
     
     `AGIAppError` is raised on failure.
     """
+
     def __init__(self):
         _Action.__init__(self, 'NOOP')
+
 
 class ReceiveChar(_Action):
     """
@@ -450,6 +489,7 @@ class ReceiveChar(_Action):
 
     `AGIAppError` is raised on failure.
     """
+
     def __init__(self, timeout=0):
         _Action.__init__(self, 'RECEIVE CHAR', quote(timeout))
 
@@ -458,6 +498,7 @@ class ReceiveChar(_Action):
         if not result.value == '0':
             return (_convert_to_char(result.value, response.items), result.data == 'timeout')
         return None
+
 
 class ReceiveText(_Action):
     """
@@ -470,12 +511,14 @@ class ReceiveText(_Action):
 
     `AGIAppError` is raised on failure.
     """
+
     def __init__(self, timeout=0):
         _Action.__init__(self, 'RECEIVE TEXT', quote(timeout))
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
         return result.value
+
 
 class RecordFile(_Action):
     """
@@ -521,29 +564,32 @@ class RecordFile(_Action):
     `AGIAppError` is raised on failure, most commonly because the destination file isn't
     writable.
     """
-    def __init__(self, filename, format=FORMAT_WAV, escape_digits='', timeout=-1, sample_offset=0, beep=True, silence=None):
+
+    def __init__(self, filename, format=FORMAT_WAV, escape_digits='', timeout=-1, sample_offset=0, beep=True,
+                 silence=None):
         escape_digits = _process_digit_list(escape_digits)
         _Action.__init__(self,
-         'RECORD FILE', quote(filename), quote(format),
-         quote(escape_digits), quote(timeout), quote(sample_offset),
-         (beep and quote('beep') or None),
-         (silence and quote('s=' + str(silence)) or None)
-        )
+                         'RECORD FILE', quote(filename), quote(format),
+                         quote(escape_digits), quote(timeout), quote(sample_offset),
+                         (beep and quote('beep') or None),
+                         (silence and quote('s=' + str(silence)) or None)
+                         )
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
         offset = _convert_to_int(response.items)
-        
+
         if result.data == 'randomerror':
             raise AGIAppError("Unknown error occurred %(ms)i into recording: %(error)s" % {
-             'ms': offset,
-             'error': result.value,
+                'ms': offset,
+                'error': result.value,
             })
         elif result.data == 'timeout':
             return ('', offset, True)
         elif result.data == 'dtmf':
             return (_convert_to_char(result.value, response.items), offset, False)
-        return ('', offset, True) #Assume a timeout if any other result data is received.
+        return ('', offset, True)  # Assume a timeout if any other result data is received.
+
 
 class _SayAction(_Action):
     """
@@ -562,11 +608,12 @@ class _SayAction(_Action):
     `AGIAppError` is raised on failure, most commonly because the channel was
     hung-up.
     """
+
     def __init__(self, say_type, argument, escape_digits, *args):
         escape_digits = _process_digit_list(escape_digits)
         _Action.__init__(self,
-         'SAY ' + say_type, quote(argument), quote(escape_digits), *args
-        )
+                         'SAY ' + say_type, quote(argument), quote(escape_digits), *args
+                         )
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
@@ -574,7 +621,8 @@ class _SayAction(_Action):
         if not result.value == '0':
             return _convert_to_char(result.value, response.items)
         return None
-        
+
+
 class SayAlpha(_SayAction):
     """
     Reads an alphabetic string of `characters`.
@@ -586,9 +634,11 @@ class SayAlpha(_SayAction):
     `AGIAppError` is raised on failure, most commonly because the channel was
     hung-up.
     """
+
     def __init__(self, characters, escape_digits=''):
         characters = _process_digit_list(characters)
         _SayAction.__init__(self, 'ALPHA', characters, escape_digits)
+
 
 class SayDate(_SayAction):
     """
@@ -602,10 +652,12 @@ class SayDate(_SayAction):
     `AGIAppError` is raised on failure, most commonly because the channel was
     hung-up.
     """
+
     def __init__(self, seconds=None, escape_digits=''):
         if seconds is None:
             seconds = int(time.time())
         _SayAction.__init__(self, 'DATE', seconds, escape_digits)
+
 
 class SayDatetime(_SayAction):
     """
@@ -639,15 +691,17 @@ class SayDatetime(_SayAction):
     `AGIAppError` is raised on failure, most commonly because the channel was
     hung-up.
     """
+
     def __init__(self, seconds=None, escape_digits='', format=None, timezone=None):
         if seconds is None:
             seconds = int(time.time())
         if not format:
             timezone = None
         _SayAction.__init__(self,
-         'DATETIME', seconds, escape_digits,
-         (format and quote(format) or None), (timezone and quote(timezone) or None)
-        )
+                            'DATETIME', seconds, escape_digits,
+                            (format and quote(format) or None), (timezone and quote(timezone) or None)
+                            )
+
 
 class SayDigits(_SayAction):
     """
@@ -660,9 +714,11 @@ class SayDigits(_SayAction):
     `AGIAppError` is raised on failure, most commonly because the channel was
     hung-up.
     """
+
     def __init__(self, digits, escape_digits=''):
         digits = _process_digit_list(digits)
         _SayAction.__init__(self, 'DIGITS', digits, escape_digits)
+
 
 class SayNumber(_SayAction):
     """
@@ -675,9 +731,11 @@ class SayNumber(_SayAction):
     `AGIAppError` is raised on failure, most commonly because the channel was
     hung-up.
     """
+
     def __init__(self, number, escape_digits=''):
         number = _process_digit_list(number)
         _SayAction.__init__(self, 'NUMBER', number, escape_digits)
+
 
 class SayPhonetic(_SayAction):
     """
@@ -685,14 +743,16 @@ class SayPhonetic(_SayAction):
 
     `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
     of possibly mixed ints and strings. Playback ends immediately when one is received and it is
-    returned. If nothing is recieved, `None` is returned.
+    returned. If nothing is received, `None` is returned.
 
     `AGIAppError` is raised on failure, most commonly because the channel was
     hung-up.
     """
+
     def __init__(self, characters, escape_digits=''):
         characters = _process_digit_list(characters)
-        _SayAction.__init__(self, 'ALPHA', characters, escape_digits)
+        _SayAction.__init__(self, 'PHONETIC', characters, escape_digits)
+
 
 class SayTime(_SayAction):
     """
@@ -701,15 +761,17 @@ class SayTime(_SayAction):
     
     `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
     of possibly mixed ints and strings. Playback ends immediately when one is received and it is
-    returned. If nothing is recieved, `None` is returned.
+    returned. If nothing is received, `None` is returned.
 
     `AGIAppError` is raised on failure, most commonly because the channel was
     hung-up.
     """
+
     def __init__(self, seconds=None, escape_digits=''):
         if seconds is None:
             seconds = int(time.time())
         _SayAction.__init__(self, 'TIME', seconds, escape_digits)
+
 
 class SendImage(_Action):
     """
@@ -720,8 +782,10 @@ class SendImage(_Action):
 
     `AGIAppError` is raised on failure.
     """
+
     def __init__(self, filename):
         _Action.__init__(self, 'SEND FILE', quote(filename))
+
 
 class SendText(_Action):
     """
@@ -729,8 +793,10 @@ class SendText(_Action):
 
     `AGIAppError` is raised on failure.
     """
+
     def __init__(self, text):
         _Action.__init__(self, 'SEND TEXT', quote(text))
+
 
 class SetAutohangup(_Action):
     """
@@ -740,8 +806,10 @@ class SetAutohangup(_Action):
 
     `AGIAppError` is raised on failure.
     """
+
     def __init__(self, seconds=0):
         _Action.__init__(self, 'SET AUTOHANGUP', quote(seconds))
+
 
 class SetCallerid(_Action):
     """
@@ -749,18 +817,20 @@ class SetCallerid(_Action):
 
     `AGIAppError` is raised on failure.
     """
+
     def __init__(self, number, name=None):
-        if name: #Escape it
+        if name:  # Escape it
             name = '\\"%(name)s\\"' % {
-             'name': name,
+                'name': name,
             }
-        else: #Make sure it's the empty string
+        else:  # Make sure it's the empty string
             name = ''
         number = "%(name)s<%(number)s>" % {
-         'name': name,
-         'number': number,
+            'name': name,
+            'number': number,
         }
         _Action.__init__(self, 'SET CALLERID', quote(number))
+
 
 class SetContext(_Action):
     """
@@ -771,8 +841,10 @@ class SetContext(_Action):
     
     `AGIAppError` is raised on failure.
     """
+
     def __init__(self, context):
         _Action.__init__(self, 'SET CONTEXT', quote(context))
+
 
 class SetExtension(_Action):
     """
@@ -783,8 +855,10 @@ class SetExtension(_Action):
     
     `AGIAppError` is raised on failure.
     """
+
     def __init__(self, extension):
         _Action.__init__(self, 'SET EXTENSION', quote(extension))
+
 
 class SetMusic(_Action):
     """
@@ -794,11 +868,13 @@ class SetMusic(_Action):
     
     `AGIAppError` is raised on failure.
     """
+
     def __init__(self, on, moh_class=None):
         _Action.__init__(self,
-         'SET MUSIC', quote(on and 'on' or 'off'),
-         (moh_class and quote(moh_class) or None)
-        )
+                         'SET MUSIC', quote(on and 'on' or 'off'),
+                         (moh_class and quote(moh_class) or None)
+                         )
+
 
 class SetPriority(_Action):
     """
@@ -809,8 +885,10 @@ class SetPriority(_Action):
     
     `AGIAppError` is raised on failure.
     """
+
     def __init__(self, priority):
         _Action.__init__(self, 'SET PRIORITY', quote(priority))
+
 
 class SetVariable(_Action):
     """
@@ -818,8 +896,10 @@ class SetVariable(_Action):
 
     `AGIAppError` is raised on failure.
     """
+
     def __init__(self, name, value):
         _Action.__init__(self, 'SET VARIABLE', quote(name), quote(value))
+
 
 class StreamFile(_Action):
     """
@@ -842,12 +922,13 @@ class StreamFile(_Action):
     `AGIAppError` is raised on failure, most commonly because the channel was
     hung-up.
     """
+
     def __init__(self, filename, escape_digits='', sample_offset=0):
         escape_digits = _process_digit_list(escape_digits)
         _Action.__init__(self,
-         'STREAM FILE', quote(filename),
-         quote(escape_digits), quote(sample_offset)
-        )
+                         'STREAM FILE', quote(filename),
+                         quote(escape_digits), quote(sample_offset)
+                         )
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
@@ -856,6 +937,7 @@ class StreamFile(_Action):
             offset = _convert_to_int(response.items)
             return (dtmf_character, offset)
         return None
+
 
 class TDDMode(_Action):
     """
@@ -869,12 +951,14 @@ class TDDMode(_Action):
     `AGIAppError` is raised if a problem occurs. According to documentation from 2006,
     all non-capable channels will cause an exception to occur.
     """
+
     def __init__(self, mode):
         _Action.__init__(self, 'TDD MODE', mode)
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
         return result.value == '1'
+
 
 class Verbose(_Action):
     """
@@ -892,8 +976,10 @@ class Verbose(_Action):
     
     `AGIAppError` is raised on failure.
     """
+
     def __init__(self, message, level=LOG_INFO):
         _Action.__init__(self, 'VERBOSE', quote(message), quote(level))
+
 
 class WaitForDigit(_Action):
     """
@@ -905,6 +991,7 @@ class WaitForDigit(_Action):
     `AGIAppError` is raised on failure, most commonly because the channel was
     hung-up.
     """
+
     def __init__(self, timeout=-1):
         _Action.__init__(self, 'WAIT FOR DIGIT', quote(timeout))
 
@@ -915,11 +1002,10 @@ class WaitForDigit(_Action):
         return None
 
 
-#Exceptions
+# Exceptions
 ###############################################################################
 class AGIDBError(AGIAppError):
     """
     Indicates that Asterisk encountered an error while interactive with its
     database.
     """
-    
