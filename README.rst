@@ -32,12 +32,9 @@ Detailed usage information is provided in the documentation, along with simple e
 Documentation
 =============
 
-Every release will be packaged with full offline HTML documentation, which is the preferred way to look things up.
-
-Online documentation is available at http://pystrix.readthedocs.io/ but it's better to use the offline version when possible, since the online documentation is unstable and may not be available when you need it most.
+Online documentation is available at http://pystrix.readthedocs.io/.
 
 Inline documentation is complete and made readable by `reStructuredText <http://docutils.sourceforge.net/rst.html>`_, so you'll never be completely lost.
-
 
 ****
 
