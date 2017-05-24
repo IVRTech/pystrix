@@ -34,7 +34,6 @@ Authors:
 """
 import abc
 import collections
-import Queue
 import random
 import re
 import socket
@@ -43,6 +42,12 @@ import time
 import traceback
 import types
 import warnings
+from pystrix.ami import core
+
+try:
+    import queue
+except:
+    import Queue as queue
 
 _EVENT_REGISTRY = {} #Meant to be internally managed only, this provides mappings from event-class-names to the classes, to enable type-mutation
 _EVENT_REGISTRY_REV = {} #Provides the friendly names of events as strings, keyed by class object
@@ -213,7 +218,7 @@ class Manager(object):
         else:
             try:
                 event = message_reader.event_queue.get_nowait()
-            except Queue.Empty:
+            except queue.Empty:
                 pass
             else:
                 #Bind it to a request, if appropriate
@@ -268,7 +273,7 @@ class Manager(object):
         response = None
         try:
             response = message_reader.response_queue.get_nowait()
-        except Queue.Empty:
+        except queue.Empty:
             pass
             
         if response:
@@ -397,7 +402,7 @@ class Manager(object):
         is still alive; defaults to 2.5.
         """
         def _monitor_connection():
-            import core
+
             while self.is_connected():
                 self.send_action(core.Ping())
                 time.sleep(interval)
@@ -960,8 +965,8 @@ class _MessageReader(threading.Thread):
         self._manager = manager
         self._orphaned_response_timeout = orphaned_response_timeout
 
-        self.event_queue = Queue.Queue()
-        self.response_queue = Queue.Queue()
+        self.event_queue = queue.Queue()
+        self.response_queue = queue.Queue()
         self._served_requests = {}
         self._served_requests_lock = threading.Lock()
         

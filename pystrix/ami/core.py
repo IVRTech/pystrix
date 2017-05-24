@@ -41,9 +41,9 @@ import hashlib
 import time
 import types
 
-from ami import (_Request, ManagerError)
-import core_events
-import generic_transforms
+from pystrix.ami.ami import (_Request, ManagerError)
+from pystrix.ami import core_events
+from pystrix.ami import generic_transforms
 
 AUTHTYPE_MD5 = 'MD5' #Uses MD5 authentication when logging into AMI
 
