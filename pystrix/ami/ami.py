@@ -42,7 +42,6 @@ import time
 import traceback
 import types
 import warnings
-from pystrix.ami import core
 
 try:
     import queue
@@ -402,6 +401,7 @@ class Manager(object):
         is still alive; defaults to 2.5.
         """
         def _monitor_connection():
+            from pystrix.ami import core
 
             while self.is_connected():
                 self.send_action(core.Ping())
@@ -416,11 +416,11 @@ class Manager(object):
         Provides a triple of type, match-criteria, and callback for the given event-identifier and
         function.
         """
-        if isinstance(event, types.StringTypes):
+        if isinstance(event, str):
             if not event:
                 return (_CALLBACK_TYPE_UNIVERSAL, None, function)
             return (_CALLBACK_TYPE_REFERENCE, event, function)
-        elif isinstance(event, types.TypeType):
+        elif isinstance(event, type):
             event_name = _EVENT_REGISTRY_REV.get(event)
             if event_name:
                 return (_CALLBACK_TYPE_REFERENCE, event_name, function)
@@ -653,7 +653,7 @@ class _MessageTemplate(object):
         A convenience qualifier for decision-blocks to allow the message to be compared to strings for
         readability purposes.
         """
-        if isinstance(o, types.StringType):
+        if isinstance(o, str):
             return self.name == o
         return dict.__eq__(self, o)
         
@@ -740,7 +740,7 @@ class _Aggregate(_MessageTemplate, dict):
         event = event.process()[0]
         list_items_count = event.get(count_header)
         if list_items_count is not None:
-            items_count = sum(len(v) for (k, v) in self.items() if type(v) is list and isinstance(k, types.StringType))
+            items_count = sum(len(v) for (k, v) in self.items() if type(v) is list and isinstance(k, str))
             self._valid = list_items_count == items_count
             if not self._valid:
                 self._error_message = "Expected %(event)i list-items; received %(count)i" % {

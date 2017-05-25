@@ -146,7 +146,7 @@ class FastAGIServer(_ThreadedTCPServer):
         with self._script_handlers_lock:
             for (regex, handler) in self._script_handlers:
                 match = None
-                if type(regex) in types.StringTypes:
+                if isinstance(regex, str):
                     match = re.match(regex, script_path)
                 else:
                     match = regex.match(script_path)

@@ -282,7 +282,7 @@ class Events(_Request):
         If an empty value is provided, EVENTMASK_NONE is assumed.
         """
         _Request.__init__(self, 'Events')
-        if isinstance(mask, types.StringTypes):
+        if isinstance(mask, str):
             self['EventMask'] = mask
         else:
             if EVENTMASK_ALL in mask:
