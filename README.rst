@@ -6,13 +6,13 @@
 Overview
 ========
 
-pystrix runs on `Python <http://python.org/>`_ 2.6+ (intended to be compatible with Python 3.x with the 2to3 script), on any platform. It's targeted at Asterisk 1.10+ and provides a rich, easy-to-extend set of bindings for AGI, FastAGI, and AMI.
+pystrix runs on python 2.7/python 3.4+ on any platform. It's targeted at Asterisk 1.10+ and provides a rich, easy-to-extend set of bindings for AGI, FastAGI, and AMI.
 
 ================
 Release Schedule
 ================
 
-The current code in the repository correspond to version **1.0.0** of the package.  When a bug is found and fixed a new version of the package will be generated in order to keep it updated and as bug-free as possible.
+The current code in the repository correspond to version **1.1.0** of the package.  When a bug is found and fixed a new version of the package will be generated in order to keep it updated and as bug-free as possible.
 
 New releases will follow the format: <release mayor>.<release minor>.<bug fixed> according to the change made to the code.
 
@@ -70,5 +70,8 @@ Other contributions
 -------------------
 
 **Marta Solano**
- * Some bug solving
+ * Bug solving
  * Pip package maintenance
+
+**Eric Lee**
+ * Python 2 to 3 migration

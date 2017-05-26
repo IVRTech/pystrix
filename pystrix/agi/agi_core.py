@@ -229,7 +229,7 @@ class _AGI(object):
             self._wfile.flush()
         except Exception as e:
             raise AGISIGPIPEHangup("Socket link broken: %(error)s" % {
-             'error': str.encode(e),
+             'error': str(e),
             })
             
     def _test_hangup(self):

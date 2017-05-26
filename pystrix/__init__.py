@@ -39,8 +39,8 @@ Authors:
 
 - Neil Tallim <n.tallim@ivrnet.com>
 """
-import agi
-import ami
+import pystrix.agi
+import pystrix.ami
 
-VERSION = '1.0.0'
+VERSION = '1.1.0'
 COPYRIGHT = '2013, Neil Tallim <flan@uguu.ca>'
