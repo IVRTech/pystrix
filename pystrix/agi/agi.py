@@ -32,8 +32,8 @@ Authors:
 import signal
 import sys
 
-from agi_core import *
-from agi_core import _AGI
+from pystrix.agi.agi_core import *
+from pystrix.agi.agi_core import _AGI
 
 class AGI(_AGI):
     """

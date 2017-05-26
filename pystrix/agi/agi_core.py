@@ -205,11 +205,11 @@ class _AGI(object):
             line = self._rfile.readline()
             if not line: #EOF encountered
                 raise AGISIGPIPEHangup("Process input pipe closed")
-            elif not line.endswith('\n'): #Fragment encountered
+            elif not line.decode().endswith('\n'): #Fragment encountered
                 #Recursively append to the current fragment until the line is
                 #complete or the socket dies.
                 line += self._read_line()
-            return line.strip()
+            return line.decode().strip()
         except IOError as e:
             raise AGISIGPIPEHangup("Process input pipe broken: %(error)s" % {
              'error': str(e),
@@ -225,11 +225,11 @@ class _AGI(object):
         If the connection to Asterisk is broken, `AGISIGPIPEHangup` is raised.
         """
         try:
-            self._wfile.write(command)
+            self._wfile.write(command.encode())
             self._wfile.flush()
         except Exception as e:
             raise AGISIGPIPEHangup("Socket link broken: %(error)s" % {
-             'error': str(e),
+             'error': str.encode(e),
             })
             
     def _test_hangup(self):

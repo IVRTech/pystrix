@@ -38,23 +38,29 @@ Authors:
 import cgi
 import re
 import socket
-import SocketServer
 import threading
 import types
+from pystrix.agi.agi_core import *
+from pystrix.agi.agi_core import _AGI
 
-from agi_core import *
-from agi_core import _AGI
+try:
+	import socketserver
+except:
+	import SocketServer as socketserver
 
-class _ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+
+
+
+class _ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     """
     Provides a variant of the TCPServer that spawns a new thread to handle each
     request.
     """
     def server_bind(self):
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        SocketServer.TCPServer.server_bind(self)
+        socketserver.TCPServer.server_bind(self)
         
-class _AGIClientHandler(SocketServer.StreamRequestHandler):
+class _AGIClientHandler(socketserver.StreamRequestHandler):
     """
     Handles TCP connections.
     """
@@ -140,7 +146,7 @@ class FastAGIServer(_ThreadedTCPServer):
         with self._script_handlers_lock:
             for (regex, handler) in self._script_handlers:
                 match = None
-                if type(regex) in types.StringTypes:
+                if isinstance(regex, str):
                     match = re.match(regex, script_path)
                 else:
                     match = regex.match(script_path)

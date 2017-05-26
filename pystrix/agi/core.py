@@ -33,7 +33,7 @@ Authors:
 """
 import time
 
-from agi_core import (
+from pystrix.agi.agi_core import (
     _Action,
     quote,
     _RESULT_KEY,

@@ -34,20 +34,20 @@ Authors:
 
 - Neil Tallim <n.tallim@ivrnet.com>
 """
-from agi_core import (
+from pystrix.agi.agi_core import (
  AGIException, AGIError, AGINoResultError, AGIUnknownError, AGIAppError,
  AGIHangup, AGISIGPIPEHangup, AGIResultHangup,
  AGIDeadChannelError, AGIUsageError, AGIInvalidCommandError,
 )
 
-from agi import (
+from pystrix.agi.agi import (
  AGI,
  AGISIGHUPHangup,
 )
 
-from fastagi import (
+from pystrix.agi.fastagi import (
  FastAGIServer, FastAGI,
 )
 
-import core
+from pystrix.agi import core
 

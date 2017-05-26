@@ -34,24 +34,24 @@ Authors:
 
 - Neil Tallim <n.tallim@ivrnet.com>
 """
-from ami import (
+from pystrix.ami.ami import (
  RESPONSE_GENERIC, EVENT_GENERIC,
  KEY_ACTION, KEY_ACTIONID, KEY_EVENT, KEY_RESPONSE,
  Manager,
  Error, ManagerError, ManagerSocketError,
 )
-import core
-import dahdi
-import app_confbridge
-import app_meetme
+from pystrix.ami import core
+from pystrix.ami import dahdi
+from pystrix.ami import app_confbridge
+from pystrix.ami import app_meetme
 
 #Register events
-import core_events
-import dahdi_events
-import app_confbridge_events
-import app_meetme_events
+from pystrix.ami import core_events
+from pystrix.ami import dahdi_events
+from pystrix.ami import app_confbridge_events
+from pystrix.ami import app_meetme_events
 
-from ami import (_EVENT_REGISTRY, _EVENT_REGISTRY_REV)
+from pystrix.ami.ami import (_EVENT_REGISTRY, _EVENT_REGISTRY_REV)
 for module in (
  core_events, dahdi_events,
  app_confbridge_events, app_meetme_events,

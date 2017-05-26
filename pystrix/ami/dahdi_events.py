@@ -31,8 +31,8 @@ Authors:
 The events implemented by this module follow the definitions provided by
 http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
 """
-from ami import (_Aggregate, _Event)
-import generic_transforms
+from pystrix.ami.ami import (_Aggregate, _Event)
+from pystrix.ami import generic_transforms
 
 class DAHDIShowChannels(_Event):
     """

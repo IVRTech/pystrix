@@ -33,9 +33,9 @@ Authors:
 The requests implemented by this module follow the definitions provided by
 https://wiki.asterisk.org/
 """
-from ami import (_Request, ManagerError)
-import dahdi_events
-import generic_transforms
+from pystrix.ami.ami import (_Request, ManagerError)
+from pystrix.ami import dahdi_events
+from pystrix.ami import generic_transforms
 
 class DAHDIDNDoff(_Request):
     """
