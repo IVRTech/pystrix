@@ -41,9 +41,9 @@ import hashlib
 import time
 import types
 
-from ami import (_Request, ManagerError)
-import core_events
-import generic_transforms
+from pystrix.ami.ami import (_Request, ManagerError)
+from pystrix.ami import core_events
+from pystrix.ami import generic_transforms
 
 AUTHTYPE_MD5 = 'MD5' #Uses MD5 authentication when logging into AMI
 
@@ -282,7 +282,7 @@ class Events(_Request):
         If an empty value is provided, EVENTMASK_NONE is assumed.
         """
         _Request.__init__(self, 'Events')
-        if isinstance(mask, types.StringTypes):
+        if isinstance(mask, str):
             self['EventMask'] = mask
         else:
             if EVENTMASK_ALL in mask:

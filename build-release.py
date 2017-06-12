@@ -34,7 +34,7 @@ if __name__ == '__main__':
     for line in fileinput.input("pystrix.spec", inplace=True, backup=False):
         if line.startswith('%define initversion'):
             line = "%%define initversion %s" % VERSION 
-        print "%s" % (line.rstrip())
+        print("%s" % (line.rstrip()))
     f.add('pystrix.spec', arcname="%s/pystrix.spec" % base_name)
     f.add('COPYING', arcname="%s/COPYING" % base_name)
     f.add('COPYING.LESSER', arcname="%s/COPYING.LESSER" % base_name)
