@@ -29,7 +29,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     author='Marta Solano',
-    author_email='marsogut@gmail.com',
+    author_email='marta.solano@ivrtechnology.com',
     name='pystrix',
     version=VERSION,
     description='Python bindings for Asterisk Manager Interface and Asterisk Gateway Interface',
