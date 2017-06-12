@@ -66,12 +66,14 @@ Credits
  * Development lead
  * Programming
 
-Other contributions
--------------------
 
-**Marta Solano**
- * Bug solving
+Other contributions and current package maintenance
+---------------------------------------------------
+
+`Marta Solano <marta.solano@ivrtechnology.com>`_
+ * Bug solving - Programming
  * Pip package maintenance
 
-**Eric Lee**
- * Python 2 to 3 migration
+`Eric Lee <eric@ivrtechnology.com>`_
+ * Python 2 to 3 migration - compatibility
+ * Programming
