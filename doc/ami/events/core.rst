@@ -125,6 +125,14 @@ Events
     :show-inheritance:
     :members:
 
+.. autoclass:: ami.core_events.QueueSummary
+    :show-inheritance:
+    :members:
+
+.. autoclass:: ami.core_events.QueueSummaryComplete
+    :show-inheritance:
+    :members:
+
 .. autoclass:: ami.core_events.RegistryEntry
     :show-inheritance:
     :members:
@@ -189,6 +197,10 @@ Aggregate Events
     :members:
     
 .. autoclass:: ami.core_events.QueueStatus_Aggregate
+    :show-inheritance:
+    :members:
+
+.. autoclass:: ami.core_events.QueueSummary_Aggregate
     :show-inheritance:
     :members:
     
