@@ -571,23 +571,25 @@ class QueueSummary(_Event):
     """
     Describes a Summary of a queue.
 
-    Event: QueueSummary
-    Queue: default
-    LoggedIn: 0
-    Available: 0
-    Callers: 0
-    HoldTime: 0
-    TalkTime: 0
-    LongestHoldTime: 0
+    - Event: QueueSummary
+    - Queue: default
+    - LoggedIn: 0
+    - Available: 0
+    - Callers: 0
+    - HoldTime: 0
+    - TalkTime: 0
+    - LongestHoldTime: 0
 
-    Event: QueueSummaryComplete
-    EventList: Complete
-    ListItems: 2
+    - Event: QueueSummaryComplete
+    - EventList: Complete
+    - ListItems: 2
 
     """
 
     def process(self):
         """
+            Translates the 'LoggedIn', 'Available', 'Callers', 'Holdtime', 'TalkTime' and 'LongestHoldTime' headers'
+            values into ints, setting them to -1 on error.
         """
         (headers, data) = _Event.process(self)
         generic_transforms.to_int(headers, ('LoggedIn', 'Available', 'Callers', 'HoldTime', 'TalkTime',
@@ -597,7 +599,7 @@ class QueueSummary(_Event):
 
 class QueueSummaryComplete(_Event):
     """
-    Indicates that a QueueStatus request has completed.
+    Indicates that a QueueSummary request has completed.
     """
 
 
