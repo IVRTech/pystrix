@@ -569,21 +569,19 @@ class QueueStatusComplete(_Event):
 
 class QueueSummary(_Event):
     """
-    Describes a Summary of a queue.
+    Describes a Summary of a queue. Example:
 
-    - Event: QueueSummary
-    - Queue: default
-    - LoggedIn: 0
-    - Available: 0
-    - Callers: 0
-    - HoldTime: 0
-    - TalkTime: 0
-    - LongestHoldTime: 0
-
-    - Event: QueueSummaryComplete
-    - EventList: Complete
-    - ListItems: 2
-
+        - Event: QueueSummary
+        - Queue: default
+        - LoggedIn: 0
+        - Available: 0
+        - Callers: 0
+        - HoldTime: 0
+        - TalkTime: 0
+        - LongestHoldTime: 0
+        - Event: QueueSummaryComplete
+        - EventList: Complete
+        - ListItems: 2
     """
 
     def process(self):
