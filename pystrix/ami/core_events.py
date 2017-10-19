@@ -567,6 +567,40 @@ class QueueStatusComplete(_Event):
     Indicates that a QueueStatus request has completed.
     """
 
+class QueueSummary(_Event):
+    """
+    Describes a Summary of a queue.
+
+    Event: QueueSummary
+    Queue: default
+    LoggedIn: 0
+    Available: 0
+    Callers: 0
+    HoldTime: 0
+    TalkTime: 0
+    LongestHoldTime: 0
+
+    Event: QueueSummaryComplete
+    EventList: Complete
+    ListItems: 2
+
+    """
+
+    def process(self):
+        """
+        """
+        (headers, data) = _Event.process(self)
+        generic_transforms.to_int(headers, ('LoggedIn', 'Available', 'Callers', 'HoldTime', 'TalkTime',
+                                            'LongestHoldTime'), -1)
+        return (headers, data)
+
+
+class QueueSummaryComplete(_Event):
+    """
+    Indicates that a QueueStatus request has completed.
+    """
+
+
 class RegistryEntry(_Event):
     """
     Describes a SIP registration.
@@ -897,7 +931,22 @@ class QueueStatus_Aggregate(_Aggregate):
     
     _aggregation_members = (QueueParams, QueueMember, QueueEntry,)
     _aggregation_finalisers = (QueueStatusComplete,)
-    
+
+
+class QueueSummary_Aggregate(_Aggregate):
+    """
+    Emitted after all queue properties have been received in response to a QueueSummary request.
+
+    Its members consist of QueueSummary events.
+
+    It is finalised by QueueSummaryComplete.
+    """
+    _name = "QueueSummary_Aggregate"
+
+    _aggregation_members = (QueueSummary,)
+    _aggregation_finalisers = (QueueSummaryComplete,)
+	
+
 class SIPpeers_Aggregate(_Aggregate):
     """
     Emitted after all queue properties have been received in response to a SIPpeers request.
