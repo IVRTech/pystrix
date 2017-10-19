@@ -38,6 +38,8 @@ import collections
 import re
 import time
 
+import sys
+
 _Response = collections.namedtuple('Response', ('items', 'code', 'raw'))
 _ValueData = collections.namedtuple('ValueData', ('value', 'data'))
 
@@ -203,13 +205,17 @@ class _AGI(object):
         """
         try:
             line = self._rfile.readline()
+            try:
+                line = line.decode()  # decode line if it comes in bytes, example if it comes from a socket
+            except:
+                pass  # line it's a string, so nothing to change - it's string if it's using stdin as _rfile for example
             if not line: #EOF encountered
                 raise AGISIGPIPEHangup("Process input pipe closed")
-            elif not line.decode().endswith('\n'): #Fragment encountered
+            elif not line.endswith('\n'): #Fragment encountered
                 #Recursively append to the current fragment until the line is
                 #complete or the socket dies.
                 line += self._read_line()
-            return line.decode().strip()
+            return line.strip()
         except IOError as e:
             raise AGISIGPIPEHangup("Process input pipe broken: %(error)s" % {
              'error': str(e),
@@ -225,7 +231,9 @@ class _AGI(object):
         If the connection to Asterisk is broken, `AGISIGPIPEHangup` is raised.
         """
         try:
-            self._wfile.write(command.encode())
+            if self._wfile is not sys.stdout:  # stdout handles str instead of bytes, so we don't encode
+                command = command.encode()
+            self._wfile.write(command)
             self._wfile.flush()
         except Exception as e:
             raise AGISIGPIPEHangup("Socket link broken: %(error)s" % {
