@@ -154,14 +154,15 @@ class _AGI(object):
                 }, response)
 
             result = response.get(_RESULT_KEY)
-            if result.value == '-1': #A result of -1 always indicates failure
-                raise AGIAppError("Error executing application or the channel was hung up", response)
             if check_hangup and result.data == 'hangup': #A 'hangup' response usually indicates that the channel was hungup, but it is a legal variable value
                 raise AGIResultHangup("User hung up during execution", response)
                 
             return _Response(response, code, raw)
         elif code == 0:
-            raise AGIResultHangup("Call hung up")
+            # No code was returned by Asterisk.
+            # The only other possible codes returned by Asterisk are 200, 510, 511 and 520 which is being handled.
+            # We probably got a signal like SIGHUP, so move on and do nothing
+            pass
         elif code == 510:
             raise AGIInvalidCommandError(response)
         elif code == 511:
@@ -196,7 +197,7 @@ class _AGI(object):
                 if key:
                     self._environment[key] = data
                     
-    def _read_line(self):
+    def _read_line(self, should_strip=True):
         """
         Reads and returns a line from the Asterisk pipe, blocking until a complete line is
         assembled.
@@ -209,13 +210,20 @@ class _AGI(object):
                 line = line.decode()  # decode line if it comes in bytes, example if it comes from a socket
             except:
                 pass  # line it's a string, so nothing to change - it's string if it's using stdin as _rfile for example
+            # Check to see if we received a HANGUP because AGISIGHUP was not set explicitly or is no
+            # and then handle the HANGUP which is being returned because the AGI script can still interact with
+            # Asterisk after the call was hungup in DeadAGI mode (which Asterisk converts the channel to automatically)
+            # All commands won't work in DeadAGI but that is not our concern here because if such a command is issued
+            # which indeed requires channel interaction, Asterisk will respond with a 511 code.
+            if 'no' == self._environment.get('AGISIGHUP', 'no') and 'HANGUP\n' == line:
+                line = self._read_line(should_strip=False) # read from pipe again to get response for the given command
             if not line: #EOF encountered
                 raise AGISIGPIPEHangup("Process input pipe closed")
             elif not line.endswith('\n'): #Fragment encountered
                 #Recursively append to the current fragment until the line is
                 #complete or the socket dies.
                 line += self._read_line()
-            return line.strip()
+            return line.strip() if should_strip else line
         except IOError as e:
             raise AGISIGPIPEHangup("Process input pipe broken: %(error)s" % {
              'error': str(e),
@@ -284,9 +292,9 @@ class AGIException(Exception):
     """
     items = None #Any items received from Asterisk, as a dictionary.
 
-    def __init__(self, message, items={}):
+    def __init__(self, message, items=None):
         Exception.__init__(self, message)
-        self.items = items
+        self.items = items if items else {}
         
 class AGIError(AGIException):
     """
