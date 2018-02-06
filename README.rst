@@ -77,3 +77,7 @@ Other contributions and current package maintenance
 `Eric Lee <eric@ivrtechnology.com>`_
  * Python 2 to 3 migration - compatibility
  * Programming
+
+`Karthic Raghupathi <karthicr@ivrtechnology.com>`_
+ * Bug solving - Programming
+ * Pip package maintenance
