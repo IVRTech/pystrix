@@ -12,7 +12,7 @@ pystrix runs on python 2.7/python 3.4+ on any platform. It's targeted at Asteris
 Release Schedule
 ================
 
-The current code in the repository correspond to version **1.1.0** of the package.  When a bug is found and fixed a new version of the package will be generated in order to keep it updated and as bug-free as possible.
+The current code in the repository correspond to version **1.1.2** of the package.  When a bug is found and fixed a new version of the package will be generated in order to keep it updated and as bug-free as possible.
 
 New releases will follow the format: <release mayor>.<release minor>.<bug fixed> according to the change made to the code.
 
@@ -66,12 +66,14 @@ Credits
  * Development lead
  * Programming
 
-Other contributions
--------------------
 
-**Marta Solano**
- * Bug solving
+Other contributions and current package maintenance
+---------------------------------------------------
+
+`Marta Solano <marta.solano@ivrtechnology.com>`_
+ * Bug solving - Programming
  * Pip package maintenance
 
-**Eric Lee**
- * Python 2 to 3 migration
+`Eric Lee <eric@ivrtechnology.com>`_
+ * Python 2 to 3 migration - compatibility
+ * Programming

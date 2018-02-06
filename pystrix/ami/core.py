@@ -995,6 +995,27 @@ class QueueStatus(_Request):
         if not queue is None:
             self['Queue'] = queue
 
+         
+class QueueSummary(_Request):
+    """
+    Describes the Summary of one (or all) queues.
+
+    Upon success, 'QueueSummary' event will be generated, ending
+    with 'QueueSummaryComplete'.
+    """
+    _aggregates = (core_events.QueueSummary_Aggregate,)
+    _synchronous_events_list = (core_events.QueueSummary,)
+    _synchronous_events_finalising = (core_events.QueueSummaryComplete,)
+
+    def __init__(self, queue=None):
+        """
+        Describes all queues in the system, unless `queue` is given, which limits the scope to one.
+        """
+        _Request.__init__(self, "QueueSummary")
+        if not queue is None:
+            self['Queue'] = queue
+          
+          
 class Redirect(_Request):
     """
     Redirects a call to an arbitrary context/extension/priority.

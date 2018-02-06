@@ -260,6 +260,10 @@ Actions
     :show-inheritance:
     :members: __init__
 
+.. autoclass:: ami.core.QueueSummary
+    :show-inheritance:
+    :members: __init__
+
 .. autoclass:: ami.core.Redirect
     :show-inheritance:
     :members: __init__

@@ -121,13 +121,13 @@ for information::
             self._kill_flag = True
             
         def _handle_event(self, event, manager):
-            print "Recieved event: %s" % event.name
+            print("Received event: %s" % event.name)
 
         def _handle_string_event(self, event, manager):
-            print "Recieved string event: %s" % event.name
+            print("Received string event: %s" % event.name)
 
         def _handle_class_event(self, event, manager):
-            print "Recieved class event: %s" % event.name
+            print("Received class event: %s" % event.name)
 
         def is_alive(self):
             return not self._kill_flag

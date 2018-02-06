@@ -2,13 +2,12 @@
 """
 Deployment script for pystrix.
 """
-__author__ = 'Neil Tallim'
-
 
 from pystrix import VERSION
 
 from setuptools import setup
 import os
+
 
 CLASSIFIERS = [
     'Intended Audience :: Developers',
@@ -30,12 +29,12 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     author='Marta Solano',
-    author_email='marsoguti@gmail.com',
+    author_email='marta.solano@ivrtechnology.com',
     name='pystrix',
     version=VERSION,
     description='Python bindings for Asterisk Manager Interface and Asterisk Gateway Interface',
     long_description=README,
-    url='https://github.com/marsoguti/pystrix',
+    url='https://github.com/IVRTech/pystrix',
     license='GNU General Public License',
     platforms=['OS Independent'],
     classifiers=CLASSIFIERS,
