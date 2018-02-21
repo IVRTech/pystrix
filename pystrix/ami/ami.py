@@ -42,7 +42,7 @@ import time
 import traceback
 import types
 import warnings
-
+from pystrix.ami.logger import logger as pystrix_logger
 try:
     import queue
 except:
@@ -97,7 +97,6 @@ class Manager(object):
     _action_id_lock = None #A lock used to prevent race conditions on ActionIDs
     _connection = None #A connection to the Asterisk manager, realised as a `_SynchronisedSocket`
     _connection_lock = None #A means of preventing race conditions on the connection
-    _debug = False #If True, development information is emitted along the normal logging stream
     _event_aggregates = None #A list of aggregates awaiting fulfillment
     _event_aggregates_lock = None #A lock used to prevent race conditions on event aggregation
     _event_aggregates_timeout = None #The amount of time to wait before considering an aggregate timed-out
@@ -129,8 +128,10 @@ class Manager(object):
 
         `debug` should only be turned on for library development.
         """
-        self._debug = debug
-        self._logger = logger
+
+        self._logger = pystrix_logger(logger,debug)
+        
+        self._logger.debug('Start Manager')
         
         self._action_id = 0
         action_id_random_token = []
@@ -173,6 +174,8 @@ class Manager(object):
 
         If any callbacks throw exceptions, warnings are issued, but processing continues.
         """
+        self._logger.debug('Event dispatcher')
+        
         event_aggregates_complete = collections.deque()
         event_aggregate_cycle = 0
         while self._alive:
@@ -197,7 +200,7 @@ class Manager(object):
                         for (i, aggregate) in enumerate(self._event_aggregates):
                             if aggregate[0] <= current_time: #Expired
                                 del self._event_aggregates[i]
-                                (self._logger and self._logger.warn or warnings.warn)("Aggregate '%(name)s' for action-ID '%(action-id)s' timed out before all events were gathered" % {
+                                self._logger.debug("Aggregate '%(name)s' for action-ID '%(action-id)s' timed out before all events were gathered" % {
                                  'name': aggregate[1].name,
                                  'action-id': aggregate[1].action_id,
                                 })
@@ -243,8 +246,6 @@ class Manager(object):
             global _CALLBACK_TYPE_UNIVERSAL
             with self._event_callbacks_lock:
                 callbacks = [c for (t, e, c) in self._event_callbacks if (t == _CALLBACK_TYPE_REFERENCE and event_name == e) or (t == _CALLBACK_TYPE_UNIVERSAL)]
-                
-            if self._logger:
                 self._logger.debug("Received event '%(name)s' with %(callbacks)i callbacks" % {
                  'name': event_name,
                  'callbacks': len(callbacks),
@@ -254,7 +255,7 @@ class Manager(object):
                 try:
                     callback(event, self)
                 except Exception as e:
-                    (self._logger and self._logger.error or warnings.warn)("Exception occurred while processing event callback: event='%(event)r'; handler='%(function)s' exception: %(error)s; trace:\n%(trace)s" % {
+                    self._logger.error("Exception occurred while processing event callback: event='%(event)r'; handler='%(function)s' exception: %(error)s; trace:\n%(trace)s" % {
                      'event': event,
                      'function': str(callback),
                      'error': str(e),
@@ -280,8 +281,6 @@ class Manager(object):
             global _CALLBACK_TYPE_ORPHANED
             with self._event_callbacks_lock:
                 callbacks = [c for (t, e, c) in self._event_callbacks if t == _CALLBACK_TYPE_ORPHANED]
-                
-            if self._logger:
                 self._logger.debug("Received orphaned response '%(name)s' with %(callbacks)i callbacks" % {
                  'name': response.name,
                  'callbacks': len(callbacks),
@@ -291,7 +290,7 @@ class Manager(object):
                 try:
                     callback(response, self)
                 except Exception as e:
-                    (self._logger and self._logger.error or warnings.warn)("Exception occurred while processing orphaned response handler: response=%(response)r; handler='%(function)s'; exception: %(error)s; trace:\n%(trace)s" % {
+                    self._logger.error("Exception occurred while processing orphaned response handler: response=%(response)r; handler='%(function)s'; exception: %(error)s; trace:\n%(trace)s" % {
                      'response': response,
                      'function': str(callback),
                      'error': str(e),
@@ -344,6 +343,7 @@ class Manager(object):
         
         If the connection fails, `ManagerSocketError` is raised.
         """
+        self._logger.debug('Connecting with %s'%host)
         self.disconnect()
         with self._connection_lock:
             self._connection = _SynchronisedSocket(host=host, port=port, timeout=timeout)
@@ -358,6 +358,7 @@ class Manager(object):
         If not connected, this is a no-op.
         """
         with self._connection_lock:
+            self._logger.debug('Disconnecting')
             if self._connection: #Close the old connection, if any.
                 self._connection.close()
                 self._connection = None
@@ -516,17 +517,17 @@ class Manager(object):
         (command, action_id) = request.build_request(action_id and str(action_id), self._get_host_action_id, **kwargs)
         events = self._add_outstanding_request(action_id, request)
         with self._connection_lock:
+            self._logger.debug(command)
             self._connection.send_message(command)
             
         if request.aggregate and not request.synchronous: #Set up aggregate-event generation
             with self._event_aggregates_lock:
                 for aggregate_class in request.get_aggregate_classes():
                     self._event_aggregates.append((time.time() + self._event_aggregates_timeout, aggregate_class(action_id)))
-                    if self._debug:
-                        (self._logger and self._logger.debug or warnings.warn)("Started building aggregate-event '%(event)s' for action-ID '%(action-id)s'" % {
+                    self._logger.debug("Started building aggregate-event '%(event)s' for action-ID '%(action-id)s'" % {
                          'event': _EVENT_REGISTRY_REV.get(aggregate_class),
                          'action-id': action_id,
-                        })
+                    })
 
         start_time = time.time()
         timeout = start_time + request.timeout
@@ -548,7 +549,7 @@ class Manager(object):
         else: #Timed out
             if request.synchronous:
                 events_timeout = True
-                (self._logger and self._logger.warn or warnings.warn)("Timed out while collecting events for synchronised action-ID '%(action-id)s'" % {
+                self._logger.warning("Timed out while collecting events for synchronised action-ID '%(action-id)s'" % {
                  'action-id': action_id,
                 })
                 
@@ -565,7 +566,7 @@ class Manager(object):
                 events_timeout
             )
         else:
-            (self._logger and self._logger.warn or warnings.warn)("Timed out while waiting for response for action-ID '%(action-id)s'" % {
+            self._logger.warning("Timed out while waiting for response for action-ID '%(action-id)s'" % {
              'action-id': action_id,
             })
             return None
@@ -902,7 +903,7 @@ class _Request(dict):
         The 'Action' line is always first.
         """
         items = [(KEY_ACTION, self[KEY_ACTION])]
-        for (key, value) in [(k, v) for (k, v) in self.items() if not k in (KEY_ACTION, KEY_ACTIONID)] + kwargs.items():
+        for (key, value) in [(k, v) for (k, v) in self.items() if not k in (KEY_ACTION, KEY_ACTIONID)] + list(kwargs.items()):
             key = str(key)
             if type(value) in (tuple, list, set, frozenset):
                 for val in value:
@@ -1026,8 +1027,7 @@ class _MessageReader(threading.Thread):
                         message.__class__ = event_class
                     else:
                         message.__class__ = _Event
-                        if self._manager._debug:
-                            (self._manager._logger and self._manager._logger.warn or warnings.warn)("Unknown event received: " + repr(message))
+                        self._manager._logger.warning("Unknown event received: " + repr(message))
                             
                     self.event_queue.put(message)
                 elif action_id is not None:
@@ -1164,7 +1164,7 @@ class _SynchronisedSocket(object):
             
         with self._socket_write_lock:
             try:
-                self._socket.sendall(message)
+                self._socket.sendall(message.encode())
             except socket.error as e:
                 self._close()
                 raise ManagerSocketError("Connection to Asterisk manager broken while writing data: %(error)s" % {
@@ -1218,4 +1218,5 @@ class ManagerSocketError(Error):
     """
     Represents a generic error involving the Asterisk connection.
     """
+ 
 
