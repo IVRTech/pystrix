@@ -42,7 +42,7 @@ import time
 import traceback
 import types
 import warnings
-from pystrix.ami.logger import logger as pystrix_logger
+from pystrix.logger import logger as pystrix_logger
 try:
     import queue
 except:
@@ -518,7 +518,6 @@ class Manager(object):
         (command, action_id) = request.build_request(action_id and str(action_id), self._get_host_action_id, **kwargs)
         events = self._add_outstanding_request(action_id, request)
         with self._connection_lock:
-            _logger.debug(command)
             self._connection.send_message(command)
             
         if request.aggregate and not request.synchronous: #Set up aggregate-event generation
@@ -648,7 +647,6 @@ class _MessageTemplate(object):
     """
     An abstract base-class for all message-types, including aggregates.
     """
-    global _logger
     __meta__ = abc.ABCMeta
     
     
@@ -804,7 +802,6 @@ class _Message(_MessageTemplate, dict):
 
     All message headers are exposed as dictionary items on this object directly.
     """
-    global _logger
     data = None #The payload received from Asterisk
     headers = None #A reference to this object, which is a dictionary with header responses from Asterisk
     raw = None #The raw response received from Asterisk
@@ -861,7 +858,6 @@ class _Event(_Message):
     The base-class of any event received from Asterisk, either unsolicited or as part of an extended
     response-chain.
     """
-    global _logger
     def process(self):
         """
         Provides a tuple containing a copy of all headers as a dictionary and a copy of all response
@@ -924,7 +920,7 @@ class _Request(dict):
             elif KEY_ACTIONID in self:
                 action_id = self[KEY_ACTIONID]
             items.append((KEY_ACTIONID, action_id))
-            
+        _logger.debug("Build request items with: %s "%items)
         return (
          _EOL.join(['%(key)s: %(value)s' % {
           'key': key,
@@ -957,7 +953,6 @@ class _Request(dict):
         return (self._synchronous_events_unique, self._synchronous_events_list, self._synchronous_events_finalising)
         
 class _MessageReader(threading.Thread):
-    global _logger
     event_queue = None #A queue containing unsolicited events received from Asterisk
     response_queue = None #A queue containing orphaned or unparented responses from Asterisk
     _alive = True #False when this thread has been killed
@@ -978,6 +973,8 @@ class _MessageReader(threading.Thread):
         self.response_queue = queue.Queue()
         self._served_requests = {}
         self._served_requests_lock = threading.Lock()
+        global _logger
+        _logger.debug("Start MessageReader")
         
     def _clean_orphaned_responses(self):
         """
@@ -1172,8 +1169,15 @@ class _SynchronisedSocket(object):
             raise ManagerSocketError("Not connected to Asterisk server")
             
         with self._socket_write_lock:
+            if isinstance(message, str): 
+                message = message.encode()
             try:
-                self._socket.sendall(message.encode())
+                self._socket.sendall(message)
+            except TypeError as e:
+             if _logger :
+               _logger.error("Data body fail: %(error)s" % {
+                 'error': _format_socket_error(e),
+                })
             except socket.error as e:
                 self._close()
                 raise ManagerSocketError("Connection to Asterisk manager broken while writing data: %(error)s" % {
@@ -1217,27 +1221,24 @@ class Error(Exception):
     """
     The base exception from which all errors native to this module inherit.
     """
-    global _logger
     def __init__(self,*mesg):
-        if _logger:
-            _loger.error(mesg)
+        global _logger
+        _loger.error(mesg)
     
 class ManagerError(Error):
     """
     Represents a generic error involving the Asterisk manager.
     """
-    global _logger
     def __init__(self,*mesg):
-        if _logger:
-            _loger.error(mesg)
+        global _logger
+        _loger.error(mesg)
     
 class ManagerSocketError(Error):
     """
     Represents a generic error involving the Asterisk connection.
     """
-    global _logger
     def __init__(self,*mesg):
-        if _logger:
-            _loger.error(mesg)
+        global _logger
+        _logger.error(mesg)
  
 

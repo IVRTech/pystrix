@@ -39,6 +39,8 @@ import re
 import time
 
 import sys
+from pystrix.logger import logger as pystrix_logger
+
 
 _Response = collections.namedtuple('Response', ('items', 'code', 'raw'))
 _ValueData = collections.namedtuple('ValueData', ('value', 'data'))
@@ -47,7 +49,7 @@ _RE_CODE = re.compile(r'(^\d+)\s*(.+)') #Matches Asterisk's response-code lines
 _RE_KV = re.compile(r'(?P<key>\w+)=(?P<value>[^\s]+)?(?:\s+\((?P<data>.*)\))?') #Matches Asterisk's key-value response-pairs
 
 _RESULT_KEY = 'result'
-
+_logger = None
 
 #Functions
 ###############################################################################
@@ -80,10 +82,13 @@ class _AGI(object):
 
         `debug` should only be turned on for library development.
         """
-        self._debug = debug
+        global _logger
+        _logger = pystrix_logger(debug=debug)
         
         self._environment = {}
         self._parse_agi_environment()
+        
+        _logger.debug("Start AGI")
 
     def execute(self, action):
         """
@@ -296,56 +301,57 @@ class AGIException(Exception):
         Exception.__init__(self, message)
         self.items = items if items else {}
         
+        global _logger
+        _loger.error(message)
+        
 class AGIError(AGIException):
     """
     The base error from which all errors native to this module inherit.
     """
+    def __init__(self,*mesg):
+        global _logger
+        _loger.error(mesg)
     
 class AGINoResultError(AGIException):
     """
     Indicates that Asterisk did not return a 'result' parameter in a 200 response.
     """
+    def __init__(self,*mesg):
+        global _logger
+        _loger.error(mesg)
     
 class AGIUnknownError(AGIError):
     """
     An error raised when an unknown response is received from Asterisk.
     """
-    
 class AGIAppError(AGIError):
     """
     An error raised when an attempt to make use of an Asterisk application
     fails.
     """
-    
 class AGIDeadChannelError(AGIError):
     """
     Indicates that a command was issued on a channel that can no longer process
     it.
     """
-    
 class AGIInvalidCommandError(AGIError):
     """
     Indicates that a request made to Asterisk was not understood.
     """
-    
 class AGIUsageError(AGIError):
     """
     Indicates that a request made to Asterisk was sent with invalid syntax.
     """
-    
 class AGIHangup(AGIException):
     """
     The base exception used to indicate that the call has been completed or
     abandoned.
     """
-    
 class AGISIGPIPEHangup(AGIHangup):
     """
     Indicates that the communications pipe to Asterisk has been severed.
     """
-    
 class AGIResultHangup(AGIHangup):
     """
     Indicates that Asterisk received a clean hangup event.
     """
-    
