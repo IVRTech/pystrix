@@ -37,6 +37,8 @@ class logger:
         
         `logger_name` may be a text name to display with then logger format
         """
+        global root
+        root = self
         
         if logger_name:
            self.NAME=logger_name
@@ -46,7 +48,13 @@ class logger:
         
         if logger and isinstance(logger, logging) :
             self._logger=logger
-        else:    
+        else:  
+            self._default_logger()
+
+
+    """ Used when don't exist instance of logger class """
+    def _default_logger(self):
+        if not self._logger:
             # create logger
             self._logger=logging.getLogger(self.NAME)  
             self._logger.setLevel(self._logger_level)  
@@ -56,15 +64,16 @@ class logger:
             formatter = logging.Formatter(self.FORMAT)
             ch.setFormatter(formatter)
             self._logger.addHandler(ch)
-
-
+        
             
+               
     """ Used to change the logger level
     
      `level` identifies the log level by number type
         entries.
     """
     def set_level(self, level):  
+        
         if (level in [CRITICAL,FATAL,ERROR,WARNING,WARN,INFO,DEBUG,NOTSET] ):  
             self._logger.setLevel(level)
    
@@ -74,6 +83,7 @@ class logger:
     
     """
     def _is_enable_log(self,check_level):
+        
         setting_level= self._logger.getEffectiveLevel()
         if self._logger.isEnabledFor(check_level): # setting level
             return True
@@ -86,10 +96,13 @@ class logger:
     
       `mesg` string with the log text to display 
     """    
+    
     def warning(self,mesg):
         if self._is_enable_log(self.WARN):
             self._logger.warn (mesg)
-
+            
+    warn = warning
+    
     """ filter logging of debug 
         
       `mesg` string with the log text to display 
@@ -113,7 +126,8 @@ class logger:
     def critical(self,mesg):
         if self._is_enable_log(self.CRITICAL):
             self._logger.critical (mesg)
-            
+     
+    fatal = critical        
     """ filter logging of info 
         
       `mesg` string with the log text to display 
@@ -129,4 +143,52 @@ class logger:
     """             
     def exception  (self,mesg):
         self._logger.exception(mesg)
-                                        
+
+
+
+
+""" Methods to use default logger without instance"""
+root = logger() 
+
+def warning(mesg):
+    root._logger.warn (mesg)            
+warn = warning
+    
+"""
+  logging of debug 
+        
+ `mesg` string with the log text to display 
+"""             
+def debug(mesg):
+    root.debug (mesg)       
+
+""" logging of error 
+        
+   `mesg` string with the log text to display 
+"""                  
+def error(mesg):
+    root.error(mesg)
+            
+""" logging of critical 
+        
+      `mesg` string with the log text to display 
+"""             
+def critical(mesg):
+    root.critical (mesg)
+     
+fatal = critical        
+""" logging of info 
+        
+      `mesg` string with the log text to display 
+"""   
+              
+def info(mesg):
+    root.info (mesg)              
+                    
+"""  exceptions logs
+         
+    `mesg` string with the log text to display 
+"""             
+def exception(mesg):
+    root.exception(mesg)
+                                    
