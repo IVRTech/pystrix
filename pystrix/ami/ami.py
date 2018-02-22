@@ -72,7 +72,9 @@ KEY_RESPONSE = 'Response' #The key used to hold the event-name of a request
 _CALLBACK_TYPE_REFERENCE = 1 #Identifies a callback-definition as an event-reference
 _CALLBACK_TYPE_UNIVERSAL = 2 #Identifies a callback-definition as universal
 _CALLBACK_TYPE_ORPHANED = 3 #Identifies a callback-definition for orphaned responses
-
+_logger = None #A logger that may be used to record warnings
+    
+    
 def _format_socket_error(exception):
     """
     Ensures that, regardless of the form that a `socket.error` takes, it is
@@ -107,8 +109,7 @@ class Manager(object):
     _message_reader = None #A thread that continuously collects messages from the Asterisk server
     _orphaned_response_timeout = None #The number of seconds to hold on to request-responses before considering them to be timed-out
     _outstanding_requests = None #A dictionary of ActionIDs sent to Asterisk, currently awaiting responses; values are a tuple of (events, pending_finalisers), if synchronous, and None otherwise
-    _logger = None #A logger that may be used to record warnings
-    
+
     def __init__(self, debug=False, logger=None, aggregate_timeout=5, orphaned_response_timeout=5):
         """
         Sets up an environment for interacting with an Asterisk Management Interface.
@@ -128,10 +129,10 @@ class Manager(object):
 
         `debug` should only be turned on for library development.
         """
-
-        self._logger = pystrix_logger(logger,debug)
+        global _logger
+        _logger = pystrix_logger(logger,debug)
         
-        self._logger.debug('Start Manager')
+        _logger.debug('Start Manager')
         
         self._action_id = 0
         action_id_random_token = []
@@ -174,7 +175,7 @@ class Manager(object):
 
         If any callbacks throw exceptions, warnings are issued, but processing continues.
         """
-        self._logger.debug('Event dispatcher')
+        _logger.debug('Event dispatcher')
         
         event_aggregates_complete = collections.deque()
         event_aggregate_cycle = 0
@@ -200,7 +201,7 @@ class Manager(object):
                         for (i, aggregate) in enumerate(self._event_aggregates):
                             if aggregate[0] <= current_time: #Expired
                                 del self._event_aggregates[i]
-                                self._logger.debug("Aggregate '%(name)s' for action-ID '%(action-id)s' timed out before all events were gathered" % {
+                                _logger.debug("Aggregate '%(name)s' for action-ID '%(action-id)s' timed out before all events were gathered" % {
                                  'name': aggregate[1].name,
                                  'action-id': aggregate[1].action_id,
                                 })
@@ -246,7 +247,7 @@ class Manager(object):
             global _CALLBACK_TYPE_UNIVERSAL
             with self._event_callbacks_lock:
                 callbacks = [c for (t, e, c) in self._event_callbacks if (t == _CALLBACK_TYPE_REFERENCE and event_name == e) or (t == _CALLBACK_TYPE_UNIVERSAL)]
-                self._logger.debug("Received event '%(name)s' with %(callbacks)i callbacks" % {
+                _logger.debug("Received event '%(name)s' with %(callbacks)i callbacks" % {
                  'name': event_name,
                  'callbacks': len(callbacks),
                 })
@@ -255,7 +256,7 @@ class Manager(object):
                 try:
                     callback(event, self)
                 except Exception as e:
-                    self._logger.error("Exception occurred while processing event callback: event='%(event)r'; handler='%(function)s' exception: %(error)s; trace:\n%(trace)s" % {
+                    _logger.error("Exception occurred while processing event callback: event='%(event)r'; handler='%(function)s' exception: %(error)s; trace:\n%(trace)s" % {
                      'event': event,
                      'function': str(callback),
                      'error': str(e),
@@ -281,7 +282,7 @@ class Manager(object):
             global _CALLBACK_TYPE_ORPHANED
             with self._event_callbacks_lock:
                 callbacks = [c for (t, e, c) in self._event_callbacks if t == _CALLBACK_TYPE_ORPHANED]
-                self._logger.debug("Received orphaned response '%(name)s' with %(callbacks)i callbacks" % {
+                _logger.debug("Received orphaned response '%(name)s' with %(callbacks)i callbacks" % {
                  'name': response.name,
                  'callbacks': len(callbacks),
                 })
@@ -290,7 +291,7 @@ class Manager(object):
                 try:
                     callback(response, self)
                 except Exception as e:
-                    self._logger.error("Exception occurred while processing orphaned response handler: response=%(response)r; handler='%(function)s'; exception: %(error)s; trace:\n%(trace)s" % {
+                    _logger.error("Exception occurred while processing orphaned response handler: response=%(response)r; handler='%(function)s'; exception: %(error)s; trace:\n%(trace)s" % {
                      'response': response,
                      'function': str(callback),
                      'error': str(e),
@@ -343,7 +344,7 @@ class Manager(object):
         
         If the connection fails, `ManagerSocketError` is raised.
         """
-        self._logger.debug('Connecting with %s'%host)
+        _logger.debug('Connecting with %s'%host)
         self.disconnect()
         with self._connection_lock:
             self._connection = _SynchronisedSocket(host=host, port=port, timeout=timeout)
@@ -358,7 +359,7 @@ class Manager(object):
         If not connected, this is a no-op.
         """
         with self._connection_lock:
-            self._logger.debug('Disconnecting')
+            _logger.debug('Disconnecting')
             if self._connection: #Close the old connection, if any.
                 self._connection.close()
                 self._connection = None
@@ -517,14 +518,14 @@ class Manager(object):
         (command, action_id) = request.build_request(action_id and str(action_id), self._get_host_action_id, **kwargs)
         events = self._add_outstanding_request(action_id, request)
         with self._connection_lock:
-            self._logger.debug(command)
+            _logger.debug(command)
             self._connection.send_message(command)
             
         if request.aggregate and not request.synchronous: #Set up aggregate-event generation
             with self._event_aggregates_lock:
                 for aggregate_class in request.get_aggregate_classes():
                     self._event_aggregates.append((time.time() + self._event_aggregates_timeout, aggregate_class(action_id)))
-                    self._logger.debug("Started building aggregate-event '%(event)s' for action-ID '%(action-id)s'" % {
+                    _logger.debug("Started building aggregate-event '%(event)s' for action-ID '%(action-id)s'" % {
                          'event': _EVENT_REGISTRY_REV.get(aggregate_class),
                          'action-id': action_id,
                     })
@@ -549,7 +550,7 @@ class Manager(object):
         else: #Timed out
             if request.synchronous:
                 events_timeout = True
-                self._logger.warning("Timed out while collecting events for synchronised action-ID '%(action-id)s'" % {
+                _logger.warning("Timed out while collecting events for synchronised action-ID '%(action-id)s'" % {
                  'action-id': action_id,
                 })
                 
@@ -566,7 +567,7 @@ class Manager(object):
                 events_timeout
             )
         else:
-            self._logger.warning("Timed out while waiting for response for action-ID '%(action-id)s'" % {
+            _logger.warning("Timed out while waiting for response for action-ID '%(action-id)s'" % {
              'action-id': action_id,
             })
             return None
@@ -647,7 +648,9 @@ class _MessageTemplate(object):
     """
     An abstract base-class for all message-types, including aggregates.
     """
+    global _logger
     __meta__ = abc.ABCMeta
+    
     
     def __eq__(self, o):
         """
@@ -678,6 +681,7 @@ class _Aggregate(_MessageTemplate, dict):
     event-class. Repeatable event-types are exposed as lists, while others are direct references to
     the event itself.
     """
+    global _logger
     _name = None #The name of the aggregate-type
     _action_id = None #The action-ID associated with the aggregate, if any
     _valid = True #Indicates whether the aggregate's contents are consistent with Asterisk's protocol
@@ -800,6 +804,7 @@ class _Message(_MessageTemplate, dict):
 
     All message headers are exposed as dictionary items on this object directly.
     """
+    global _logger
     data = None #The payload received from Asterisk
     headers = None #A reference to this object, which is a dictionary with header responses from Asterisk
     raw = None #The raw response received from Asterisk
@@ -856,6 +861,7 @@ class _Event(_Message):
     The base-class of any event received from Asterisk, either unsolicited or as part of an extended
     response-chain.
     """
+    global _logger
     def process(self):
         """
         Provides a tuple containing a copy of all headers as a dictionary and a copy of all response
@@ -872,6 +878,7 @@ class _Request(dict):
     as override `process_response()` to specially format the data to be returned after a request
     has been served.
     """
+    global _logger
     aggregate = False #Only has an effect on certain types of requests; will result in an aggregate-event being generated after a list of independent events
     synchronous = False #If True, requests will block until all response events have been collected; these events will appear in a `response` dictionary-attribute
     timeout = 5 #The number of seconds to wait before considering this request timed out; may be a float
@@ -950,6 +957,7 @@ class _Request(dict):
         return (self._synchronous_events_unique, self._synchronous_events_list, self._synchronous_events_finalising)
         
 class _MessageReader(threading.Thread):
+    global _logger
     event_queue = None #A queue containing unsolicited events received from Asterisk
     response_queue = None #A queue containing orphaned or unparented responses from Asterisk
     _alive = True #False when this thread has been killed
@@ -1027,7 +1035,7 @@ class _MessageReader(threading.Thread):
                         message.__class__ = event_class
                     else:
                         message.__class__ = _Event
-                        self._manager._logger.warning("Unknown event received: " + repr(message))
+                        _logger.warning("Unknown event received: " + repr(message))
                             
                     self.event_queue.put(message)
                 elif action_id is not None:
@@ -1044,6 +1052,7 @@ class _SynchronisedSocket(object):
     """
     Provides a threadsafe conduit for communication with an Asterisk manager interface.
     """
+    global _logger
     _asterisk_name = '<unknown>' #The name of the Asterisk server to which the socket is connected
     _asterisk_version = '<unknown>' # The version of the Asterisk server to which the socket is connected
     _connected = False #True while a connection is active
@@ -1208,15 +1217,18 @@ class Error(Exception):
     """
     The base exception from which all errors native to this module inherit.
     """
+    global _logger
     
 class ManagerError(Error):
     """
     Represents a generic error involving the Asterisk manager.
     """
+    global _logger
     
 class ManagerSocketError(Error):
     """
     Represents a generic error involving the Asterisk connection.
     """
+    global _logger
  
 
