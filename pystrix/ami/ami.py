@@ -1218,17 +1218,26 @@ class Error(Exception):
     The base exception from which all errors native to this module inherit.
     """
     global _logger
+    def __init__(self,*mesg):
+        if _logger:
+            _loger.error(mesg)
     
 class ManagerError(Error):
     """
     Represents a generic error involving the Asterisk manager.
     """
     global _logger
+    def __init__(self,*mesg):
+        if _logger:
+            _loger.error(mesg)
     
 class ManagerSocketError(Error):
     """
     Represents a generic error involving the Asterisk connection.
     """
     global _logger
+    def __init__(self,*mesg):
+        if _logger:
+            _loger.error(mesg)
  
 
