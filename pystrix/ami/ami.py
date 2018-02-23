@@ -43,6 +43,8 @@ import traceback
 import types
 
 import pystrix.logger  as pystrix_logger
+
+
 try:
     import queue
 except:
@@ -74,23 +76,7 @@ _CALLBACK_TYPE_UNIVERSAL = 2 #Identifies a callback-definition as universal
 _CALLBACK_TYPE_ORPHANED = 3 #Identifies a callback-definition for orphaned responses
 
     
-    
-def _format_socket_error(exception):
-    """
-    Ensures that, regardless of the form that a `socket.error` takes, it is
-    formatted into a readable string.
-    
-    @param str exception: The `socket.error` to be formatted.
-    @return str: A nicely formatted summary of the exception.
-    """
-    try:
-        (errno, message) = exception
-        return "[%(errno)i] %(error)s" % {
-         'errno': errno,
-         'error': message,
-        }
-    except Exception:
-        return str(exception)
+_format_socket_error = pystrix_logger._format_socket_error
         
 class Manager(object):
     _alive = True #False when this manager object is ready to be disposed of
@@ -129,10 +115,11 @@ class Manager(object):
 
         `debug` should only be turned on for library development.
         """
-
-        pystrix_logger.create(logger,debug)
         
-        pystrix_logger.debug('Start Manager')
+        pystrix_logger._logger=pystrix_logger.create(logger,debug)
+        
+        
+        pystrix_logger.debug("start Manager")
         
         self._action_id = 0
         action_id_random_token = []

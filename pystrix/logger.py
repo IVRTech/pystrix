@@ -20,14 +20,15 @@ NOTSET = logging.NOTSET
 DEBUG = logging.DEBUG
     
 FORMAT = ('%(asctime)s - %(name)s - %(levelname)s - %(message)s')  # Format to display default logger
-NAME = 'Pystrix'   # Name to display default logger
+LOGGER_NAME = 'Pystrix'   # Name to display default logger
 _logger = None # instance of correct logger
-_logger_level = logging.WARNING # logger display setting level activate
+
 
 
 
 
 """ Used to set custom logging class  """
+
 def create(logger=None,debug=False,logger_name=None):
         """
         Sets up to setting custom logger
@@ -38,24 +39,28 @@ def create(logger=None,debug=False,logger_name=None):
         `debug` should only be turned on for library development.
         
         `logger_name` may be a text name to display with then logger format
-        """
-        if logger_name:
-           NAME=logger_name
-        
-        if  debug :
-            _logger_level= DEBUG
-        
+        """          
+        if not logger_name:
+            logger_name=LOGGER_NAME
+            
         if logger and isinstance(logger, logging) :
-            _logger=logger
-
-
+            pre_logger=logger
+        else:
+            if  debug :
+                pre_logger= _default_logger(logger_name,DEBUG)
+            else:    
+                pre_logger= _default_logger(logger_name)
+ 
+        return pre_logger
+    
+            
 """ Used when don't exist instance of logger class """
-def _default_logger():
+def _default_logger(name=None,level=logging.WARNING ):
         # create logger
-        _logger=logging.getLogger(NAME)  
-        _logger.setLevel(_logger_level)  
+        _logger=logging.getLogger(name)  
+        _logger.setLevel(level)  
         ch = logging.StreamHandler()
-        ch.setLevel(_logger_level)
+        ch.setLevel(level)
         # create formatter
         formatter = logging.Formatter(FORMAT)
         ch.setFormatter(formatter)
@@ -71,28 +76,21 @@ _logger=_default_logger()
     `check_level` identifies the log level to pre-check valid level    
 """
 def _is_enable_log(check_level):
-        
     setting_level= _logger.getEffectiveLevel()
     if _logger.isEnabledFor(check_level): # setting level
         return True
-    if  check_level  > setting_level: # levels number values  10 < 20 < 30
+    if  check_level  >= setting_level: # levels number values  10 < 20 < 30
         return True
     return False   
-
-
-
-
 
     
 """ Used to change the logger level
      `level` identifies the log level by number type
         entries.
 """
-def set_level(level):  
-        
+def set_level(_logger,level):  
         if (level in [CRITICAL,FATAL,ERROR,WARNING,WARN,INFO,DEBUG,NOTSET] ):  
             _logger.setLevel(level)
-   
 def warning(mesg):
     if _is_enable_log(WARN) :
          _logger.warn (mesg)
@@ -105,8 +103,8 @@ warn = warning
  `mesg` string with the log text to display 
 """             
 def debug(mesg):
-    if _is_enable_log(DEBUG) and _logger_level==DEBUG:
-        _logger.debug (mesg)       
+    if _is_enable_log(DEBUG) and _logger.getEffectiveLevel()==DEBUG:
+        _logger.debug (mesg)  
 
 """ logging of error 
         
@@ -140,4 +138,23 @@ def info(mesg):
 """             
 def exception(mesg):
     _logger.exception(mesg)
+    
+    
+    
+def _format_socket_error(exception):
+    """
+    Ensures that, regardless of the form that a `socket.error` takes, it is
+    formatted into a readable string.
+    
+    @param str exception: The `socket.error` to be formatted.
+    @return str: A nicely formatted summary of the exception.
+    """
+    try:
+        (errno, message) = exception
+        return "[%(errno)i] %(error)s" % {
+         'errno': errno,
+         'error': message,
+        }
+    except Exception:
+        return str(exception)    
                                     

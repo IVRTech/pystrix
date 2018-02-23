@@ -82,7 +82,9 @@ class _AGI(object):
 
         `debug` should only be turned on for library development.
         """
-        pystrix_logger.create(debug=debug)
+        pystrix_logger._logger=pystrix_logger.create(debug=debug)
+        
+        pystrix_logger.debug("Start AGI")
         
         self._environment = {}
         self._parse_agi_environment()
@@ -100,6 +102,7 @@ class _AGI(object):
         """
         self._test_hangup()
         
+        pystrix_logger.debug("_AGI execute : %s"%action.command)
         self._send_command(action.command)
         return action.process_response(self._get_result(action.check_hangup))
 
@@ -152,14 +155,20 @@ class _AGI(object):
                 response[key] = _ValueData(value or '', data)
                 
             if not _RESULT_KEY in response: #Must always be present.
-                raise AGINoResultError("Asterisk did not provide a '%(result-key)s' key-value pair" % {
+                raise AGINoResultError("Asterisk did not provide a '%{result-key}s' key-value pair" % {
                  'result-key': _RESULT_KEY,
                 }, response)
 
             result = response.get(_RESULT_KEY)
+
             if check_hangup and result.data == 'hangup': #A 'hangup' response usually indicates that the channel was hungup, but it is a legal variable value
                 raise AGIResultHangup("User hung up during execution", response)
                 
+            pystrix_logger.debug("_AGI _get_result: ( result='%{result}s' , code='%{code}r', raw='%{raw}s' )"%{
+                 'result': result,
+                 'code': code,
+                  'raw': raw,
+            })
             return _Response(response, code, raw)
         elif code == 0:
             # No code was returned by Asterisk.
@@ -277,6 +286,9 @@ class _Action(object):
         command = ' '.join([self._command.strip()] + [str(arg) for arg in self._arguments if not arg is None]).strip()
         if not command.endswith('\n'):
             command += '\n'
+        pystrix_logger.debug("_Action command: '%(command)s' " % {
+                 'command': command,
+        })
         return command
         
     def process_response(self, response):

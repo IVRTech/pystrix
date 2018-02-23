@@ -32,7 +32,6 @@ Authors:
 - Neil Tallim <n.tallim@ivrnet.com>
 """
 import time
-
 from pystrix.agi.agi_core import (
     _Action,
     quote,
@@ -153,6 +152,9 @@ class ChannelStatus(_Action):
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
         try:
+            pystrix_logger.debug("ChannelStatus process_response: result '%(result)s' " % {
+                 'result': result,
+            })
             return int(result.value)
         except ValueError:
             raise AGIAppError(
@@ -269,6 +271,11 @@ class DatabaseGet(_Action):
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
+        pystrix_logger.debug("DatabaseGet process_response:  family=%(family)r, key=%(key)r, result=%(result)r" % {
+            'family': self.family,
+            'key': self.key,
+            'result': result,
+        })
         if result.value == '0':
             raise AGIDBError("Key not found in database: family=%(family)r, key=%(key)r" % {
                 'family': self.family,
@@ -365,6 +372,9 @@ class GetData(_Action):
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
+        pystrix_logger.debug("ChannelStatus process_response: result '%(result)s' " % {
+                 'result': result,
+        })
         return (result.value, result.data == 'timeout')
 
 

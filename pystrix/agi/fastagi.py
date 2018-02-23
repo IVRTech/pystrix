@@ -42,12 +42,12 @@ import threading
 import types
 from pystrix.agi.agi_core import *
 from pystrix.agi.agi_core import _AGI
+from pystrix.agi.agi_core import pystrix_logger
 
 try:
 	import socketserver
 except:
 	import SocketServer as socketserver
-
 
 
 
@@ -59,7 +59,7 @@ class _ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     def server_bind(self):
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         socketserver.TCPServer.server_bind(self)
-        
+        pystrix_logger.debug("_ThreadedTCPServer server_bind ")
 class _AGIClientHandler(socketserver.StreamRequestHandler):
     """
     Handles TCP connections.
@@ -85,6 +85,8 @@ class _AGIClientHandler(socketserver.StreamRequestHandler):
         """
         env = agi_instance.get_environment()
         keys = sorted((int(key[8:]) for key in env if key.startswith('agi_arg_')))
+        
+        pystrix_logger.debug("_AGIClientHandler _extract_positional_args: '%s'"%(','.join(keys))  )
         return tuple((env['agi_arg_%i' % key] for key in keys))
 
     def _extract_query_elements(self, agi_instance):
@@ -95,6 +97,7 @@ class _AGIClientHandler(socketserver.StreamRequestHandler):
         """
         tokens = (agi_instance.get_environment().get('agi_network_script') or '/').split('?', 1)
         path = tokens[0]
+        pystrix_logger.debug("_AGIClientHandler _extract_query_elements: path='%{path}s' "%{'path':path} )
         if len(tokens) == 1:
             return (path, {})
         return (path, cgi.urlparse.parse_qs(tokens[1]))
@@ -123,6 +126,13 @@ class FastAGIServer(_ThreadedTCPServer):
         `debug` should only be turned on for library development.
         """
         _ThreadedTCPServer.__init__(self, (interface, port), _AGIClientHandler)
+        
+        pystrix_logger._logger=pystrix_logger.create(debug=debug)
+        
+        pystrix_logger.debug("FastAGIServer: interface='%(interface)s' port='%(port)s' " %{
+			'interface' : interface,
+			'port' : port,			
+		})
         self.debug = debug
         self.daemon_threads = daemon_threads
         self._script_handlers = []
@@ -151,7 +161,8 @@ class FastAGIServer(_ThreadedTCPServer):
                 else:
                     match = regex.match(script_path)
                 if match:
-                    return (handler, match)
+                	pystrix_logger.debug("FastAGIServer  get_script_handler: handler='%(handler)s match='%(match)s' "%{'handler':handler,'match':match})
+                	return (handler, match)
                     
             return (self._default_script_handler, None)
 
@@ -213,4 +224,11 @@ class FastAGI(_AGI):
         self._wfile = wfile
         
         _AGI.__init__(self, debug)
+        
+        
+        
+        
+				
+
+
         
