@@ -164,10 +164,8 @@ class _AGI(object):
             if check_hangup and result.data == 'hangup': #A 'hangup' response usually indicates that the channel was hungup, but it is a legal variable value
                 raise AGIResultHangup("User hung up during execution", response)
                 
-            pystrix_logger.debug("_AGI _get_result: ( result='%{result}s' , code='%{code}r', raw='%{raw}s' )"%{
+            pystrix_logger.debug("_AGI _get_result: ( result='%{result}s'  )"%{
                  'result': result,
-                 'code': code,
-                  'raw': raw,
             })
             return _Response(response, code, raw)
         elif code == 0:

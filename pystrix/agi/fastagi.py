@@ -86,7 +86,7 @@ class _AGIClientHandler(socketserver.StreamRequestHandler):
         env = agi_instance.get_environment()
         keys = sorted((int(key[8:]) for key in env if key.startswith('agi_arg_')))
         
-        pystrix_logger.debug("_AGIClientHandler _extract_positional_args: '%s'"%(','.join(keys))  )
+        pystrix_logger.debug("_AGIClientHandler _extract_positional_args: env='%s'"%(','.join(keys))  )
         return tuple((env['agi_arg_%i' % key] for key in keys))
 
     def _extract_query_elements(self, agi_instance):
@@ -97,7 +97,7 @@ class _AGIClientHandler(socketserver.StreamRequestHandler):
         """
         tokens = (agi_instance.get_environment().get('agi_network_script') or '/').split('?', 1)
         path = tokens[0]
-        pystrix_logger.debug("_AGIClientHandler _extract_query_elements: path='%{path}s' "%{'path':path} )
+        pystrix_logger.debug("_AGIClientHandler _extract_query_elements: path='%(path)s' "%{'path':path} )
         if len(tokens) == 1:
             return (path, {})
         return (path, cgi.urlparse.parse_qs(tokens[1]))
@@ -129,7 +129,7 @@ class FastAGIServer(_ThreadedTCPServer):
         
         pystrix_logger._logger=pystrix_logger.create(debug=debug)
         
-        pystrix_logger.debug("FastAGIServer: interface='%(interface)s' port='%(port)s' " %{
+        pystrix_logger.debug("FastAGIServer: interface='%(interface)s' port='%(port)i' " %{
 			'interface' : interface,
 			'port' : port,			
 		})
@@ -184,14 +184,17 @@ class FastAGIServer(_ThreadedTCPServer):
         with self._script_handlers_lock:
             if regex is None:
                 self._default_script_handler = handler
+                pystrix_logger.debug("FastAGIServer register_script_handler: regex==None")
                 return
 
             #Ensure that the regex hasn't been registered before
             for (old_regex, old_handler) in self._script_handlers:
                 if old_regex == regex:
-                    return
+                	pystrix_logger.debug("FastAGIServer register_script_handler: regex==old_regex")
+                	return
 
             #Add the handler to the end of the list
+            pystrix_logger.debug("FastAGIServer register_script_handler: regex adding  ")
             self._script_handlers.append((regex, handler))
 
     def unregister_script_handler(self, regex):
