@@ -233,10 +233,10 @@ class Manager(object):
             global _CALLBACK_TYPE_UNIVERSAL
             with self._event_callbacks_lock:
                 callbacks = [c for (t, e, c) in self._event_callbacks if (t == _CALLBACK_TYPE_REFERENCE and event_name == e) or (t == _CALLBACK_TYPE_UNIVERSAL)]
-                pystrix_logger.debug("Received event '%(name)s' with %(callbacks)i callbacks" % {
+            pystrix_logger.debug("Received event '%(name)s' with %(callbacks)i callbacks" % {
                  'name': event_name,
                  'callbacks': len(callbacks),
-                })
+            })
                 
             for callback in callbacks:
                 try:
@@ -268,10 +268,10 @@ class Manager(object):
             global _CALLBACK_TYPE_ORPHANED
             with self._event_callbacks_lock:
                 callbacks = [c for (t, e, c) in self._event_callbacks if t == _CALLBACK_TYPE_ORPHANED]
-                pystrix_logger.debug("Received orphaned response '%(name)s' with %(callbacks)i callbacks" % {
+            pystrix_logger.debug("Received orphaned response '%(name)s' with %(callbacks)i callbacks" % {
                  'name': response.name,
                  'callbacks': len(callbacks),
-                })
+            })
                 
             for callback in callbacks:
                 try:
