@@ -42,7 +42,8 @@ import time
 import traceback
 import types
 import warnings
-from pystrix.logger import logger as pystrix_logger
+import six
+import pystrix.logger  as pystrix_logger
 try:
     import queue
 except:
@@ -72,7 +73,7 @@ KEY_RESPONSE = 'Response' #The key used to hold the event-name of a request
 _CALLBACK_TYPE_REFERENCE = 1 #Identifies a callback-definition as an event-reference
 _CALLBACK_TYPE_UNIVERSAL = 2 #Identifies a callback-definition as universal
 _CALLBACK_TYPE_ORPHANED = 3 #Identifies a callback-definition for orphaned responses
-_logger = None #A logger that may be used to record warnings
+
     
     
 def _format_socket_error(exception):
@@ -129,10 +130,10 @@ class Manager(object):
 
         `debug` should only be turned on for library development.
         """
-        global _logger
-        _logger = pystrix_logger(logger,debug)
+
+        pystrix_logger.create(logger,debug)
         
-        _logger.debug('Start Manager')
+        pystrix_logger.debug('Start Manager')
         
         self._action_id = 0
         action_id_random_token = []
@@ -175,7 +176,6 @@ class Manager(object):
 
         If any callbacks throw exceptions, warnings are issued, but processing continues.
         """
-        _logger.debug('Event dispatcher')
         
         event_aggregates_complete = collections.deque()
         event_aggregate_cycle = 0
@@ -201,7 +201,7 @@ class Manager(object):
                         for (i, aggregate) in enumerate(self._event_aggregates):
                             if aggregate[0] <= current_time: #Expired
                                 del self._event_aggregates[i]
-                                _logger.debug("Aggregate '%(name)s' for action-ID '%(action-id)s' timed out before all events were gathered" % {
+                                pystrix_logger.debug("Aggregate '%(name)s' for action-ID '%(action-id)s' timed out before all events were gathered" % {
                                  'name': aggregate[1].name,
                                  'action-id': aggregate[1].action_id,
                                 })
@@ -247,7 +247,7 @@ class Manager(object):
             global _CALLBACK_TYPE_UNIVERSAL
             with self._event_callbacks_lock:
                 callbacks = [c for (t, e, c) in self._event_callbacks if (t == _CALLBACK_TYPE_REFERENCE and event_name == e) or (t == _CALLBACK_TYPE_UNIVERSAL)]
-                _logger.debug("Received event '%(name)s' with %(callbacks)i callbacks" % {
+                pystrix_logger.debug("Received event '%(name)s' with %(callbacks)i callbacks" % {
                  'name': event_name,
                  'callbacks': len(callbacks),
                 })
@@ -256,7 +256,7 @@ class Manager(object):
                 try:
                     callback(event, self)
                 except Exception as e:
-                    _logger.error("Exception occurred while processing event callback: event='%(event)r'; handler='%(function)s' exception: %(error)s; trace:\n%(trace)s" % {
+                    pystrix_logger.error("Exception occurred while processing event callback: event='%(event)r'; handler='%(function)s' exception: %(error)s; trace:\n%(trace)s" % {
                      'event': event,
                      'function': str(callback),
                      'error': str(e),
@@ -282,7 +282,7 @@ class Manager(object):
             global _CALLBACK_TYPE_ORPHANED
             with self._event_callbacks_lock:
                 callbacks = [c for (t, e, c) in self._event_callbacks if t == _CALLBACK_TYPE_ORPHANED]
-                _logger.debug("Received orphaned response '%(name)s' with %(callbacks)i callbacks" % {
+                pystrix_logger.debug("Received orphaned response '%(name)s' with %(callbacks)i callbacks" % {
                  'name': response.name,
                  'callbacks': len(callbacks),
                 })
@@ -291,7 +291,7 @@ class Manager(object):
                 try:
                     callback(response, self)
                 except Exception as e:
-                    _logger.error("Exception occurred while processing orphaned response handler: response=%(response)r; handler='%(function)s'; exception: %(error)s; trace:\n%(trace)s" % {
+                    pystrix_logger.error("Exception occurred while processing orphaned response handler: response=%(response)r; handler='%(function)s'; exception: %(error)s; trace:\n%(trace)s" % {
                      'response': response,
                      'function': str(callback),
                      'error': str(e),
@@ -344,7 +344,6 @@ class Manager(object):
         
         If the connection fails, `ManagerSocketError` is raised.
         """
-        _logger.debug('Connecting with %s'%host)
         self.disconnect()
         with self._connection_lock:
             self._connection = _SynchronisedSocket(host=host, port=port, timeout=timeout)
@@ -359,7 +358,6 @@ class Manager(object):
         If not connected, this is a no-op.
         """
         with self._connection_lock:
-            _logger.debug('Disconnecting')
             if self._connection: #Close the old connection, if any.
                 self._connection.close()
                 self._connection = None
@@ -519,12 +517,13 @@ class Manager(object):
         events = self._add_outstanding_request(action_id, request)
         with self._connection_lock:
             self._connection.send_message(command)
-            
+
+
         if request.aggregate and not request.synchronous: #Set up aggregate-event generation
             with self._event_aggregates_lock:
                 for aggregate_class in request.get_aggregate_classes():
                     self._event_aggregates.append((time.time() + self._event_aggregates_timeout, aggregate_class(action_id)))
-                    _logger.debug("Started building aggregate-event '%(event)s' for action-ID '%(action-id)s'" % {
+                    pystrix_logger.debug("Started building aggregate-event '%(event)s' for action-ID '%(action-id)s'" % {
                          'event': _EVENT_REGISTRY_REV.get(aggregate_class),
                          'action-id': action_id,
                     })
@@ -549,7 +548,7 @@ class Manager(object):
         else: #Timed out
             if request.synchronous:
                 events_timeout = True
-                _logger.warning("Timed out while collecting events for synchronised action-ID '%(action-id)s'" % {
+                pystrix_logger.warning("Timed out while collecting events for synchronised action-ID '%(action-id)s'" % {
                  'action-id': action_id,
                 })
                 
@@ -566,7 +565,7 @@ class Manager(object):
                 events_timeout
             )
         else:
-            _logger.warning("Timed out while waiting for response for action-ID '%(action-id)s'" % {
+            pystrix_logger.warning("Timed out while waiting for response for action-ID '%(action-id)s'" % {
              'action-id': action_id,
             })
             return None
@@ -679,7 +678,6 @@ class _Aggregate(_MessageTemplate, dict):
     event-class. Repeatable event-types are exposed as lists, while others are direct references to
     the event itself.
     """
-    global _logger
     _name = None #The name of the aggregate-type
     _action_id = None #The action-ID associated with the aggregate, if any
     _valid = True #Indicates whether the aggregate's contents are consistent with Asterisk's protocol
@@ -874,7 +872,7 @@ class _Request(dict):
     as override `process_response()` to specially format the data to be returned after a request
     has been served.
     """
-    global _logger
+
     aggregate = False #Only has an effect on certain types of requests; will result in an aggregate-event being generated after a list of independent events
     synchronous = False #If True, requests will block until all response events have been collected; these events will appear in a `response` dictionary-attribute
     timeout = 5 #The number of seconds to wait before considering this request timed out; may be a float
@@ -906,7 +904,7 @@ class _Request(dict):
         The 'Action' line is always first.
         """
         items = [(KEY_ACTION, self[KEY_ACTION])]
-        for (key, value) in [(k, v) for (k, v) in self.items() if not k in (KEY_ACTION, KEY_ACTIONID)] + list(kwargs.items()):
+        for (key, value) in [(k, v) for (k, v) in self.items() if not k in (KEY_ACTION, KEY_ACTIONID)] + kwargs.items():
             key = str(key)
             if type(value) in (tuple, list, set, frozenset):
                 for val in value:
@@ -920,7 +918,6 @@ class _Request(dict):
             elif KEY_ACTIONID in self:
                 action_id = self[KEY_ACTIONID]
             items.append((KEY_ACTIONID, action_id))
-        _logger.debug("Build request items with: %s "%items)
         return (
          _EOL.join(['%(key)s: %(value)s' % {
           'key': key,
@@ -973,8 +970,7 @@ class _MessageReader(threading.Thread):
         self.response_queue = queue.Queue()
         self._served_requests = {}
         self._served_requests_lock = threading.Lock()
-        global _logger
-        _logger.debug("Start MessageReader")
+        
         
     def _clean_orphaned_responses(self):
         """
@@ -1032,7 +1028,7 @@ class _MessageReader(threading.Thread):
                         message.__class__ = event_class
                     else:
                         message.__class__ = _Event
-                        _logger.warning("Unknown event received: " + repr(message))
+                        pystrix_logger.warning("Unknown event received: " + repr(message))
                             
                     self.event_queue.put(message)
                 elif action_id is not None:
@@ -1049,7 +1045,7 @@ class _SynchronisedSocket(object):
     """
     Provides a threadsafe conduit for communication with an Asterisk manager interface.
     """
-    global _logger
+
     _asterisk_name = '<unknown>' #The name of the Asterisk server to which the socket is connected
     _asterisk_version = '<unknown>' # The version of the Asterisk server to which the socket is connected
     _connected = False #True while a connection is active
@@ -1169,13 +1165,10 @@ class _SynchronisedSocket(object):
             raise ManagerSocketError("Not connected to Asterisk server")
             
         with self._socket_write_lock:
-            if isinstance(message, str): 
-                message = message.encode()
             try:
                 self._socket.sendall(message)
             except TypeError as e:
-             if _logger :
-               _logger.error("Data body fail: %(error)s" % {
+               pystrix_logger.error("Data body to send is failed: %(error)s" % {
                  'error': _format_socket_error(e),
                 })
             except socket.error as e:
@@ -1222,23 +1215,18 @@ class Error(Exception):
     The base exception from which all errors native to this module inherit.
     """
     def __init__(self,*mesg):
-        global _logger
-        _loger.error(mesg)
+
+        pystrix_logger.error(mesg)
+        super(Error, self).__init__(mesg)
     
 class ManagerError(Error):
     """
     Represents a generic error involving the Asterisk manager.
     """
-    def __init__(self,*mesg):
-        global _logger
-        _loger.error(mesg)
-    
 class ManagerSocketError(Error):
     """
     Represents a generic error involving the Asterisk connection.
     """
-    def __init__(self,*mesg):
-        global _logger
-        _logger.error(mesg)
+
  
 

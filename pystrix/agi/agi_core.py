@@ -39,7 +39,7 @@ import re
 import time
 
 import sys
-from pystrix.logger import logger as pystrix_logger
+import pystrix.logger as pystrix_logger
 
 
 _Response = collections.namedtuple('Response', ('items', 'code', 'raw'))
@@ -49,7 +49,7 @@ _RE_CODE = re.compile(r'(^\d+)\s*(.+)') #Matches Asterisk's response-code lines
 _RE_KV = re.compile(r'(?P<key>\w+)=(?P<value>[^\s]+)?(?:\s+\((?P<data>.*)\))?') #Matches Asterisk's key-value response-pairs
 
 _RESULT_KEY = 'result'
-_logger = None
+
 
 #Functions
 ###############################################################################
@@ -82,13 +82,11 @@ class _AGI(object):
 
         `debug` should only be turned on for library development.
         """
-        global _logger
-        _logger = pystrix_logger(debug=debug)
+        pystrix_logger.create(debug=debug)
         
         self._environment = {}
         self._parse_agi_environment()
-        
-        _logger.debug("Start AGI")
+
 
     def execute(self, action):
         """
@@ -301,24 +299,18 @@ class AGIException(Exception):
         Exception.__init__(self, message)
         self.items = items if items else {}
         
-        global _logger
-        _loger.error(message)
+        pystrix_logger.error(message)
+        
         
 class AGIError(AGIException):
     """
     The base error from which all errors native to this module inherit.
     """
-    def __init__(self,*mesg):
-        global _logger
-        _loger.error(mesg)
     
 class AGINoResultError(AGIException):
     """
     Indicates that Asterisk did not return a 'result' parameter in a 200 response.
     """
-    def __init__(self,*mesg):
-        global _logger
-        _loger.error(mesg)
     
 class AGIUnknownError(AGIError):
     """

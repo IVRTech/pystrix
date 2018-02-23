@@ -35,6 +35,7 @@ import sys
 from pystrix.agi.agi_core import *
 from pystrix.agi.agi_core import _AGI
 
+
 class AGI(_AGI):
     """
     An interface to Asterisk, exposing request-response functions for
@@ -79,4 +80,5 @@ class AGISIGHUPHangup(AGIHangup):
     Indicates that the script's process received the SIGHUP signal, implying
     Asterisk has hung up the call. Specific to script-based instances.
     """
+
     

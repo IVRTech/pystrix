@@ -45,6 +45,7 @@ from pystrix.ami.ami import (_Request, ManagerError)
 from pystrix.ami import core_events
 from pystrix.ami import generic_transforms
 
+
 AUTHTYPE_MD5 = 'MD5' #Uses MD5 authentication when logging into AMI
 
 #Constants for use with the `Events` action
@@ -87,6 +88,7 @@ class AbsoluteTimeout(_Request):
         _Request.__init__(self, 'AbsoluteTimeout')
         self['Channel'] = channel
         self['Timeout'] = str(int(seconds))
+        
 
 class AGI(_Request):
     """
@@ -143,6 +145,8 @@ class Challenge(_Request):
         _Request.__init__(self, 'Challenge')
         self['AuthType'] = authtype
         
+
+        
 class ChangeMonitor(_Request):
     """
     Changes the filename associated with the recording of a monitored channel. The channel must have
@@ -158,6 +162,8 @@ class ChangeMonitor(_Request):
         _Request.__init__(self, 'ChangeMonitor')
         self['Channel'] = channel
         self['File'] = filename
+        
+
         
 class Command(_Request):
     """
