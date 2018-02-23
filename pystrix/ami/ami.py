@@ -41,8 +41,7 @@ import threading
 import time
 import traceback
 import types
-import warnings
-import six
+
 import pystrix.logger  as pystrix_logger
 try:
     import queue
@@ -829,6 +828,7 @@ class _Message(_MessageTemplate, dict):
 
         All headers are added to the core dictionary and all data is exposed as a list of lines.
         """
+
         while response:
             line = response[0]
             if line.endswith(_EOL_FAKE) or not line.endswith(_EOL) or not ':' in line: #All lines from this point forth are data
