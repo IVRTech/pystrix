@@ -91,7 +91,7 @@ def _is_enable_log(check_level):
 def set_level(level):  
         
         if (level in [CRITICAL,FATAL,ERROR,WARNING,WARN,INFO,DEBUG,NOTSET] ):  
-            root.setLevel(level)
+            _logger.setLevel(level)
    
 def warning(mesg):
     if _is_enable_log(WARN) :
