@@ -42,8 +42,8 @@ def create(logger=None,debug=False,logger_name=None):
         """          
         if not logger_name:
             logger_name=LOGGER_NAME
-            
-        if logger and isinstance(logger, logging) :
+        if logger and  hasattr(logger, '__class__') and  hasattr(logger.__class__, '__name__') \
+         and logger.__class__.__name__ == 'Logger':
             pre_logger=logger
         else:
             if  debug :

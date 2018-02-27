@@ -37,6 +37,7 @@ from pystrix.agi.agi_core import (
     quote,
     _RESULT_KEY,
     AGIAppError,
+    pystrix_logger,
 )
 
 CHANNEL_DOWN_AVAILABLE = 0  # Channel is down and available
@@ -190,6 +191,7 @@ class ControlStreamFile(_Action):
     """
 
     def __init__(self, filename, escape_digits='', sample_offset=0, forward='', rewind='', pause=''):
+        
         escape_digits = _process_digit_list(escape_digits)
         _Action.__init__(self, 'CONTROL STREAM FILE', quote(filename),
                          quote(escape_digits), quote(sample_offset),
@@ -393,6 +395,7 @@ class GetFullVariable(_Action):
         _Action.__init__(self, 'GET FULL VARIABLE', quote(variable))
 
     def process_response(self, response):
+        pystrix_logger.debug("GetFullVariable process_response: '%(response)s'"%{'response':response})
         result = response.items.get(_RESULT_KEY)
         if result.value == '1':
             return result.data
@@ -431,6 +434,7 @@ class GetOption(_Action):
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
+        pystrix_logger.debug("GetOption process_response: '%(result)s'"%{'result':result})
         if not result.value == '0':
             dtmf_character = _convert_to_char(result.value, response.items)
             offset = _convert_to_int(response.items)
@@ -454,6 +458,7 @@ class GetVariable(_Action):
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
+        pystrix_logger.debug("GetOption process_response: '%(result)s'"%{'result':result})
         if result.value == '1':
             return result.data
         return None
@@ -468,6 +473,7 @@ class Hangup(_Action):
 
     def __init__(self, channel=None):
         _Action.__init__(self, 'HANGUP', (channel and quote(channel) or None))
+        pystrix_logger.debug("Start  Hangup")
 
 
 class Noop(_Action):
@@ -483,6 +489,7 @@ class Noop(_Action):
 
     def __init__(self):
         _Action.__init__(self, 'NOOP')
+        pystrix_logger.debug("Start  Noop")
 
 
 class ReceiveChar(_Action):
@@ -505,6 +512,7 @@ class ReceiveChar(_Action):
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
+        pystrix_logger.debug("ReceiveChar process_response: '%(result)s'"%{'result':result})
         if not result.value == '0':
             return (_convert_to_char(result.value, response.items), result.data == 'timeout')
         return None
@@ -527,6 +535,7 @@ class ReceiveText(_Action):
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
+        pystrix_logger.debug("ReceiveChar process_response: '%(result)s'"%{'result':result})
         return result.value
 
 
@@ -588,7 +597,7 @@ class RecordFile(_Action):
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
         offset = _convert_to_int(response.items)
-
+        pystrix_logger.debug("RecordFile process_response: '%(result)s'"%{'result':result})
         if result.data == 'randomerror':
             raise AGIAppError("Unknown error occurred %(ms)i into recording: %(error)s" % {
                 'ms': offset,
@@ -627,7 +636,7 @@ class _SayAction(_Action):
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
-
+        pystrix_logger.debug("RecordFile process_response: '%(result)s'"%{'result':result})
         if not result.value == '0':
             return _convert_to_char(result.value, response.items)
         return None
@@ -934,6 +943,7 @@ class StreamFile(_Action):
     """
 
     def __init__(self, filename, escape_digits='', sample_offset=0):
+        pystrix_logger.debug("StreamFile: file='%(file)s'"%{'file':filename})
         escape_digits = _process_digit_list(escape_digits)
         _Action.__init__(self,
                          'STREAM FILE', quote(filename),
@@ -942,6 +952,7 @@ class StreamFile(_Action):
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
+        pystrix_logger.debug("StreamFile process_response: '%(result)s'"%{'result':result})
         if not result.value == '0':
             dtmf_character = _convert_to_char(result.value, response.items)
             offset = _convert_to_int(response.items)
@@ -967,6 +978,7 @@ class TDDMode(_Action):
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
+        pystrix_logger.debug("TDDMode process_response: '%(result)s'"%{'result':result})
         return result.value == '1'
 
 
@@ -989,6 +1001,7 @@ class Verbose(_Action):
 
     def __init__(self, message, level=LOG_INFO):
         _Action.__init__(self, 'VERBOSE', quote(message), quote(level))
+        pystrix_logger.debug("Start Verbose")
 
 
 class WaitForDigit(_Action):

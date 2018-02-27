@@ -76,15 +76,19 @@ class _AGI(object):
     _rfile = None #The input file-like-object
     _wfile = None #The output file-like-object
     
-    def __init__(self, debug=False):
+    def __init__(self, debug=False,logger=None):
         """
         Sets up variables required to process an AGI session.
 
         `debug` should only be turned on for library development.
-        """
-        pystrix_logger._logger=pystrix_logger.create(debug=debug)
         
-        pystrix_logger.debug("Start AGI")
+        'logger` may be a logging.Logger object to use for logging problems in AGI threads. If not
+        provided, use default Pytrix logger.
+        
+        """
+        pystrix_logger._logger=pystrix_logger.create(logger,debug)
+        
+        pystrix_logger.debug("Start _AGI: encapsulates communication")
         
         self._environment = {}
         self._parse_agi_environment()
@@ -100,9 +104,9 @@ class _AGI(object):
         The state of the channel is verified with each call to this function, to ensure that it is
         still connected. An instance of `AGIHangup` is raised if it is not.
         """
+        pystrix_logger.debug("_AGI execute : '%s' "%action.command)
         self._test_hangup()
         
-        pystrix_logger.debug("_AGI execute : %s"%action.command)
         self._send_command(action.command)
         return action.process_response(self._get_result(action.check_hangup))
 
@@ -148,14 +152,16 @@ class _AGI(object):
         m = _RE_CODE.search(line)
         if m:
             code = int(m.group(1))
-            
+        pystrix_logger.debug("_AGI _get_result: Checking process response - code=%i"%code)  
+          
         if code == 200:
             raw = m.group(2) #The entire line, excluding the code
             for (key, value, data) in _RE_KV.findall(m.group(2)):
                 response[key] = _ValueData(value or '', data)
+                pystrix_logger.debug("_AGI _get_result: response='%(response)s'"%{'response':response})                  
                 
             if not _RESULT_KEY in response: #Must always be present.
-                raise AGINoResultError("Asterisk did not provide a '%{result-key}s' key-value pair" % {
+                raise AGINoResultError("Asterisk did not provide a '%(result-key)s' key-value pair" % {
                  'result-key': _RESULT_KEY,
                 }, response)
 
@@ -164,7 +170,7 @@ class _AGI(object):
             if check_hangup and result.data == 'hangup': #A 'hangup' response usually indicates that the channel was hungup, but it is a legal variable value
                 raise AGIResultHangup("User hung up during execution", response)
                 
-            pystrix_logger.debug("_AGI _get_result: ( result='%{result}s'  )"%{
+            pystrix_logger.debug("_AGI _get_result:  result='%(result)s'  "%{
                  'result': result,
             })
             return _Response(response, code, raw)
@@ -174,9 +180,9 @@ class _AGI(object):
             # We probably got a signal like SIGHUP, so move on and do nothing
             pass
         elif code == 510:
-            raise AGIInvalidCommandError(response)
+            raise AGIInvalidCommandError("_AGI _get_result: Asterisk  (510) - Invalid or unknown command  '%s'"%response)
         elif code == 511:
-            raise AGIDeadChannelError(response)
+            raise AGIDeadChannelError("_AGI _get_result: Asterisk  (511) - Command not permitted on a dead channel  '%s'"%response)
         elif code == 520:
             usage = [line]
             while True:
@@ -194,7 +200,7 @@ class _AGI(object):
     def _parse_agi_environment(self):
         """
         Reads all of Asterisk's environment variables and stores them in memory.
-        """
+        """  
         while True:
             line = self._read_line()
             if line == '': #Blank line signals end
@@ -206,6 +212,7 @@ class _AGI(object):
                 data = data.strip()
                 if key:
                     self._environment[key] = data
+        pystrix_logger.debug("AGI _parse_agi_environment: '%(environment)s' "%{'environment' : self._environment })                    
                     
     def _read_line(self, should_strip=True):
         """
@@ -276,17 +283,18 @@ class _Action(object):
     check_hangup = True #True if the output of this action is sure to be hangup-detection-safe
     
     def __init__(self, command, *arguments):
+        pystrix_logger.debug("_Action : '%(command)s'"%{'command':command} )
         self._command = command
         self._arguments = arguments
 
     @property
     def command(self):
         command = ' '.join([self._command.strip()] + [str(arg) for arg in self._arguments if not arg is None]).strip()
-        if not command.endswith('\n'):
-            command += '\n'
         pystrix_logger.debug("_Action command: '%(command)s' " % {
                  'command': command,
         })
+        if not command.endswith('\n'):
+            command += '\n'
         return command
         
     def process_response(self, response):
@@ -294,6 +302,7 @@ class _Action(object):
         Just returns the `response` from Asterisk verbatim. May be overridden to allow for
         sophisticated processing.
         """
+        pystrix_logger.debug("_Action process_response: '%(response)s'"%{ 'response' : response})
         return response
 
 

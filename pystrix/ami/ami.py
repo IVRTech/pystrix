@@ -103,8 +103,8 @@ class Manager(object):
         To proceed, register any necessary callbacks, then call `connect()`, then pass the core
         `Login` or `Challenge` request to `send_action()`.
 
-        `logger` may be a logging.Logger object to use for logging problems in AMI threads. If not
-        provided, problems will be emitted through the Python warnings interface.
+        'logger` may be a logging.Logger object to use for logging problems in AMI threads. If not
+        provided, use default Pytrix logger.
         
         `aggregate_timeout` is the number of seconds to wait for aggregates to be fully assembled
         before considering them timed-out.
@@ -119,7 +119,7 @@ class Manager(object):
         pystrix_logger._logger=pystrix_logger.create(logger,debug)
         
         
-        pystrix_logger.debug("start Manager")
+        pystrix_logger.debug("Start Manager")
         
         self._action_id = 0
         action_id_random_token = []

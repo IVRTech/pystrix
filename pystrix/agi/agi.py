@@ -43,17 +43,21 @@ class AGI(_AGI):
     """
     _got_sighup = False #True when a hangup signal has been received.
     
-    def __init__(self, debug=False):
+    def __init__(self, debug=False,logger=None):
         """
         Binds the SIGHUP signal and associates I/O with stdin/stdout.
 
         `debug` should only be turned on for library development.
+        
+        'logger` may be a logging.Logger object to use for logging problems in AGI threads. If not
+        provided, use default Pytrix logger.
+        
         """
         signal.signal(signal.SIGHUP, self._handle_sighup)
         self._rfile = sys.stdin
         self._wfile = sys.stdout
         
-        _AGI.__init__(self, debug)
+        _AGI.__init__(self, debug,logger)
         
     def _handle_sighup(self, signum, frame):
         """

@@ -69,6 +69,7 @@ class _AGIClientHandler(socketserver.StreamRequestHandler):
         Creates an instance of an AGI-interface object and passes it to a pre-specified callable,
         selected by matching the request parameters against a series of regular expressions.
         """
+        pystrix_logger.debug("_AGIClientHandler handle: created instance AGI-interface")
         agi_instance = FastAGI(self.rfile, self.wfile, debug=self.server.debug)
 
         (path, kwargs) = self._extract_query_elements(agi_instance)
@@ -111,7 +112,7 @@ class FastAGIServer(_ThreadedTCPServer):
     _script_handlers = None #A list of regex/callable pairs to use when determining how to handle an AGI request
     _script_handlers_lock = None #A lock used to prevent race conditions on the handlers list
     
-    def __init__(self, interface='127.0.0.1', port=4573, daemon_threads=True, debug=False):
+    def __init__(self, interface='127.0.0.1', port=4573, daemon_threads=True, debug=False, logger=None):
         """
         Creates the server and binds the client-handler callable.
         
@@ -124,10 +125,13 @@ class FastAGIServer(_ThreadedTCPServer):
         idea to avoid hung calls keeping the process alive forever)
 
         `debug` should only be turned on for library development.
+        
+        'logger` may be a logging.Logger object to use for logging problems in FastAGI threads. If not
+		provided, use default Pytrix logger.
         """
         _ThreadedTCPServer.__init__(self, (interface, port), _AGIClientHandler)
         
-        pystrix_logger._logger=pystrix_logger.create(debug=debug)
+        pystrix_logger._logger=pystrix_logger.create(logger,debug)
         
         pystrix_logger.debug("FastAGIServer: interface='%(interface)s' port='%(port)i' " %{
 			'interface' : interface,
@@ -161,7 +165,6 @@ class FastAGIServer(_ThreadedTCPServer):
                 else:
                     match = regex.match(script_path)
                 if match:
-                	pystrix_logger.debug("FastAGIServer  get_script_handler: handler='%(handler)s match='%(match)s' "%{'handler':handler,'match':match})
                 	return (handler, match)
                     
             return (self._default_script_handler, None)
@@ -184,17 +187,17 @@ class FastAGIServer(_ThreadedTCPServer):
         with self._script_handlers_lock:
             if regex is None:
                 self._default_script_handler = handler
-                pystrix_logger.debug("FastAGIServer register_script_handler: regex==None")
+                pystrix_logger.debug("FastAGIServer register_script_handler: return None")
                 return
 
             #Ensure that the regex hasn't been registered before
             for (old_regex, old_handler) in self._script_handlers:
                 if old_regex == regex:
-                	pystrix_logger.debug("FastAGIServer register_script_handler: regex==old_regex")
+                	pystrix_logger.debug("FastAGIServer register_script_handler: regex  has been registered before")
                 	return
 
             #Add the handler to the end of the list
-            pystrix_logger.debug("FastAGIServer register_script_handler: regex adding  ")
+            pystrix_logger.debug("FastAGIServer register_script_handler: regex found  ")
             self._script_handlers.append((regex, handler))
 
     def unregister_script_handler(self, regex):
@@ -217,7 +220,7 @@ class FastAGI(_AGI):
     An interface to Asterisk, exposing request-response functions for
     synchronous management of the call associated with this channel.
     """
-    def __init__(self, rfile, wfile, debug=False):
+    def __init__(self, rfile, wfile, debug=False, logger=None):
         """
         Associates I/O with `rfile` and `wfile`.
 
@@ -226,7 +229,7 @@ class FastAGI(_AGI):
         self._rfile = rfile
         self._wfile = wfile
         
-        _AGI.__init__(self, debug)
+        _AGI.__init__(self, debug, logger)
         
         
         
