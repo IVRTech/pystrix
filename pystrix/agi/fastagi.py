@@ -70,7 +70,7 @@ class _AGIClientHandler(socketserver.StreamRequestHandler):
         selected by matching the request parameters against a series of regular expressions.
         """
         pystrix_logger.debug("_AGIClientHandler handle: created instance AGI-interface")
-        agi_instance = FastAGI(self.rfile, self.wfile, debug=self.server.debug)
+        agi_instance = FastAGI(self.rfile, self.wfile, debug=self.server.debug,logger=self.server.logger)
 
         (path, kwargs) = self._extract_query_elements(agi_instance)
         args = self._extract_positional_args(agi_instance)
@@ -138,6 +138,7 @@ class FastAGIServer(_ThreadedTCPServer):
 			'port' : port,			
 		})
         self.debug = debug
+        self.logger = logger
         self.daemon_threads = daemon_threads
         self._script_handlers = []
         self._script_handlers_lock = threading.Lock()
@@ -219,6 +220,11 @@ class FastAGI(_AGI):
     """
     An interface to Asterisk, exposing request-response functions for
     synchronous management of the call associated with this channel.
+    
+    `debug` should only be turned on for library development.
+		
+	`logger` may be a logging.Logger object to use for logging problems in FastAGI threads. If not
+		provided, use default Pystrix logger.
     """
     def __init__(self, rfile, wfile, debug=False, logger=None):
         """
