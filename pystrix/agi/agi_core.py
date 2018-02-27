@@ -83,7 +83,7 @@ class _AGI(object):
         `debug` should only be turned on for library development.
         
         'logger` may be a logging.Logger object to use for logging problems in AGI threads. If not
-        provided, use default Pytrix logger.
+        provided, use default Pystrix logger.
         
         """
         pystrix_logger._logger=pystrix_logger.create(logger,debug)

@@ -127,7 +127,7 @@ class FastAGIServer(_ThreadedTCPServer):
         `debug` should only be turned on for library development.
         
         'logger` may be a logging.Logger object to use for logging problems in FastAGI threads. If not
-		provided, use default Pytrix logger.
+		provided, use default Pystrix logger.
         """
         _ThreadedTCPServer.__init__(self, (interface, port), _AGIClientHandler)
         

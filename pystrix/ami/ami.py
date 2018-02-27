@@ -104,7 +104,7 @@ class Manager(object):
         `Login` or `Challenge` request to `send_action()`.
 
         'logger` may be a logging.Logger object to use for logging problems in AMI threads. If not
-        provided, use default Pytrix logger.
+        provided, use default Pystrix logger.
         
         `aggregate_timeout` is the number of seconds to wait for aggregates to be fully assembled
         before considering them timed-out.
