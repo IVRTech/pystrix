@@ -126,7 +126,7 @@ class FastAGIServer(_ThreadedTCPServer):
 
         `debug` should only be turned on for library development.
         
-        'logger` may be a logging.Logger object to use for logging problems in FastAGI threads. If not
+        `logger` may be a logging.Logger object to use for logging problems in FastAGI threads. If not
 		provided, use default Pystrix logger.
         """
         _ThreadedTCPServer.__init__(self, (interface, port), _AGIClientHandler)
@@ -221,16 +221,15 @@ class FastAGI(_AGI):
     An interface to Asterisk, exposing request-response functions for
     synchronous management of the call associated with this channel.
     
-    `debug` should only be turned on for library development.
-		
-	`logger` may be a logging.Logger object to use for logging problems in FastAGI threads. If not
-		provided, use default Pystrix logger.
     """
     def __init__(self, rfile, wfile, debug=False, logger=None):
         """
         Associates I/O with `rfile` and `wfile`.
 
-        `debug` should only be turned on for library development.
+	   `debug` should only be turned on for library development.
+		
+	   `logger` may be a logging.Logger object to use for logging problems in FastAGI threads. If not
+		provided, use default Pystrix logger.
         """
         self._rfile = rfile
         self._wfile = wfile
