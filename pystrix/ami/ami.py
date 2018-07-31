@@ -1139,6 +1139,8 @@ class _SynchronisedSocket(object):
                 except AttributeError:
                     raise ManagerSocketError("Local socket no longer defined, caused by system shutdown and blocking I/O")
 
+            line = "{0}\r\n".format(line.rstrip()) #Make sure line termination complies with _EOL
+            
             if line == _EOL and not wait_for_marker:
                 if response_lines: #A full response has been collected
                     return _Message(response_lines)
@@ -1164,6 +1166,8 @@ class _SynchronisedSocket(object):
             
         with self._socket_write_lock:
             try:
+                if type(message) == str:
+                    message = message.encode('utf-8') #socket3.sendall expects byte, no string type            
                 self._socket.sendall(message)
             except socket.error as e:
                 self._close()
