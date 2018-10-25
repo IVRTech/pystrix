@@ -529,7 +529,11 @@ class Manager(object):
                         })
 
         start_time = time.time()
-        timeout = start_time + request.timeout
+        if request['Action'] == 'Originate':
+            # timeout is in millisecs
+            timeout = start_time + (request.timeout / 1000)
+        else:
+            timeout = start_time + request.timeout
         response = processed_response = success = None
         events_timeout = False
         while time.time() < timeout:
