@@ -637,7 +637,7 @@ class _Originate(_Request):
     
     Requires call
     """
-    def __init__(self, channel, timeout=None, callerid=None, variables={}, account=None, async=True):
+    def __init__(self, channel, timeout=None, callerid=None, variables={}, account=None, async_=True):
         """
         Sets common parameters for originated calls.
 
@@ -659,11 +659,11 @@ class _Originate(_Request):
         `account` is an optional account code to be associated with the channel, useful for tracking
         billing information.
 
-        `async` should always be `True`. If not, only one unanswered call can be active at a time.
+        `async_` should always be `True`. If not, only one unanswered call can be active at a time.
         """
         _Request.__init__(self, "Originate")
         self['Channel'] = channel
-        self['Async'] = async and 'true' or 'false'
+        self['Async'] = async_ and 'true' or 'false'
         
         if timeout and timeout > 0:
             self['Timeout'] = str(timeout)
@@ -686,7 +686,7 @@ class Originate_Application(_Originate):
     
     Requires call
     """
-    def __init__(self, channel, application, data=(), timeout=None, callerid=None, variables={}, account=None, async=True):
+    def __init__(self, channel, application, data=(), timeout=None, callerid=None, variables={}, account=None, async_=True):
         """
         `channel` is the destination to be called, expressed as a fully qualified Asterisk channel,
         like "SIP/test-account@example.org".
@@ -710,9 +710,9 @@ class Originate_Application(_Originate):
         `account` is an optional account code to be associated with the channel, useful for tracking
         billing information.
 
-        `async` should always be `True`. If not, only one unanswered call can be active at a time.
+        `async_` should always be `True`. If not, only one unanswered call can be active at a time.
         """
-        _Originate.__init__(self, channel, timeout, callerid, variables, account, async)
+        _Originate.__init__(self, channel, timeout, callerid, variables, account, async_)
         self['Application'] = application
         if data:
             self['Data'] = ','.join((str(d) for d in data))
@@ -723,7 +723,7 @@ class Originate_Context(_Originate):
     
     Requires call
     """
-    def __init__(self, channel, context, extension, priority, timeout=None, callerid=None, variables={}, account=None, async=True):
+    def __init__(self, channel, context, extension, priority, timeout=None, callerid=None, variables={}, account=None, async_=True):
         """
         `channel` is the destination to be called, expressed as a fully qualified Asterisk channel,
         like "SIP/test-account@example.org".
@@ -747,9 +747,9 @@ class Originate_Context(_Originate):
         `account` is an optional account code to be associated with the channel, useful for tracking
         billing information.
 
-        `async` should always be `True`. If not, only one unanswered call can be active at a time.
+        `async_` should always be `True`. If not, only one unanswered call can be active at a time.
         """
-        _Originate.__init__(self, channel, timeout, callerid, variables, account, async)
+        _Originate.__init__(self, channel, timeout, callerid, variables, account, async_)
         self['Context'] = context
         self['Exten'] = extension
         self['Priority'] = priority
