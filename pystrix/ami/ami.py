@@ -529,7 +529,11 @@ class Manager(object):
                         })
 
         start_time = time.time()
-        timeout = start_time + request.timeout
+        if request['Action'] == 'Originate':
+            # timeout is in millisecs
+            timeout = start_time + (request.timeout / 1000)
+        else:
+            timeout = start_time + request.timeout
         response = processed_response = success = None
         events_timeout = False
         while time.time() < timeout:
@@ -902,7 +906,7 @@ class _Request(dict):
         The 'Action' line is always first.
         """
         items = [(KEY_ACTION, self[KEY_ACTION])]
-        for (key, value) in [(k, v) for (k, v) in self.items() if not k in (KEY_ACTION, KEY_ACTIONID)] + kwargs.items():
+        for (key, value) in [(k, v) for (k, v) in self.items() if not k in (KEY_ACTION, KEY_ACTIONID)] + list(kwargs.items()):
             key = str(key)
             if type(value) in (tuple, list, set, frozenset):
                 for val in value:
@@ -1139,6 +1143,8 @@ class _SynchronisedSocket(object):
                 except AttributeError:
                     raise ManagerSocketError("Local socket no longer defined, caused by system shutdown and blocking I/O")
 
+            line = "{0}\r\n".format(line.rstrip()) #Make sure line termination complies with _EOL
+            
             if line == _EOL and not wait_for_marker:
                 if response_lines: #A full response has been collected
                     return _Message(response_lines)
@@ -1164,6 +1170,8 @@ class _SynchronisedSocket(object):
             
         with self._socket_write_lock:
             try:
+                if type(message) == str:
+                    message = message.encode('utf-8') #socket3.sendall expects byte, no string type            
                 self._socket.sendall(message)
             except socket.error as e:
                 self._close()
