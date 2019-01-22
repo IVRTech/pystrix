@@ -172,7 +172,7 @@ class _AGI(object):
             while True:
                 line = self._read_line()
                 usage.append(line)
-                if line.startswith('520'):
+                if '520 End of proper usage.' in line:
                     break
             raise AGIUsageError('\n'.join(usage + ['']))
         else:
