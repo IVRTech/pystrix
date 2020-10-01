@@ -40,13 +40,14 @@ import socket
 import threading
 import time
 import traceback
-import types
 import warnings
 
 try:
     import queue
 except:
     import Queue as queue
+
+from pystrix.ami import generic_transforms
 
 _EVENT_REGISTRY = {} #Meant to be internally managed only, this provides mappings from event-class-names to the classes, to enable type-mutation
 _EVENT_REGISTRY_REV = {} #Provides the friendly names of events as strings, keyed by class object
@@ -1132,7 +1133,7 @@ class _SynchronisedSocket(object):
             line = None
             with self._socket_read_lock:
                 try:
-                    line = self._socket_file.readline()
+                    line = generic_transforms.bytes_to_string(self._socket_file.readline())
                 except socket.timeout:
                     return None
                 except socket.error as e:
@@ -1143,8 +1144,6 @@ class _SynchronisedSocket(object):
                 except AttributeError:
                     raise ManagerSocketError("Local socket no longer defined, caused by system shutdown and blocking I/O")
 
-            line = "{0}\r\n".format(line.rstrip()) #Make sure line termination complies with _EOL
-            
             if line == _EOL and not wait_for_marker:
                 if response_lines: #A full response has been collected
                     return _Message(response_lines)
@@ -1170,9 +1169,7 @@ class _SynchronisedSocket(object):
             
         with self._socket_write_lock:
             try:
-                if type(message) == str:
-                    message = message.encode('utf-8') #socket3.sendall expects byte, no string type            
-                self._socket.sendall(message)
+                self._socket.sendall(generic_transforms.string_to_bytes(message))
             except socket.error as e:
                 self._close()
                 raise ManagerSocketError("Connection to Asterisk manager broken while writing data: %(error)s" % {
@@ -1189,7 +1186,10 @@ class _SynchronisedSocket(object):
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self._socket.settimeout(self._timeout)
             self._socket.connect((host, port))
-            self._socket_file = self._socket.makefile()
+            # makefile() defaults to mode="r"; this will cause carriage returns to be dropped silently
+            # resulting in strings which only ends with \n
+            # however Asterisk returns \r\n; so to properly fix this, we should use mode="rb"
+            self._socket_file = self._socket.makefile(mode="rb")
         except socket.error as e:
             self._socket.close()
             raise ManagerSocketError("Connection to Asterisk manager could not be established: %(error)s" % {
@@ -1199,7 +1199,7 @@ class _SynchronisedSocket(object):
 
         #Pop the greeting off the head of the pipe and set the version information
         try:
-            line = self._socket_file.readline()
+            line = generic_transforms.bytes_to_string(self._socket_file.readline())
         except socket.error as e:
             self._socket.close()
             raise ManagerSocketError("Connection to Asterisk manager broken while reading greeting: %(error)s" % {
@@ -1226,4 +1226,3 @@ class ManagerSocketError(Error):
     """
     Represents a generic error involving the Asterisk connection.
     """
-
