@@ -28,6 +28,13 @@ Authors:
 
 - Neil Tallim <flan@uguu.ca>
 """
+import sys
+
+
+# identify string type in a python 2 and 3 compatible manner
+string_type = str if sys.version_info[0] >= 3 else basestring
+
+
 def to_bool(dictionary, keys, truth_value=None, truth_function=(lambda x:bool(x)), preprocess=(lambda x:x)):
     for key in keys:
         if truth_value:
@@ -51,4 +58,15 @@ def to_int(dictionary, keys, failure_value, preprocess=(lambda x:x)):
             dictionary[key] = int(preprocess(dictionary.get(key)))
         except Exception:
             dictionary[key] = failure_value
-            
+
+
+def string_to_bytes(value, encoding="utf-8", errors="strict"):
+    if isinstance(value, string_type):
+        return value.encode(encoding, errors)
+    return value
+
+
+def bytes_to_string(value, encoding="utf-8", errors="strict"):
+    if not isinstance(value, string_type):
+        return value.decode(encoding, errors)
+    return value

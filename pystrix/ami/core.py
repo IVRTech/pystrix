@@ -442,7 +442,9 @@ class Login(_Request):
         if not challenge is None and authtype:
             self['AuthType'] = authtype
             if authtype == AUTHTYPE_MD5:
-                self['Key'] = hashlib.md5(challenge + secret).hexdigest()
+                self['Key'] = hashlib.md5(
+                    generic_transforms.string_to_bytes(challenge + secret)
+                ).hexdigest()
             else:
                 raise ManagerAuthError("Invalid AuthType specified: %(authtype)s" % {
                  'authtype': authtype,
@@ -1377,4 +1379,3 @@ class ManagerAuthError(ManagerError):
     """
     Indicates that a problem occurred while authenticating 
     """
-    
