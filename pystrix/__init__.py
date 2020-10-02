@@ -42,5 +42,5 @@ Authors:
 import pystrix.agi
 import pystrix.ami
 
-VERSION = '1.1.5'
+VERSION = '1.1.6'
 COPYRIGHT = '2013, Neil Tallim <flan@uguu.ca>'
