@@ -44,20 +44,27 @@ def to_bool(dictionary, keys, truth_value=None, truth_function=(lambda x:bool(x)
                 dictionary[key] = truth_function(preprocess(dictionary.get(key)))
             except Exception:
                 dictionary[key] = False
-                
+
+
 def to_float(dictionary, keys, failure_value, preprocess=(lambda x:x)):
     for key in keys:
         try:
             dictionary[key] = float(preprocess(dictionary.get(key)))
         except Exception:
             dictionary[key] = failure_value
-            
+
+
 def to_int(dictionary, keys, failure_value, preprocess=(lambda x:x)):
     for key in keys:
         try:
             dictionary[key] = int(preprocess(dictionary.get(key)))
         except Exception:
             dictionary[key] = failure_value
+
+
+def add_result(dictionary, key, result_map):
+    if dictionary[key] in result_map:
+        dictionary['Result'] = result_map[dictionary[key]]
 
 
 def string_to_bytes(value, encoding="utf-8", errors="strict"):
