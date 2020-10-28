@@ -40,12 +40,13 @@ from pystrix.ami.ami import (
  Manager,
  Error, ManagerError, ManagerSocketError,
 )
+
 from pystrix.ami import core
 from pystrix.ami import dahdi
 from pystrix.ami import app_confbridge
 from pystrix.ami import app_meetme
 
-#Register events
+# Register events
 from pystrix.ami import core_events
 from pystrix.ami import dahdi_events
 from pystrix.ami import app_confbridge_events

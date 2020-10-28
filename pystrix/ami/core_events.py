@@ -34,7 +34,7 @@ http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
 import re
 
 from pystrix.ami.ami import (_Aggregate, _Event)
-from pystrix.ami import (core, generic_transforms)
+from pystrix.ami import generic_transforms
 
 
 class AGIExec(_Event):
@@ -326,9 +326,10 @@ class OriginateResponse(_Event):
         Sets the 'Reason' values to an int, one of the `ORIGINATE_RESULT` constants, with -1
         indicating failure.
         """
+        from pystrix.ami.core import ORIGINATE_RESULT_MAP  # import here to prevent circular imports
         (headers, data) = _Event.process(self)
         generic_transforms.to_int(headers, ('Reason',), -1)
-        generic_transforms.add_result(headers, 'Reason', core.ORIGINATE_RESULT_MAP)
+        generic_transforms.add_result(headers, 'Reason', ORIGINATE_RESULT_MAP)
         return (headers, data)
         
 class ParkedCall(_Event):

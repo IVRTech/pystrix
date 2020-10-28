@@ -45,16 +45,16 @@ from pystrix.ami.ami import (_Request, ManagerError)
 from pystrix.ami import core_events
 from pystrix.ami import generic_transforms
 
-AUTHTYPE_MD5 = 'MD5' #Uses MD5 authentication when logging into AMI
+AUTHTYPE_MD5 = 'MD5'  # Uses MD5 authentication when logging into AMI
 
-#Constants for use with the `Events` action
+# Constants for use with the `Events` action
 EVENTMASK_ALL = 'on'
 EVENTMASK_NONE = 'off'
 EVENTMASK_CALL = 'call'
 EVENTMASK_LOG = 'log'
 EVENTMASK_SYSTEM = 'system'
 
-#Audio format constants
+# Audio format constants
 FORMAT_SLN = 'sln'
 FORMAT_G723 = 'g723'
 FORMAT_G729 = 'g729'
@@ -64,18 +64,18 @@ FORMAT_ULAW = 'ulaw'
 FORMAT_VOX = 'vox'
 FORMAT_WAV = 'wav'
 
-#Originate result constants
-#https://github.com/asterisk/asterisk/blob/56028426de0692e8e36167251053c91b96e97c41/include/asterisk/frame.h#L277
-ORIGINATE_RESULT_REJECT = 1 #Remote hangup
+# Originate result constants
+# https://github.com/asterisk/asterisk/blob/56028426de0692e8e36167251053c91b96e97c41/include/asterisk/frame.h#L277
+ORIGINATE_RESULT_REJECT = 1  # Remote hangup
 ORIGINATE_RESULT_RING_LOCAL = 2
 ORIGINATE_RESULT_RING_REMOTE = 3
 ORIGINATE_RESULT_ANSWERED = 4
 ORIGINATE_RESULT_BUSY = 5
 ORIGINATE_RESULT_CONGESTION = 8
-ORIGINATE_RESULT_INCOMPLETE = 30 #Unable to resolve
-#Reason 0 is not documented in source
-#https://github.com/asterisk/asterisk/blob/56028426de0692e8e36167251053c91b96e97c41/main/manager.c#L5446
-#External reference https://www.voip-info.org/asterisk-manager-api-action-originate/
+ORIGINATE_RESULT_INCOMPLETE = 30  # Unable to resolve
+# Reason 0 is not documented in source
+# https://github.com/asterisk/asterisk/blob/56028426de0692e8e36167251053c91b96e97c41/main/manager.c#L5446
+# External reference https://www.voip-info.org/asterisk-manager-api-action-originate/
 ORIGINATE_RESULT_BAD_NUMBER = 0 #No such number/extension or bad technology
 ORIGINATE_RESULT_MAP = {
     ORIGINATE_RESULT_BAD_NUMBER: 'BAD_NUMBER',
@@ -87,6 +87,7 @@ ORIGINATE_RESULT_MAP = {
     ORIGINATE_RESULT_CONGESTION: 'CONGESTION',
     ORIGINATE_RESULT_INCOMPLETE: 'INCOMPLETE'
 }
+
 
 class AbsoluteTimeout(_Request):
     """
