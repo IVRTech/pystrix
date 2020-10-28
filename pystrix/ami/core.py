@@ -65,6 +65,7 @@ FORMAT_VOX = 'vox'
 FORMAT_WAV = 'wav'
 
 #Originate result constants
+#https://github.com/asterisk/asterisk/blob/56028426de0692e8e36167251053c91b96e97c41/include/asterisk/frame.h#L277
 ORIGINATE_RESULT_REJECT = 1 #Remote hangup
 ORIGINATE_RESULT_RING_LOCAL = 2
 ORIGINATE_RESULT_RING_REMOTE = 3
@@ -72,6 +73,20 @@ ORIGINATE_RESULT_ANSWERED = 4
 ORIGINATE_RESULT_BUSY = 5
 ORIGINATE_RESULT_CONGESTION = 8
 ORIGINATE_RESULT_INCOMPLETE = 30 #Unable to resolve
+#Reason 0 is not documented in source
+#https://github.com/asterisk/asterisk/blob/56028426de0692e8e36167251053c91b96e97c41/main/manager.c#L5446
+#External reference https://www.voip-info.org/asterisk-manager-api-action-originate/
+ORIGINATE_RESULT_BAD_NUMBER = 0 #No such number/extension or bad technology
+ORIGINATE_RESULT_MAP = {
+    ORIGINATE_RESULT_BAD_NUMBER: 'BAD_NUMBER',
+    ORIGINATE_RESULT_REJECT: 'REJECTED',
+    ORIGINATE_RESULT_RING_LOCAL: 'RINGING',
+    ORIGINATE_RESULT_RING_REMOTE: 'RINGING',
+    ORIGINATE_RESULT_ANSWERED: 'ANSWERED',
+    ORIGINATE_RESULT_BUSY: 'BUSY',
+    ORIGINATE_RESULT_CONGESTION: 'CONGESTION',
+    ORIGINATE_RESULT_INCOMPLETE: 'INCOMPLETE'
+}
 
 class AbsoluteTimeout(_Request):
     """
