@@ -34,7 +34,8 @@ http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
 import re
 
 from pystrix.ami.ami import (_Aggregate, _Event)
-from pystrix.ami import core, generic_transforms
+from pystrix.ami import (core, generic_transforms)
+
 
 class AGIExec(_Event):
     """
