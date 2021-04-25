@@ -1083,6 +1083,9 @@ class _SynchronisedSocket(object):
         """
         Release resources associated with this connection.
         """
+        if self._socket_write_lock is None:
+            self._close()
+            return
         with self._socket_write_lock as write_lock:
             self._close()
             
