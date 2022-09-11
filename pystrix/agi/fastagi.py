@@ -36,19 +36,17 @@ Authors:
 - Neil Tallim <n.tallim@ivrnet.com>
 """
 import cgi
-import re
+import platform
 import socket
+import subprocess
 import threading
-import types
 from pystrix.agi.agi_core import *
 from pystrix.agi.agi_core import _AGI
 
 try:
-	import socketserver
-except:
-	import SocketServer as socketserver
-
-
+    import socketserver
+except ModuleNotFoundError:
+    import SocketServer as socketserver
 
 
 class _ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
@@ -56,6 +54,38 @@ class _ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     Provides a variant of the TCPServer that spawns a new thread to handle each
     request.
     """
+
+    @staticmethod
+    def get_somaxconn():
+        """
+        Returns the value of SOMAXCONN configured in the system.
+        """
+        # determine the OS appropriate management informations base (MIB)
+        # name to determine SOMAXCONN
+        system = platform.system()
+        if "Linux" == system:
+            sysctl_mib_somaxconn = "net.core.somaxconn"
+            sysctl_output_delimiter = "="
+        elif "Darwin" == system:
+            sysctl_mib_somaxconn = "kern.ipc.somaxconn"
+            sysctl_output_delimiter = ":"
+        else:
+            raise NotImplementedError(
+                "Determining SOMAXCONN is not implemented for {} system.".format(system)
+            )
+        # run the cmd to determine the SOMAXCONN
+        cmd_result = subprocess.check_output(["sysctl", sysctl_mib_somaxconn])
+
+        # parse the output of the cmd to return the value of SOMAXCONN
+        return int(cmd_result.decode().split(sysctl_output_delimiter)[-1].strip())
+
+    def __init__(self, *args, **kwargs):
+        # adjust request queue size to a saner value for modern systems
+        # further adjustments are automatically picked up for kernel
+        # settings on server start
+        self.request_queue_size = max(socket.SOMAXCONN, self.get_somaxconn())
+        super().__init__(*args, **kwargs)
+
     def server_bind(self):
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         socketserver.TCPServer.server_bind(self)
