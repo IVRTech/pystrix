@@ -84,12 +84,10 @@ class _ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         # further adjustments are automatically picked up for kernel
         # settings on server start
         self.request_queue_size = max(socket.SOMAXCONN, self.get_somaxconn())
+        self.allow_reuse_address = True
         super().__init__(*args, **kwargs)
 
-    def server_bind(self):
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        socketserver.TCPServer.server_bind(self)
-        
+
 class _AGIClientHandler(socketserver.StreamRequestHandler):
     """
     Handles TCP connections.
