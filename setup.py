@@ -28,7 +28,7 @@ README = open(os.path.join(os.path.dirname(__file__), 'README.rst')).read()
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
-    author='Marta Solano',
+    author='Jaime Rebollo',
     author_email='marta.solano@ivrtechnology.com',
     name='pystrix',
     version=VERSION,
