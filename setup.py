@@ -41,6 +41,9 @@ setup(
     platforms=['OS Independent'],
     classifiers=CLASSIFIERS,
     python_requires='>=3.9',
+    extras_require={
+        'test': ['pytest'],
+    },
     packages=[
      'pystrix',
      'pystrix.agi',
