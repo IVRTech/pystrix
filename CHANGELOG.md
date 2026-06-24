@@ -6,6 +6,8 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-06-24
+
 ### Added
 - `AGENTS.md` with an architecture overview and contributor guidance.
 - `CLAUDE.md` pointing to `AGENTS.md`.
@@ -51,5 +53,6 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 Releases before 1.2.0 are recorded in the git commit history.
 
-[Unreleased]: https://github.com/IVRTech/pystrix/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/IVRTech/pystrix/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/IVRTech/pystrix/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/IVRTech/pystrix/releases/tag/v1.2.0
