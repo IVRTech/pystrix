@@ -4,7 +4,7 @@ Guidance for AI agents working in the pystrix repository. Read this before makin
 
 ## What pystrix is
 
-pystrix is a pure-Python client library for the Asterisk telephony server. It is a toolkit, not a framework, with no third-party runtime dependencies. It supports Python 2.7 and 3.4+ and targets Asterisk 1.10+.
+pystrix is a pure-Python client library for the Asterisk telephony server. It is a toolkit, not a framework, with no third-party runtime dependencies. It targets Python 3.9+ and Asterisk 1.10+.
 
 It covers three Asterisk protocols:
 
@@ -77,14 +77,19 @@ This fork's main feature is FastAGI throughput. `_ThreadedTCPServer` (`fastagi.p
 - **Add an AGI command**: subclass `_Action` in `agi/core.py`. Override `process_response()` to parse the reply.
 - The `app_*` and `dahdi` modules are this same pattern applied to Asterisk add-on modules. Follow their structure for new modules.
 
-## Python 2/3 compatibility
+## Python version and legacy shims
 
-The code still supports Python 2.7, so keep changes compatible:
+The project targets Python 3.9+. The source still carries Python 2 compatibility shims left over from the 2-to-3 migration. These are slated for removal, so don't add new ones:
 
-- Import shims like `try: import queue except: import Queue as queue` (`ami.py:45`).
+- Import fallbacks like `try: import queue except: import Queue as queue` (`ami.py:45`).
 - `basestring` detection in `generic_transforms.py`.
+
+Two related details are not Python 2 baggage and must stay:
+
 - Explicit bytes/string conversion at the socket boundary via `string_to_bytes` and `bytes_to_string`.
 - The AMI socket opens in binary mode (`makefile(mode="rb")`, `ami.py:1195`) on purpose. Text mode silently drops carriage returns and breaks Asterisk's CRLF message framing. Do not change this.
+
+Known gap: `pystrix/agi/fastagi.py` still uses the removed `cgi.urlparse.parse_qs`, which breaks FastAGI query-string parsing on Python 3 and blocks Python 3.13. Tracked in #36.
 
 ## Working in this repo
 

@@ -4,7 +4,7 @@
 
 ## Overview
 
-pystrix runs on Python 3.9+ on any platform. It targets Asterisk 1.10+ and provides a rich, easy-to-extend set of bindings for three Asterisk integration protocols:
+pystrix runs on Python 3.9+. It targets Asterisk 1.10+ and provides a rich, easy-to-extend set of bindings for three Asterisk integration protocols:
 
 - **AMI** (Asterisk Manager Interface) — a persistent TCP connection for controlling and monitoring the whole server. Originate calls, hang them up, read channel status, and react to live events.
 - **AGI** (Asterisk Gateway Interface) — per-call scripting over stdin and stdout. Drive the dialplan of a single call: play audio, collect digits, set variables.
@@ -69,7 +69,7 @@ server.register_script_handler(None, demo_handler)  # default handler
 server.serve_forever()
 ```
 
-The FastAGI server sizes its listen backlog from the system `SOMAXCONN` value, so it absorbs large bursts of simultaneous calls.
+The FastAGI server sizes its listen backlog from the system `SOMAXCONN` value, so it absorbs large bursts of simultaneous calls. It reads that value with `sysctl`, so the server currently runs on Linux and macOS only. AMI and AGI have no such restriction.
 
 ### AMI — control and monitor the server
 
@@ -125,7 +125,7 @@ A few things to know before you send a change:
 
 ## License
 
-pystrix is dual-licensed under the GNU GPLv3 (`COPYING`) and the GNU LGPLv3 (`COPYING.LESSER`). You may use it under the terms of either license.
+pystrix is licensed under the GNU Lesser General Public License v3 or later (`COPYING.LESSER`). The LGPL extends the GNU General Public License v3 (`COPYING`), so both license texts ship with the project.
 
 ## Credits
 

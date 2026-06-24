@@ -14,7 +14,7 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - This changelog.
 
 ### Changed
-- Converted `README.rst` to `README.md` and corrected the version, install URL, and license details.
+- Converted `README.rst` to `README.md` and corrected the version, install URL, and license wording.
 - Declared Python 3.9+ support in `setup.py` (`python_requires` and trove classifiers); dropped Python 2 and end-of-life 3.x classifiers.
 - Rewrote `AUTHORS` as the single source of truth for credits.
 - Modernized `doc/conf.py` (`exclude_patterns`, Read the Docs theme with a fallback, raw-string regex).

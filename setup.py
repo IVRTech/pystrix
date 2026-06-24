@@ -11,7 +11,7 @@ import os
 
 CLASSIFIERS = [
     'Intended Audience :: Developers',
-    'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
+    'License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)',
     'Operating System :: OS Independent',
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
@@ -19,7 +19,6 @@ CLASSIFIERS = [
     'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
     'Programming Language :: Python :: 3.12',
-    'Programming Language :: Python :: 3.13',
     'Topic :: Communications :: Telephony'
 ]
 
@@ -37,7 +36,7 @@ setup(
     long_description=README,
     long_description_content_type='text/markdown',
     url='https://github.com/IVRTech/pystrix',
-    license='GNU General Public License',
+    license='GNU Lesser General Public License v3 or later',
     platforms=['OS Independent'],
     classifiers=CLASSIFIERS,
     python_requires='>=3.9',
