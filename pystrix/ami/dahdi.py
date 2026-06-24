@@ -33,9 +33,8 @@ Authors:
 The requests implemented by this module follow the definitions provided by
 https://wiki.asterisk.org/
 """
-from pystrix.ami.ami import (_Request, ManagerError)
+from pystrix.ami.ami import (_Request)
 from pystrix.ami import dahdi_events
-from pystrix.ami import generic_transforms
 
 class DAHDIDNDoff(_Request):
     """
@@ -100,6 +99,6 @@ class DAHDIShowChannels(_Request):
     
     def __init__(self, dahdi_channel=None):
         _Request.__init__(self, 'DAHDIShowChannels')
-        if not dahdi_channel is None:
+        if dahdi_channel is not None:
             self['DAHDIChannel'] = dahdi_channel
             

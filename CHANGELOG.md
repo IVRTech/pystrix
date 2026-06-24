@@ -15,6 +15,7 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A `pytest` unit-test suite covering AMI message parsing and request building, AGI response parsing, and action and helper formatting, with `pytest` and `pytest-cov` in a `test` extra in `setup.py` (`pip install -e '.[test]'`).
 - Coverage measurement through `pytest-cov`, reported in the CI logs. No coverage data leaves CI.
 - A CI status badge in the README.
+- A curated `ruff` lint configuration (`ruff.toml`), a `.pre-commit-config.yaml`, and a CI lint job. Linting only for now; formatting is deferred.
 - This changelog.
 
 ### Changed
@@ -26,6 +27,7 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Modernized `doc/conf.py` (`exclude_patterns`, Read the Docs theme with a fallback, raw-string regex).
 
 ### Fixed
+- Applied safe lint fixes surfaced by ruff: `not x is`/`not x in` rewritten to `x is not`/`x not in`, removed unused imports, and turned two invalid escape sequences (`\d`, `\*`) into raw strings. The Python 2 shims and intentional re-exports are marked with targeted ignores.
 - `_Request.build_request` now honors its documented ActionID precedence: an explicit argument wins, then a value already set on the request, then a generated one. Previously a pre-set ActionID was dropped when no argument was passed, and it overrode an explicit argument. The resolved ActionID is also coerced to a string so a pre-set non-string value matches Asterisk's responses (#43).
 - Replaced the removed `cgi.urlparse.parse_qs` in `pystrix/agi/fastagi.py` with `urllib.parse.parse_qs`. This fixes FastAGI query-string parsing on all Python 3 and restores Python 3.13 support (#36).
 - `build-release.py` no longer fails on the missing `pystrix.spec`. The RPM packaging path was removed, and the release tarball now ships `README.md` and `CHANGELOG.md` so a build from the sdist can read the long description.

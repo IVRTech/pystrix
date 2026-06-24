@@ -44,7 +44,7 @@ import warnings
 
 try:
     import queue
-except:
+except:  # noqa: E722
     import Queue as queue
 
 from pystrix.ami import generic_transforms
@@ -835,8 +835,8 @@ class _Message(_MessageTemplate, dict):
         """
         while response:
             line = response[0]
-            if line.endswith(_EOL_FAKE) or not line.endswith(_EOL) or not ':' in line: #All lines from this point forth are data
-                self.data.extend((l.strip() for l in response))
+            if line.endswith(_EOL_FAKE) or not line.endswith(_EOL) or ':' not in line: #All lines from this point forth are data
+                self.data.extend((entry.strip() for entry in response))
                 break
             (key, value) = response.pop(0).split(':', 1)
             self[key.strip()] = value.strip()
@@ -907,7 +907,7 @@ class _Request(dict):
         The 'Action' line is always first.
         """
         items = [(KEY_ACTION, self[KEY_ACTION])]
-        for (key, value) in [(k, v) for (k, v) in self.items() if not k in (KEY_ACTION, KEY_ACTIONID)] + list(kwargs.items()):
+        for (key, value) in [(k, v) for (k, v) in self.items() if k not in (KEY_ACTION, KEY_ACTIONID)] + list(kwargs.items()):
             key = str(key)
             if type(value) in (tuple, list, set, frozenset):
                 for val in value:
@@ -1088,7 +1088,7 @@ class _SynchronisedSocket(object):
         if self._socket_write_lock is None:
             self._close()
             return
-        with self._socket_write_lock as write_lock:
+        with self._socket_write_lock:
             self._close()
             
     def _close(self):

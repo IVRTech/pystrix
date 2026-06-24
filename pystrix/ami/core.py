@@ -39,7 +39,6 @@ http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
 """
 import hashlib
 import time
-import types
 
 from pystrix.ami.ami import (_Request, ManagerError)
 from pystrix.ami import core_events
@@ -124,7 +123,7 @@ class AGI(_Request):
         _Request.__init__(self, 'AGI')
         self['Channel'] = channel
         self['Command'] = command
-        if not command_id is None:
+        if command_id is not None:
             self['CommandID'] = str(command_id)
 
 class Bridge(_Request):
@@ -244,7 +243,7 @@ class DBDelTree(_Request):
         """
         _Request.__init__(self, 'DBDelTree')
         self['Family'] = family
-        if not key is None:
+        if key is not None:
             self['Key'] = key
             
 class DBGet(_Request):
@@ -380,7 +379,7 @@ class Getvar(_Request):
         """
         _Request.__init__(self, 'Getvar')
         self['Variable'] = variable
-        if not channel is None:
+        if channel is not None:
             self['Channel'] = channel
             
 class Hangup(_Request):
@@ -455,7 +454,7 @@ class Login(_Request):
         _Request.__init__(self, 'Login')
         self['Username'] = username
         
-        if not challenge is None and authtype:
+        if challenge is not None and authtype:
             self['AuthType'] = authtype
             if authtype == AUTHTYPE_MD5:
                 self['Key'] = hashlib.md5(
@@ -589,7 +588,7 @@ class ModuleLoad(_Request):
         """
         _Request.__init__(self, 'ModuleLoad')
         self['LoadType'] = load_type
-        if not module is None:
+        if module is not None:
             self['Module'] = module
             
 class Monitor(_Request):
@@ -909,11 +908,11 @@ class QueueLog(_Request):
         _Request.__init__(self, "QueueLog")
         self['Queue'] = queue
         self['Event'] = event
-        if not uniqueid is None:
+        if uniqueid is not None:
             self['Uniqueid'] = uniqueid
-        if not interface is None:
+        if interface is not None:
             self['Interface'] = interface
-        if not message is None:
+        if message is not None:
             self['Message'] = message
 
 class QueuePause(_Request):
@@ -932,7 +931,7 @@ class QueuePause(_Request):
         _Request.__init__(self, "QueuePause")
         self['Interface'] = interface
         self['Paused'] = paused and 'true' or 'false'
-        if not queue is None:
+        if queue is not None:
             self['Queue'] = queue
 
 class QueuePenalty(_Request):
@@ -949,7 +948,7 @@ class QueuePenalty(_Request):
         _Request.__init__(self, "QueuePenalty")
         self['Interface'] = interface
         self['Penalty'] = str(penalty)
-        if not queue is None:
+        if queue is not None:
             self['Queue'] = queue
 
 class QueueReload(_Request):
@@ -973,7 +972,7 @@ class QueueReload(_Request):
         self['Members'] = members
         self['Rules'] = rules
         self['Parameters'] = parameters
-        if not queue is None:
+        if queue is not None:
             self['Queue'] = queue
             
 class QueueRemove(_Request):
@@ -1010,7 +1009,7 @@ class QueueStatus(_Request):
         Describes all queues in the system, unless `queue` is given, which limits the scope to one.
         """
         _Request.__init__(self, "QueueStatus")
-        if not queue is None:
+        if queue is not None:
             self['Queue'] = queue
 
          
@@ -1030,7 +1029,7 @@ class QueueSummary(_Request):
         Describes all queues in the system, unless `queue` is given, which limits the scope to one.
         """
         _Request.__init__(self, "QueueSummary")
-        if not queue is None:
+        if queue is not None:
             self['Queue'] = queue
           
           
@@ -1066,7 +1065,7 @@ class Reload(_Request):
         extension.
         """
         _Request.__init__(self, "Reload")
-        if not module is None:
+        if module is not None:
             self['Module'] = module
 
 class SendText(_Request):
@@ -1164,7 +1163,7 @@ class SIPqualify(_Request):
         self['Peer'] = peer
 
 class SIPshowpeer(_Request):
-    """
+    r"""
     Provides detailed information about a SIP peer.
 
     The response has the following key-value pairs:
@@ -1340,7 +1339,7 @@ class UpdateConfig(_Request):
         _Request.__init__(self, "UpdateConfig")
         self['SrcFilename'] = src_filename
         self['DstFilename'] = dst_filename
-        self['Reload'] = type(reload) == bool and (reload and 'true' or 'false') or reload
+        self['Reload'] = type(reload) == bool and (reload and 'true' or 'false') or reload  # noqa: E721
 
         for (i, (action, category, variable, value, match)) in enumerate(changes):
             index = '%(index)06i' % {
@@ -1348,11 +1347,11 @@ class UpdateConfig(_Request):
             }
             self['Action-' + index] = action
             self['Cat-' + index] = category
-            if not variable is None:
+            if variable is not None:
                 self['Var-' + index] = variable
-            if not value is None:
+            if value is not None:
                 self['Value-' + index] = value
-            if not match is None:
+            if match is not None:
                 self['Match-' + index] = match
 
 class UserEvent(_Request):

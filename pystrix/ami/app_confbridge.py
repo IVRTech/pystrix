@@ -34,10 +34,9 @@ Authors:
 The requests and events implemented by this module follow the definitions provided by
 https://wiki.asterisk.org/
 """
-from pystrix.ami.ami import (_Request, ManagerError)
+from pystrix.ami.ami import (_Request)
 from pystrix.ami import core_events
 from pystrix.ami import app_confbridge_events
-from pystrix.ami import generic_transforms
 
 class ConfbridgeKick(_Request):
     """

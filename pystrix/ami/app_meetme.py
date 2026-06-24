@@ -34,9 +34,8 @@ Authors:
 The requests and events implemented by this module follow the definitions provided by
 http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
 """
-from pystrix.ami.ami import (_Request, ManagerError)
+from pystrix.ami.ami import (_Request)
 from pystrix.ami import app_meetme_events
-from pystrix.ami import generic_transforms
 
 class MeetmeList(_Request):
     """
@@ -56,7 +55,7 @@ class MeetmeList(_Request):
         `conference` is the optional identifier of the bridge.
         """
         _Request.__init__(self, 'MeetmeList')
-        if not conference is None:
+        if conference is not None:
             self['Conference'] = conference
             
 class MeetmeListRooms(_Request):
