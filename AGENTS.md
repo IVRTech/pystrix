@@ -77,19 +77,14 @@ This fork's main feature is FastAGI throughput. `_ThreadedTCPServer` (`fastagi.p
 - **Add an AGI command**: subclass `_Action` in `agi/core.py`. Override `process_response()` to parse the reply.
 - The `app_*` and `dahdi` modules are this same pattern applied to Asterisk add-on modules. Follow their structure for new modules.
 
-## Python version and legacy shims
+## Python version and Python 3 boundaries
 
-The project targets Python 3.9+. The source still carries Python 2 compatibility shims left over from the 2-to-3 migration. These are slated for removal, so don't add new ones:
+The project targets Python 3.9+ and the source is Python 3 only. The earlier Python 2 compatibility shims were removed (#47), so don't reintroduce patterns like `basestring` checks or `import Queue` fallbacks.
 
-- Import fallbacks like `try: import queue except: import Queue as queue` (`ami.py:45`).
-- `basestring` detection in `generic_transforms.py`.
+Two bytes/string details at the I/O boundary are not Python 2 baggage and must stay:
 
-Two related details are not Python 2 baggage and must stay:
-
-- Explicit bytes/string conversion at the socket boundary via `string_to_bytes` and `bytes_to_string`.
-- The AMI socket opens in binary mode (`makefile(mode="rb")`, `ami.py:1195`) on purpose. Text mode silently drops carriage returns and breaks Asterisk's CRLF message framing. Do not change this.
-
-Known gap: `pystrix/agi/fastagi.py` still uses the removed `cgi.urlparse.parse_qs`, which breaks FastAGI query-string parsing on Python 3 and blocks Python 3.13. Tracked in #36.
+- Explicit bytes/string conversion via `string_to_bytes` and `bytes_to_string`.
+- The AMI socket opens in binary mode (`makefile(mode="rb")` in `ami.py`) on purpose. Text mode silently drops carriage returns and breaks Asterisk's CRLF message framing. Do not change this.
 
 ## Working in this repo
 
