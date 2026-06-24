@@ -184,3 +184,13 @@ def test_getdata_process_response_returns_digits():
     keys, timed_out = GetData("prompt").process_response(response)
     assert keys == "1234"
     assert timed_out is False
+
+
+def test_getdata_process_response_keeps_partial_digits_on_timeout():
+    # The common real-world timeout: a caller enters some digits, then the
+    # inter-digit timer expires. Asterisk replies "result=12 (timeout)", so the
+    # collected digits and the timeout flag must both survive process_response.
+    response = _agi("200 result=12 (timeout)\n")._get_result()
+    keys, timed_out = GetData("prompt").process_response(response)
+    assert keys == "12"
+    assert timed_out is True
