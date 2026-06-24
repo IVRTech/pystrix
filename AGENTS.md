@@ -37,8 +37,7 @@ pystrix/
     └── core.py             ~45 Action classes (Answer, StreamFile, SayNumber, ...)
 
 doc/                        Sphinx/reStructuredText docs + runnable examples in doc/examples/
-setup.py                    Packaging; reads README.md for long_description
-build-release.py            Release helper
+pyproject.toml              Packaging (PEP 621) and ruff config; version read from pystrix.VERSION
 ```
 
 ## Architecture notes
@@ -88,8 +87,8 @@ Two bytes/string details at the I/O boundary are not Python 2 baggage and must s
 
 ## Working in this repo
 
-- There is no test suite and no linter config. Verify changes against the runnable examples in `doc/examples/` and, where possible, a live Asterisk server.
-- `VERSION` in `pystrix/__init__.py` is the single source of truth. `setup.py` imports it. Bump it for releases.
-- `setup.py` reads `README.md`. Keep that filename in sync if the README is ever renamed again.
+- Run `pytest` for the unit suite, and `ruff check .` / `ruff format --check .` for lint and format. CI enforces all of them across Python 3.9 through 3.13. There is no live-Asterisk integration test, so socket-level changes are still worth checking against a real server.
+- `VERSION` in `pystrix/__init__.py` is the single source of truth. `pyproject.toml` reads it dynamically through `[tool.setuptools.dynamic]`. Bump it for releases.
+- Packaging is `pyproject.toml` (PEP 621, setuptools backend). Build with `python -m build`.
 - Docs are Sphinx reStructuredText under `doc/`. Update the relevant `.rst` when adding public actions or events.
 - Keep inline docstrings complete and in reStructuredText. The project relies on them for its documentation.

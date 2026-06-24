@@ -12,20 +12,21 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A Contributing section and AGI, FastAGI, and AMI quick-start examples in the README.
 - `.readthedocs.yaml` and `doc/requirements.txt` for reproducible documentation builds.
 - A GitHub Actions CI workflow that runs the test suite with coverage across Python 3.9 through 3.13, plus a documentation build check.
-- A `pytest` unit-test suite covering AMI message parsing and request building, AGI response parsing, and action and helper formatting, with `pytest` and `pytest-cov` in a `test` extra in `setup.py` (`pip install -e '.[test]'`).
+- A `pytest` unit-test suite covering AMI message parsing and request building, AGI response parsing, and action and helper formatting, with `pytest` and `pytest-cov` in a `test` extra (`pip install -e '.[test]'`).
 - Coverage measurement through `pytest-cov`, reported in the CI logs. No coverage data leaves CI.
 - A CI status badge in the README.
-- A curated `ruff` lint configuration (`ruff.toml`), a `.pre-commit-config.yaml`, and a CI lint job.
+- A curated `ruff` configuration, a `.pre-commit-config.yaml`, and a CI lint job.
 - This changelog.
 
 ### Changed
 - Converted `README.rst` to `README.md` and corrected the version and install URL.
-- Stated the license as the GNU LGPLv3 or later across the README and `setup.py`. pystrix is not dual-licensed. Both `COPYING` and `COPYING.LESSER` ship because the LGPL extends the GPL.
-- Declared Python 3.9+ in `setup.py` through `python_requires` and trove classifiers (3.9 through 3.13), and dropped Python 2 and the end-of-life 3.x entries.
+- Stated the license as the GNU LGPLv3 or later across the README and packaging metadata. pystrix is not dual-licensed. Both `COPYING` and `COPYING.LESSER` ship because the LGPL extends the GPL.
+- Declared Python 3.9+ through `python_requires` and trove classifiers (3.9 through 3.13), and dropped Python 2 and the end-of-life 3.x entries.
 - Narrowed the "any platform" claim. The FastAGI server runs on Linux and macOS only, because it reads `SOMAXCONN` with `sysctl`.
 - Removed the `AUTHORS` file. Provenance now lives in the README, and the contributor list comes from git history and the GitHub contributors page.
 - Modernized `doc/conf.py` (`exclude_patterns`, Read the Docs theme with a fallback, raw-string regex).
 - Formatted the whole codebase with `ruff format` (line length 88) and enabled import sorting (ruff's `I` rule). Both are now enforced in pre-commit and CI. A `.git-blame-ignore-revs` file lets `git blame` skip the reformat commit.
+- Migrated packaging from `setup.py` to `pyproject.toml` (PEP 621) with a PEP 639 SPDX license expression (`LGPL-3.0-or-later`). Moved the ruff config into `[tool.ruff]`, and removed `setup.py`, `build-release.py`, and `ruff.toml`. Build with `python -m build`; the version is read dynamically from `pystrix.VERSION`.
 
 ### Removed
 - The Python 2 compatibility shims: the `queue` and `socketserver` import fallbacks, the `basestring` branch in `generic_transforms`, and the explicit `(object)` base classes. The codebase is now Python 3 only.
@@ -35,7 +36,6 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Applied safe lint fixes surfaced by ruff: `not x is`/`not x in` rewritten to `x is not`/`x not in`, removed unused imports, and turned two invalid escape sequences (`\d`, `\*`) into raw strings. Intentional re-exports are marked with targeted ignores.
 - `_Request.build_request` now honors its documented ActionID precedence: an explicit argument wins, then a value already set on the request, then a generated one. Previously a pre-set ActionID was dropped when no argument was passed, and it overrode an explicit argument. The resolved ActionID is also coerced to a string so a pre-set non-string value matches Asterisk's responses (#43).
 - Replaced the removed `cgi.urlparse.parse_qs` in `pystrix/agi/fastagi.py` with `urllib.parse.parse_qs`. This fixes FastAGI query-string parsing on all Python 3 and restores Python 3.13 support (#36).
-- `build-release.py` no longer fails on the missing `pystrix.spec`. The RPM packaging path was removed, and the release tarball now ships `README.md` and `CHANGELOG.md` so a build from the sdist can read the long description.
 - Corrected the `_Response.time` description in the AMI docs and fixed several typos.
 - Stopped tracking `doc/_build/` output and macOS `._` metadata files, and fixed the `.gitignore` rule that let them in.
 
