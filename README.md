@@ -1,5 +1,7 @@
 # pystrix
 
+[![CI](https://github.com/IVRTech/pystrix/actions/workflows/ci.yml/badge.svg)](https://github.com/IVRTech/pystrix/actions/workflows/ci.yml)
+
 **pystrix** is a versatile [Asterisk](https://www.asterisk.org/) interface package for AMI and (Fast)AGI needs. [Ivrnet, inc.](https://www.ivrnet.com/) published it as open source under the LGPLv3, and contributions from all users are welcome.
 
 ## Overview

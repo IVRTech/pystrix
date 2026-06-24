@@ -1,0 +1,5 @@
+[run]
+source = pystrix
+
+[report]
+show_missing = True

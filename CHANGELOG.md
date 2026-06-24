@@ -11,8 +11,10 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `CLAUDE.md` pointing to `AGENTS.md`.
 - A Contributing section and AGI, FastAGI, and AMI quick-start examples in the README.
 - `.readthedocs.yaml` and `doc/requirements.txt` for reproducible documentation builds.
-- A GitHub Actions CI workflow that runs the test suite across Python 3.9 through 3.13, plus a documentation build check.
-- A `pytest` unit-test suite covering AMI message parsing and request building, AGI response parsing, and action and helper formatting, with a `test` extra in `setup.py` (`pip install -e .[test]`).
+- A GitHub Actions CI workflow that runs the test suite with coverage across Python 3.9 through 3.13, plus a documentation build check.
+- A `pytest` unit-test suite covering AMI message parsing and request building, AGI response parsing, and action and helper formatting, with `pytest` and `pytest-cov` in a `test` extra in `setup.py` (`pip install -e '.[test]'`).
+- Coverage measurement through `pytest-cov`, reported in the CI logs. No coverage data leaves CI.
+- A CI status badge in the README.
 - This changelog.
 
 ### Changed

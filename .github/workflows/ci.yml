@@ -25,8 +25,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install package with test dependencies
         run: pip install -e '.[test]'
-      - name: Run tests
-        run: pytest -q
+      - name: Run tests with coverage
+        run: pytest -q --cov --cov-report=term-missing
 
   docs:
     name: Documentation build
