@@ -35,11 +35,11 @@ Authors:
 
 - Neil Tallim <n.tallim@ivrnet.com>
 """
-import cgi
 import platform
 import socket
 import subprocess
 import threading
+from urllib.parse import parse_qs
 from pystrix.agi.agi_core import *
 from pystrix.agi.agi_core import _AGI
 
@@ -125,7 +125,7 @@ class _AGIClientHandler(socketserver.StreamRequestHandler):
         path = tokens[0]
         if len(tokens) == 1:
             return (path, {})
-        return (path, cgi.urlparse.parse_qs(tokens[1]))
+        return (path, parse_qs(tokens[1]))
 
 class FastAGIServer(_ThreadedTCPServer):
     """
