@@ -13,6 +13,7 @@ from pystrix.agi.agi_core import (
     _Action,
     quote,
 )
+from pystrix.agi.core import GetData
 
 
 class _FakeReader:
@@ -160,3 +161,36 @@ def test_malformed_bytes_surface_a_decode_error():
 
     with pytest.raises(UnicodeDecodeError):
         _agi_with_reader(_BadBytesReader())._get_result()
+
+
+def test_getdata_timeout_result_parses_without_error():
+    # Regression for #9 (fixed in 12c4bd7, 2014): a GetData timeout replies
+    # "result= (timeout)" with an empty value before the parenthetical. It must
+    # parse as value '' / data 'timeout', not raise AGINoResultError.
+    response = _agi("200 result= (timeout)\n")._get_result()
+    assert response.items["result"].value == ""
+    assert response.items["result"].data == "timeout"
+
+
+def test_getdata_process_response_flags_timeout():
+    response = _agi("200 result= (timeout)\n")._get_result()
+    keys, timed_out = GetData("prompt").process_response(response)
+    assert keys == ""
+    assert timed_out is True
+
+
+def test_getdata_process_response_returns_digits():
+    response = _agi("200 result=1234\n")._get_result()
+    keys, timed_out = GetData("prompt").process_response(response)
+    assert keys == "1234"
+    assert timed_out is False
+
+
+def test_getdata_process_response_keeps_partial_digits_on_timeout():
+    # The common real-world timeout: a caller enters some digits, then the
+    # inter-digit timer expires. Asterisk replies "result=12 (timeout)", so the
+    # collected digits and the timeout flag must both survive process_response.
+    response = _agi("200 result=12 (timeout)\n")._get_result()
+    keys, timed_out = GetData("prompt").process_response(response)
+    assert keys == "12"
+    assert timed_out is True
