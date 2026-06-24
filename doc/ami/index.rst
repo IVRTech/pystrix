@@ -2,7 +2,7 @@ Asterisk Management Interface (AMI)
 ===================================
 
 The AMI interface consists primarily of a number of action classes that are sent to Asterisk to
-ellicit responses. Additionally, a number of event classes are defined to provide convenience
+elicit responses. A number of event classes are defined to provide convenience
 processing on the various messages Asterisk generates.
 
 .. toctree::
@@ -153,7 +153,7 @@ the system, with members that are worth knowing about.
     .. attribute:: events_timeout
     
         A boolean value indicating whether any events were still unreceived when the response was
-        returned. This is meaningful only if the reqyest had `synchronous` set.
+        returned. This is meaningful only if the request had `synchronous` set.
         
     .. attribute:: response
     
@@ -163,7 +163,7 @@ the system, with members that are worth knowing about.
     .. attribute:: request
     
         The request object that led to this response. This will be `None` if the response is an
-        orhpan, which may happen when a request times out, but a response is generated anyway,
+        orphan, which may happen when a request times out, but a response is generated anyway,
         if multiple AMI clients are working with the same Asterisk instance (they won't know each
         other's action-IDs), or when working with buggy or experimental versions of Asterisk.
         
@@ -179,7 +179,7 @@ the system, with members that are worth knowing about.
         
     .. attribute:: time
     
-        The amount of time, as a UNIX timestamp, that elapsed while waiting for a response.
+        The number of seconds, as a float, that elapsed while waiting for a response.
         
 Exceptions
 ++++++++++

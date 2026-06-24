@@ -51,6 +51,7 @@ coverage.xml
 *.log
 
 # Sphinx documentation
+doc/_build/
 docs/_build/
 
 # PyBuilder
@@ -58,3 +59,12 @@ target/
 
 # IDE stuff
 .idea/
+.vscode/
+
+# Virtual environments
+.venv/
+venv/
+
+# macOS
+.DS_Store
+._*
