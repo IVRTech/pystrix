@@ -514,7 +514,7 @@ class Manager(object):
         if not self.is_connected():
             raise ManagerError("Not connected to an Asterisk manager")
             
-        (command, action_id) = request.build_request(action_id and str(action_id), self._get_host_action_id, **kwargs)
+        (command, action_id) = request.build_request(None if action_id is None else str(action_id), self._get_host_action_id, **kwargs)
         events = self._add_outstanding_request(action_id, request)
         with self._connection_lock:
             self._connection.send_message(command)
@@ -916,9 +916,12 @@ class _Request(dict):
                 items.append((key, str(value)))
 
         #Resolve the ActionID using the precedence documented above: an explicit
-        #argument wins, then any value already set on the request, then a generated one.
-        if not action_id:
-            action_id = self.get(KEY_ACTIONID) or str(id_generator())
+        #argument wins, then any value already set on the request, then a generated
+        #one. Fall back only when the argument is None, not merely falsy, and coerce
+        #to a string so it matches the string-keyed responses Asterisk sends back.
+        if action_id is None:
+            action_id = self[KEY_ACTIONID] if KEY_ACTIONID in self else id_generator()
+        action_id = str(action_id)
         items.append((KEY_ACTIONID, action_id))
             
         return (

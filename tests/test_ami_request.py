@@ -63,3 +63,13 @@ def test_explicit_action_id_wins_over_preset():
     command, action_id = _build(request, action_id='explicit')
     assert action_id == 'explicit'
     assert 'ActionID: explicit' in command
+
+
+def test_non_string_action_id_is_stringified():
+    # A non-string ActionID must be returned as a string so it matches the
+    # string-keyed responses Asterisk sends back (see #43 review).
+    request = _Request('Ping')
+    request['ActionID'] = 7
+    command, action_id = _build(request)
+    assert action_id == '7'
+    assert 'ActionID: 7' in command

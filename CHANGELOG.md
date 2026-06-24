@@ -26,7 +26,7 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Modernized `doc/conf.py` (`exclude_patterns`, Read the Docs theme with a fallback, raw-string regex).
 
 ### Fixed
-- `_Request.build_request` now honors its documented ActionID precedence: an explicit argument wins, then a value already set on the request, then a generated one. Previously a pre-set ActionID was dropped when no argument was passed, and it overrode an explicit argument (#43).
+- `_Request.build_request` now honors its documented ActionID precedence: an explicit argument wins, then a value already set on the request, then a generated one. Previously a pre-set ActionID was dropped when no argument was passed, and it overrode an explicit argument. The resolved ActionID is also coerced to a string so a pre-set non-string value matches Asterisk's responses (#43).
 - Replaced the removed `cgi.urlparse.parse_qs` in `pystrix/agi/fastagi.py` with `urllib.parse.parse_qs`. This fixes FastAGI query-string parsing on all Python 3 and restores Python 3.13 support (#36).
 - `build-release.py` no longer fails on the missing `pystrix.spec`. The RPM packaging path was removed, and the release tarball now ships `README.md` and `CHANGELOG.md` so a build from the sdist can read the long description.
 - Corrected the `_Response.time` description in the AMI docs and fixed several typos.
