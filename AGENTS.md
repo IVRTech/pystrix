@@ -18,7 +18,7 @@ The core split to keep in mind: AGI is one blocking call per script; AMI is one 
 
 ```
 pystrix/
-├── __init__.py             VERSION lives here (currently 1.2.0)
+├── __init__.py             VERSION lives here (single source of truth)
 ├── ami/
 │   ├── ami.py              Manager class + threading/socket core (the heart of AMI)
 │   ├── core.py             ~60 Action classes (Login, Originate, Hangup, Ping, ...)

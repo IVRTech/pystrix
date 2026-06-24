@@ -20,7 +20,7 @@ This repository is version **1.3.0**. The canonical version lives in `pystrix/__
 
 | pystrix | Python |
 | --- | --- |
-| 1.3.0 and later | 3.9 – 3.13 |
+| 1.3.x | 3.9 – 3.13 |
 | 1.2.0 and earlier | 2.7, 3.4+ (legacy, unmaintained) |
 
 From 1.3.0 on, the `requires-python` metadata makes pip resolve automatically: a project on an older Python receives 1.2.x. All versions target Asterisk 1.10+.
