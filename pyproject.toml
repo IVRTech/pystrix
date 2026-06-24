@@ -12,7 +12,7 @@ requires-python = ">=3.9"
 license = "LGPL-3.0-or-later"
 license-files = ["COPYING", "COPYING.LESSER"]
 authors = [{ name = "Neil Tallim" }]
-maintainers = [{ name = "Marta Solano", email = "marta.solano@ivrtechnology.com" }]
+maintainers = [{ name = "IVR Technology Group" }]
 keywords = ["asterisk", "ami", "agi", "fastagi", "telephony"]
 classifiers = [
     "Intended Audience :: Developers",
