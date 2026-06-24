@@ -42,10 +42,7 @@ import time
 import traceback
 import warnings
 
-try:
-    import queue
-except:  # noqa: E722
-    import Queue as queue
+import queue
 
 from pystrix.ami import generic_transforms
 
@@ -91,7 +88,7 @@ def _format_socket_error(exception):
     except Exception:
         return str(exception)
         
-class Manager(object):
+class Manager:
     _alive = True #False when this manager object is ready to be disposed of
     _action_id = None #The ActionID last sent to Asterisk
     _action_id_random_token = None #A randomly generated token, used to help avoid conflicts when multiple AMI connections are in use
@@ -647,7 +644,7 @@ class Manager(object):
                 del self._outstanding_requests[action_id]
             return served
 
-class _MessageTemplate(object):
+class _MessageTemplate:
     """
     An abstract base-class for all message-types, including aggregates.
     """
@@ -1047,7 +1044,7 @@ class _MessageReader(threading.Thread):
                 else: #It's an orphaned response
                     self.response_queue.put(message)
                     
-class _SynchronisedSocket(object):
+class _SynchronisedSocket:
     """
     Provides a threadsafe conduit for communication with an Asterisk manager interface.
     """
