@@ -115,3 +115,41 @@ def test_action_command_formatting():
 def test_quote_wraps_in_double_quotes():
     assert quote('demo') == '"demo"'
     assert quote(5) == '"5"'
+
+
+class _StrReader:
+    """A reader that yields str lines, as plain AGI's stdin does."""
+
+    def __init__(self, *lines):
+        self._lines = list(lines)
+        self._index = 0
+
+    def readline(self):
+        if self._index >= len(self._lines):
+            return ''
+        line = self._lines[self._index]
+        self._index += 1
+        return line
+
+
+def _agi_with_reader(reader):
+    agi = _AGI.__new__(_AGI)
+    agi._environment = {}
+    agi._rfile = reader
+    return agi
+
+
+def test_str_input_is_read_without_decoding():
+    # Plain AGI reads str from stdin; _read_line must not choke trying to decode it.
+    response = _agi_with_reader(_StrReader('200 result=1\n'))._get_result()
+    assert response.items['result'].value == '1'
+
+
+def test_malformed_bytes_surface_a_decode_error():
+    # A real decode failure on socket bytes propagates instead of being swallowed.
+    class _BadBytesReader:
+        def readline(self):
+            return b'\xff\xfe not utf-8\n'
+
+    with pytest.raises(UnicodeDecodeError):
+        _agi_with_reader(_BadBytesReader())._get_result()
