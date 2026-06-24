@@ -23,6 +23,8 @@ jobs:
         run: pip install ruff==0.15.19
       - name: Run ruff
         run: ruff check .
+      - name: Check formatting
+        run: ruff format --check .
 
   test:
     name: Python ${{ matrix.python-version }}
