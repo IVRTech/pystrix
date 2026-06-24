@@ -2,6 +2,8 @@ name: Publish to PyPI
 
 # Publishes to PyPI when a GitHub release is published. Authentication uses
 # PyPI Trusted Publishing (OIDC), so no API token is stored in the repo or CI.
+# Build and publish are separate jobs: only the publish job holds the OIDC
+# publishing identity, so the build backend never has access to it.
 #
 # One-time PyPI setup (maintainer): add a Trusted Publisher to the pystrix
 # project with owner "IVRTech", repository "pystrix", workflow "publish.yml",
@@ -14,15 +16,10 @@ permissions:
   contents: read
 
 jobs:
-  publish:
-    name: Publish to PyPI
+  build:
+    name: Build distribution
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    environment:
-      name: pypi
-      url: https://pypi.org/project/pystrix/
-    permissions:
-      id-token: write  # required for Trusted Publishing (OIDC)
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -31,7 +28,41 @@ jobs:
           python-version: "3.11"
       - name: Build sdist and wheel
         run: |
-          python -m pip install build
+          python -m pip install build twine
           python -m build
+      - name: Verify artifacts and version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          test -n "$(ls -A dist/)" || { echo "::error::dist/ is empty"; exit 1; }
+          python -m twine check dist/*
+          version="$(python -c 'import pystrix; print(pystrix.VERSION)')"
+          if [ "$RELEASE_TAG" != "v$version" ] && [ "$RELEASE_TAG" != "$version" ]; then
+            echo "::error::built version $version does not match release tag $RELEASE_TAG"
+            exit 1
+          fi
+      - name: Upload distribution artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/project/pystrix/
+    permissions:
+      contents: read
+      id-token: write  # required for Trusted Publishing (OIDC)
+    steps:
+      - name: Download distribution artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
