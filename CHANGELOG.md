@@ -15,7 +15,7 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A `pytest` unit-test suite covering AMI message parsing and request building, AGI response parsing, and action and helper formatting, with `pytest` and `pytest-cov` in a `test` extra in `setup.py` (`pip install -e '.[test]'`).
 - Coverage measurement through `pytest-cov`, reported in the CI logs. No coverage data leaves CI.
 - A CI status badge in the README.
-- A curated `ruff` lint configuration (`ruff.toml`), a `.pre-commit-config.yaml`, and a CI lint job. Linting only for now; formatting is deferred.
+- A curated `ruff` lint configuration (`ruff.toml`), a `.pre-commit-config.yaml`, and a CI lint job.
 - This changelog.
 
 ### Changed
