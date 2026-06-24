@@ -9,7 +9,10 @@ def test_package_imports():
 def test_public_entry_points_import():
     from pystrix.agi import AGI, FastAGIServer, FastAGI
     from pystrix.ami import Manager
+    from pystrix.agi.fastagi import FastAGIServer as _FastAGIServer
 
-    # Importing FastAGIServer exercises pystrix/agi/fastagi.py, which must not
-    # pull in the cgi module that Python 3.13 removed.
-    assert AGI and FastAGIServer and FastAGI and Manager
+    # The re-export must be the same class object, and importing fastagi
+    # exercises the code path that has to stay free of the cgi module removed in
+    # Python 3.13.
+    assert FastAGIServer is _FastAGIServer
+    assert isinstance(AGI, type) and isinstance(FastAGI, type) and isinstance(Manager, type)

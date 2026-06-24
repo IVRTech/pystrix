@@ -4,6 +4,7 @@ import pytest
 from pystrix.agi.agi_core import (
     _AGI, _Action, quote,
     AGIInvalidCommandError, AGIDeadChannelError, AGIResultHangup, AGINoResultError,
+    AGIUsageError, AGIUnknownError,
 )
 
 
@@ -40,6 +41,49 @@ def test_parses_result_data():
     response = _agi('200 result=1 (speech)\n')._get_result()
     assert response.items['result'].value == '1'
     assert response.items['result'].data == 'speech'
+
+
+def test_result_without_parenthetical_has_empty_data():
+    # A result with no parenthetical reports data as '' (empty string), not None.
+    response = _agi('200 result=1\n')._get_result()
+    assert response.items['result'].data == ''
+
+
+def test_usage_error_collects_multiline_block():
+    # The 520 path reads lines until '520 End of proper usage.' and raises with
+    # the accumulated block.
+    with pytest.raises(AGIUsageError) as exc_info:
+        _agi(
+            '520 Invalid command syntax.\n',
+            'Usage: ANSWER\n',
+            '520 End of proper usage.\n',
+        )._get_result()
+    message = str(exc_info.value)
+    assert '520 Invalid command syntax.' in message
+    assert 'Usage: ANSWER' in message
+
+
+def test_unrecognized_code_returns_none():
+    # A line with no leading status code (for example after a signal) yields no
+    # result rather than raising.
+    assert _agi('\n')._get_result() is None
+
+
+def test_unknown_code_raises():
+    with pytest.raises(AGIUnknownError):
+        _agi('418 unexpected\n')._get_result()
+
+
+def test_hangup_detected_by_data_not_value():
+    # The hangup guard keys on the parenthetical data, not the result value, so a
+    # non-(-1) value with 'hangup' data must still raise.
+    with pytest.raises(AGIResultHangup):
+        _agi('200 result=0 (hangup)\n')._get_result()
+
+
+def test_hangup_not_raised_when_check_disabled():
+    response = _agi('200 result=-1 (hangup)\n')._get_result(check_hangup=False)
+    assert response.items['result'].data == 'hangup'
 
 
 def test_invalid_command_raises():
