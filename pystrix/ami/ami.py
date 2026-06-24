@@ -915,12 +915,11 @@ class _Request(dict):
             else:
                 items.append((key, str(value)))
 
-        if action_id or not KEY_ACTIONID in self: #Replace or add an ActionID, if necessary
-            if not action_id:
-                action_id = str(id_generator())
-            elif KEY_ACTIONID in self:
-                action_id = self[KEY_ACTIONID]
-            items.append((KEY_ACTIONID, action_id))
+        #Resolve the ActionID using the precedence documented above: an explicit
+        #argument wins, then any value already set on the request, then a generated one.
+        if not action_id:
+            action_id = self.get(KEY_ACTIONID) or str(id_generator())
+        items.append((KEY_ACTIONID, action_id))
             
         return (
          _EOL.join(['%(key)s: %(value)s' % {
