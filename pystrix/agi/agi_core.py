@@ -205,10 +205,8 @@ class _AGI:
         """
         try:
             line = self._rfile.readline()
-            try:
-                line = line.decode()  # decode line if it comes in bytes, example if it comes from a socket
-            except:  # noqa: E722
-                pass  # line it's a string, so nothing to change - it's string if it's using stdin as _rfile for example
+            if isinstance(line, bytes):  # bytes from a FastAGI socket; already str from stdin (AGI)
+                line = line.decode()
             # Check to see if we received a HANGUP because AGISIGHUP was not set explicitly or is no
             # and then handle the HANGUP which is being returned because the AGI script can still interact with
             # Asterisk after the call was hungup in DeadAGI mode (which Asterisk converts the channel to automatically)
