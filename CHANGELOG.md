@@ -26,6 +26,9 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Removed the `AUTHORS` file. Provenance now lives in the README, and the contributor list comes from git history and the GitHub contributors page.
 - Modernized `doc/conf.py` (`exclude_patterns`, Read the Docs theme with a fallback, raw-string regex).
 
+### Removed
+- The Python 2 compatibility shims: the `queue` and `socketserver` import fallbacks, the `basestring` branch in `generic_transforms`, and the explicit `(object)` base classes. The codebase is now Python 3 only.
+
 ### Fixed
 - Applied safe lint fixes surfaced by ruff: `not x is`/`not x in` rewritten to `x is not`/`x not in`, removed unused imports, and turned two invalid escape sequences (`\d`, `\*`) into raw strings. The Python 2 shims and intentional re-exports are marked with targeted ignores.
 - `_Request.build_request` now honors its documented ActionID precedence: an explicit argument wins, then a value already set on the request, then a generated one. Previously a pre-set ActionID was dropped when no argument was passed, and it overrode an explicit argument. The resolved ActionID is also coerced to a string so a pre-set non-string value matches Asterisk's responses (#43).

@@ -43,10 +43,7 @@ from urllib.parse import parse_qs
 from pystrix.agi.agi_core import *
 from pystrix.agi.agi_core import _AGI
 
-try:
-    import socketserver
-except ModuleNotFoundError:
-    import SocketServer as socketserver
+import socketserver
 
 
 class _ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):

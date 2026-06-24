@@ -62,7 +62,7 @@ def quote(value):
 
 #Classes
 ###############################################################################
-class _AGI(object):
+class _AGI:
     """
     This class encapsulates communication between Asterisk an a python script.
     It handles encoding commands to Asterisk and parsing responses from
@@ -256,7 +256,7 @@ class _AGI(object):
         """
         return
 
-class _Action(object):
+class _Action:
     """
     Provides the basis for assembling and issuing an action via AGI.
     """
