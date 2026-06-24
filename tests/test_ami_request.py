@@ -1,6 +1,4 @@
 """Tests for AMI request building (`pystrix.ami.ami._Request`)."""
-import pytest
-
 from pystrix.ami.ami import _Request
 
 
@@ -48,12 +46,9 @@ def test_kwargs_become_headers():
     assert 'Extra: x' in command
 
 
-# The two cases below encode build_request's documented ActionID contract.
-# The implementation currently violates it (see issue #43): a pre-set ActionID
-# is dropped when action_id is None, and it overrides an explicit action_id.
-# These are strict xfails, so they will fail loudly once #43 is fixed, prompting
-# removal of the markers.
-@pytest.mark.xfail(reason="build_request drops a pre-set ActionID; see #43", strict=True)
+# build_request resolves the ActionID with the precedence documented on the
+# method: an explicit argument wins, then a value already set on the request,
+# then a generated one (fixed in #43).
 def test_preset_action_id_used_when_none_passed():
     request = _Request('Ping')
     request['ActionID'] = 'preset'
@@ -62,10 +57,19 @@ def test_preset_action_id_used_when_none_passed():
     assert 'ActionID: preset' in command
 
 
-@pytest.mark.xfail(reason="explicit action_id loses to a pre-set ActionID; see #43", strict=True)
 def test_explicit_action_id_wins_over_preset():
     request = _Request('Ping')
     request['ActionID'] = 'preset'
     command, action_id = _build(request, action_id='explicit')
     assert action_id == 'explicit'
     assert 'ActionID: explicit' in command
+
+
+def test_non_string_action_id_is_stringified():
+    # A non-string ActionID must be returned as a string so it matches the
+    # string-keyed responses Asterisk sends back (see #43 review).
+    request = _Request('Ping')
+    request['ActionID'] = 7
+    command, action_id = _build(request)
+    assert action_id == '7'
+    assert 'ActionID: 7' in command
