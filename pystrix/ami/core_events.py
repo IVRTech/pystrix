@@ -803,7 +803,7 @@ class StatusComplete(_Event):
         return (headers, data)
 
 class UserEvent(_Event):
-    """
+    r"""
     Generated in response to the UserEvent request.
     
     - \*: Any key-value pairs supplied with the request, as strings

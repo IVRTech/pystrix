@@ -1,0 +1,19 @@
+# Pre-commit hooks for pystrix. Run `pre-commit install` once to enable, then
+# the hooks run on each commit. See https://pre-commit.com.
+#
+# Formatting hooks are intentionally omitted for now (see issue #45); ruff is
+# used for linting only until a dedicated formatting pass.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.19
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files

@@ -36,7 +36,6 @@ Authors:
 """
 import collections
 import re
-import time
 
 import sys
 
@@ -148,7 +147,7 @@ class _AGI(object):
             for (key, value, data) in _RE_KV.findall(m.group(2)):
                 response[key] = _ValueData(value or '', data)
                 
-            if not _RESULT_KEY in response: #Must always be present.
+            if _RESULT_KEY not in response: #Must always be present.
                 raise AGINoResultError("Asterisk did not provide a '%(result-key)s' key-value pair" % {
                  'result-key': _RESULT_KEY,
                 }, response)
@@ -208,7 +207,7 @@ class _AGI(object):
             line = self._rfile.readline()
             try:
                 line = line.decode()  # decode line if it comes in bytes, example if it comes from a socket
-            except:
+            except:  # noqa: E722
                 pass  # line it's a string, so nothing to change - it's string if it's using stdin as _rfile for example
             # Check to see if we received a HANGUP because AGISIGHUP was not set explicitly or is no
             # and then handle the HANGUP which is being returned because the AGI script can still interact with
@@ -271,7 +270,7 @@ class _Action(object):
 
     @property
     def command(self):
-        command = ' '.join([self._command.strip()] + [str(arg) for arg in self._arguments if not arg is None]).strip()
+        command = ' '.join([self._command.strip()] + [str(arg) for arg in self._arguments if arg is not None]).strip()
         if not command.endswith('\n'):
             command += '\n'
         return command

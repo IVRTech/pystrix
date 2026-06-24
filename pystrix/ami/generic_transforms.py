@@ -32,7 +32,7 @@ import sys
 
 
 # identify string type in a python 2 and 3 compatible manner
-string_type = str if sys.version_info[0] >= 3 else basestring
+string_type = str if sys.version_info[0] >= 3 else basestring  # noqa: F821
 
 
 def to_bool(dictionary, keys, truth_value=None, truth_function=(lambda x:bool(x)), preprocess=(lambda x:x)):

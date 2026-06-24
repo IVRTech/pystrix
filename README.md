@@ -112,16 +112,17 @@ pystrix has no third-party runtime dependencies, so setup is short.
 git clone https://github.com/IVRTech/pystrix.git
 cd pystrix
 python3 -m venv .venv && source .venv/bin/activate
-pip install -e .
+pip install -e '.[test]'
 ```
 
 The editable install (`-e`) means your local edits take effect without reinstalling.
 
 A few things to know before you send a change:
 
-- **No test suite.** The project has no automated tests and no CI. Verify your change by running the matching example in `doc/examples/` against a live Asterisk server. AMI listens on port 5038 and FastAGI on port 4573.
+- **Run the tests** with `pytest`. CI runs them across Python 3.9 through 3.13 on every pull request. There is no live-Asterisk integration test, so socket-level behavior is still worth checking against a real server (AMI on port 5038, FastAGI on port 4573).
+- **Lint with ruff.** `ruff check .` must pass, and CI enforces it. Install the hooks to lint on each commit: `pip install pre-commit && pre-commit install`. Formatting is not enforced yet.
 - **Target Python 3.9+.** The codebase still carries Python 2 compatibility shims (the `Queue` import fallback, `basestring` checks). These are being removed during modernization, so don't add new ones.
-- **Build the docs** when you touch them: `pip install sphinx`, then `cd doc && make html`.
+- **Build the docs** when you touch them: `pip install -r doc/requirements.txt`, then `cd doc && make html`.
 - **Version bumps** go in `pystrix/__init__.py`. `setup.py` reads `VERSION` from there.
 - **Keep docstrings complete** and written in reStructuredText. The reference docs are generated from them.
 
