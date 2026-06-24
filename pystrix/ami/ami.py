@@ -458,13 +458,24 @@ class Manager:
 
         `interval` is the number of seconds to wait between automated Pings to see if Asterisk
         is still alive; defaults to 2.5.
+
+        Returns the monitoring `threading.Thread`, which a caller may join. The thread stops on
+        its own when the connection drops: a broken socket raises `ManagerSocketError` during a
+        Ping, which the monitor catches to exit cleanly rather than dying with an unhandled
+        traceback.
         """
 
         def _monitor_connection():
             from pystrix.ami import core
 
             while self.is_connected():
-                self.send_action(core.Ping())
+                try:
+                    self.send_action(core.Ping())
+                except ManagerSocketError:
+                    # The socket died between the connection check and the ping
+                    # (for example, Asterisk stopped). Nothing can be reported,
+                    # so the monitor stops cleanly instead of crashing the thread.
+                    break
                 time.sleep(interval)
 
         monitor = threading.Thread(
@@ -472,6 +483,7 @@ class Manager:
         )
         monitor.daemon = True
         monitor.start()
+        return monitor
 
     def _compile_callback_definition(self, event, function):
         """

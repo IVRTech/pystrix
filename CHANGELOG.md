@@ -6,6 +6,9 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- `Manager.monitor_connection` no longer crashes its monitoring thread when the connection drops. A broken socket during the periodic Ping raised `ManagerSocketError` inside the thread, which dumped a traceback to stderr and killed the monitor. The monitor now catches it and stops cleanly. The method also returns the monitoring thread so callers can join it (#3).
+
 ## [1.3.0] - 2026-06-24
 
 ### Added
