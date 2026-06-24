@@ -120,7 +120,7 @@ The editable install (`-e`) means your local edits take effect without reinstall
 A few things to know before you send a change:
 
 - **Run the tests** with `pytest`. CI runs them across Python 3.9 through 3.13 on every pull request. There is no live-Asterisk integration test, so socket-level behavior is still worth checking against a real server (AMI on port 5038, FastAGI on port 4573).
-- **Lint with ruff.** `ruff check .` must pass, and CI enforces it. Install the hooks to lint on each commit: `pip install pre-commit && pre-commit install`. Formatting is not enforced yet.
+- **Lint and format with ruff.** `ruff check .` and `ruff format --check .` must pass, and CI enforces both. Install the hooks to run them on each commit: `pip install pre-commit && pre-commit install`.
 - **Target Python 3.9+.** The codebase is Python 3 only; the old Python 2 compatibility shims have been removed, so don't reintroduce them.
 - **Build the docs** when you touch them: `pip install -r doc/requirements.txt`, then `cd doc && make html`.
 - **Version bumps** go in `pystrix/__init__.py`. `setup.py` reads `VERSION` from there.

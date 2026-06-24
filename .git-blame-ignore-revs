@@ -1,0 +1,5 @@
+# Revisions listed here are skipped by `git blame` (git 2.23+) and GitHub.
+# Configure locally with: git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# Reformat with ruff format and sort imports (#52)
+a494c88d84f14d26c9ce35dabafe15eb7124cb3e

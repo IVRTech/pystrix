@@ -31,15 +31,17 @@ Authors:
 The events implemented by this module follow the definitions provided by
 http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
 """
-from pystrix.ami.ami import (_Aggregate, _Event)
+
 from pystrix.ami import generic_transforms
+from pystrix.ami.ami import _Aggregate, _Event
+
 
 class DAHDIShowChannels(_Event):
     """
     Describes the current state of a DAHDI channel.
-    
+
     Yes, the event's name is pluralised.
-    
+
     - 'AccountCode': unknown (not present if the DAHDI channel is down)
     - 'Alarm': unknown
     - 'Channel': The channel being described (not present if the DAHDI channel is down)
@@ -51,57 +53,68 @@ class DAHDIShowChannels(_Event):
     - 'SignallingCode': A numeric description of the current signalling state
     - 'Uniqueid': unknown (not present if the DAHDI channel is down)
     """
+
     def process(self):
         """
         Translates the 'DND' header's value into a bool.
-        
+
         Translates the 'DAHDIChannel' and 'SignallingCode' headers' values into ints, or -1 on
         failure.
         """
         (headers, data) = _Event.process(self)
-        
-        generic_transforms.to_bool(headers, ('DND',), truth_value='Enabled')
-        generic_transforms.to_int(headers, ('DAHDIChannel', 'SignallingCode',), -1)
-                
+
+        generic_transforms.to_bool(headers, ("DND",), truth_value="Enabled")
+        generic_transforms.to_int(
+            headers,
+            (
+                "DAHDIChannel",
+                "SignallingCode",
+            ),
+            -1,
+        )
+
         return (headers, data)
+
 
 class DAHDIShowChannelsComplete(_Event):
     """
     Indicates that all DAHDI channels have been described.
-    
+
     - 'Items': The number of items returned prior to this event
     """
+
     def process(self):
         """
         Translates the 'Items' header's value into an int, or -1 on failure.
         """
         (headers, data) = _Event.process(self)
-        
-        generic_transforms.to_int(headers, ('Items',), -1)
-        
+
+        generic_transforms.to_int(headers, ("Items",), -1)
+
         return (headers, data)
-        
-        
-#List-aggregation events
+
+
+# List-aggregation events
 ####################################################################################################
-#These define non-Asterisk-native event-types that collect multiple events (cases where multiple
-#events are generated in response to a single action) and emit the bundle as a single message.
+# These define non-Asterisk-native event-types that collect multiple events (cases where multiple
+# events are generated in response to a single action) and emit the bundle as a single message.
+
 
 class DAHDIShowChannels_Aggregate(_Aggregate):
     """
     Emitted after all DAHDI channels have been enumerated in response to a DAHDIShowChannels
     request.
-    
+
     Its members consist of DAHDIShowChannels events.
-    
+
     It is finalised by DAHDIShowChannelsComplete.
     """
+
     _name = "DAHDIShowChannels_Aggregate"
-    
+
     _aggregation_members = (DAHDIShowChannels,)
     _aggregation_finalisers = (DAHDIShowChannelsComplete,)
-    
+
     def _finalise(self, event):
-        self._check_list_items_count(event, 'Items')
+        self._check_list_items_count(event, "Items")
         return _Aggregate._finalise(self, event)
-        

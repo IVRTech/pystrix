@@ -1,15 +1,14 @@
-# Lint configuration for pystrix.
+# Lint and format configuration for pystrix.
 #
-# Formatting is intentionally not enabled yet (see issue #45): the existing
-# style is non-standard and `ruff format` would rewrite ~4,000 lines. A later
-# pass, paired with the Python 2 shim removal, will own formatting. When the
-# project moves to pyproject.toml, this config can move there.
+# Formatting is handled by `ruff format` at its default line length of 88.
+# When the project moves to pyproject.toml, this config can move there.
 target-version = "py39"
 
 [lint]
-# pycodestyle errors/warnings and pyflakes, minus the whitespace, indentation,
-# and line-length families that a formatting pass will own.
-select = ["E4", "E7", "E9", "F", "W605"]
+# pycodestyle errors, pyflakes, import sorting (isort), and invalid escape
+# sequences. The whitespace, indentation, and line-length families are owned by
+# `ruff format`.
+select = ["E4", "E7", "E9", "F", "I", "W605"]
 
 [lint.per-file-ignores]
 # The __init__ modules deliberately re-export their public API.

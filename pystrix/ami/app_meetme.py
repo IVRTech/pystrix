@@ -34,8 +34,10 @@ Authors:
 The requests and events implemented by this module follow the definitions provided by
 http://www.asteriskdocs.org/ and https://wiki.asterisk.org/
 """
-from pystrix.ami.ami import (_Request)
+
 from pystrix.ami import app_meetme_events
+from pystrix.ami.ami import _Request
+
 
 class MeetmeList(_Request):
     """
@@ -46,18 +48,20 @@ class MeetmeList(_Request):
     Note that if no conferences are active, the response will indicate that it was not successful,
     per https://issues.asterisk.org/jira/browse/ASTERISK-16812
     """
+
     _aggregates = (app_meetme_events.MeetmeList_Aggregate,)
     _synchronous_events_list = (app_meetme_events.MeetmeList,)
     _synchronous_events_finalising = (app_meetme_events.MeetmeListComplete,)
-    
+
     def __init__(self, conference=None):
         """
         `conference` is the optional identifier of the bridge.
         """
-        _Request.__init__(self, 'MeetmeList')
+        _Request.__init__(self, "MeetmeList")
         if conference is not None:
-            self['Conference'] = conference
-            
+            self["Conference"] = conference
+
+
 class MeetmeListRooms(_Request):
     """
     Lists all conferences.
@@ -65,42 +69,46 @@ class MeetmeListRooms(_Request):
     A series of 'MeetmeListRooms' events follow, with one 'MeetmeListRoomsComplete' event at the
     end.
     """
+
     _aggregates = (app_meetme_events.MeetmeListRooms_Aggregate,)
     _synchronous_events_list = (app_meetme_events.MeetmeListRooms,)
     _synchronous_events_finalising = (app_meetme_events.MeetmeListRoomsComplete,)
-    
+
     def __init__(self):
-        _Request.__init__(self, 'MeetmeListRooms')
-        
+        _Request.__init__(self, "MeetmeListRooms")
+
+
 class MeetmeMute(_Request):
     """
     Mutes a participant in a Meetme bridge.
-    
+
     Requires call
     """
+
     def __init__(self, meetme, usernum):
         """
         `meetme` is the identifier of the bridge and `usernum` is the participant ID of the user to
         be muted, which is associated with a channel by the 'MeetmeJoin' event. If successful, this
         request will trigger a 'MeetmeMute' event.
         """
-        _Request.__init__(self, 'MeetmeMute')
-        self['Meetme'] = meetme
-        self['Usernum'] = usernum
+        _Request.__init__(self, "MeetmeMute")
+        self["Meetme"] = meetme
+        self["Usernum"] = usernum
+
 
 class MeetmeUnmute(_Request):
     """
     Unmutes a participant in a Meetme bridge.
-    
+
     Requires call
     """
+
     def __init__(self, meetme, usernum):
         """
         `meetme` is the identifier of the bridge and `usernum` is the participant ID of the user to
         be unmuted, which is associated with a channel by the 'MeetmeJoin' event. If successful,
         this request will trigger a 'MeetmeMute' event.
         """
-        _Request.__init__(self, 'MeetmeUnmute')
-        self['Meetme'] = meetme
-        self['Usernum'] = usernum
-        
+        _Request.__init__(self, "MeetmeUnmute")
+        self["Meetme"] = meetme
+        self["Usernum"] = usernum
