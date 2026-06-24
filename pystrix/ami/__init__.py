@@ -34,33 +34,42 @@ Authors:
 
 - Neil Tallim <n.tallim@ivrnet.com>
 """
-from pystrix.ami.ami import (
- RESPONSE_GENERIC, EVENT_GENERIC,
- KEY_ACTION, KEY_ACTIONID, KEY_EVENT, KEY_RESPONSE,
- Manager,
- Error, ManagerError, ManagerSocketError,
-)
-
-from pystrix.ami import core
-from pystrix.ami import dahdi
-from pystrix.ami import app_confbridge
-from pystrix.ami import app_meetme
 
 # Register events
-from pystrix.ami import core_events
-from pystrix.ami import dahdi_events
-from pystrix.ami import app_confbridge_events
-from pystrix.ami import app_meetme_events
+from pystrix.ami import (
+    app_confbridge,
+    app_confbridge_events,
+    app_meetme,
+    app_meetme_events,
+    core,
+    core_events,
+    dahdi,
+    dahdi_events,
+)
+from pystrix.ami.ami import (
+    _EVENT_REGISTRY,
+    _EVENT_REGISTRY_REV,
+    EVENT_GENERIC,
+    KEY_ACTION,
+    KEY_ACTIONID,
+    KEY_EVENT,
+    KEY_RESPONSE,
+    RESPONSE_GENERIC,
+    Error,
+    Manager,
+    ManagerError,
+    ManagerSocketError,
+)
 
-from pystrix.ami.ami import (_EVENT_REGISTRY, _EVENT_REGISTRY_REV)
 for module in (
- core_events, dahdi_events,
- app_confbridge_events, app_meetme_events,
+    core_events,
+    dahdi_events,
+    app_confbridge_events,
+    app_meetme_events,
 ):
-    for event in (e for e in dir(module) if not e.startswith('_')):
+    for event in (e for e in dir(module) if not e.startswith("_")):
         class_object = getattr(module, event)
         _EVENT_REGISTRY[event] = class_object
         _EVENT_REGISTRY_REV[class_object] = event
 del _EVENT_REGISTRY
 del _EVENT_REGISTRY_REV
-

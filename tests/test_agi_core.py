@@ -1,10 +1,17 @@
 """Tests for AGI response parsing and helpers (`pystrix.agi.agi_core`)."""
+
 import pytest
 
 from pystrix.agi.agi_core import (
-    _AGI, _Action, quote,
-    AGIInvalidCommandError, AGIDeadChannelError, AGIResultHangup, AGINoResultError,
-    AGIUsageError, AGIUnknownError,
+    _AGI,
+    AGIDeadChannelError,
+    AGIInvalidCommandError,
+    AGINoResultError,
+    AGIResultHangup,
+    AGIUnknownError,
+    AGIUsageError,
+    _Action,
+    quote,
 )
 
 
@@ -17,7 +24,7 @@ class _FakeReader:
 
     def readline(self):
         if self._index >= len(self._lines):
-            return b''
+            return b""
         line = self._lines[self._index]
         self._index += 1
         return line
@@ -32,21 +39,21 @@ def _agi(*lines):
 
 
 def test_parses_success_result():
-    response = _agi('200 result=1\n')._get_result()
+    response = _agi("200 result=1\n")._get_result()
     assert response.code == 200
-    assert response.items['result'].value == '1'
+    assert response.items["result"].value == "1"
 
 
 def test_parses_result_data():
-    response = _agi('200 result=1 (speech)\n')._get_result()
-    assert response.items['result'].value == '1'
-    assert response.items['result'].data == 'speech'
+    response = _agi("200 result=1 (speech)\n")._get_result()
+    assert response.items["result"].value == "1"
+    assert response.items["result"].data == "speech"
 
 
 def test_result_without_parenthetical_has_empty_data():
     # A result with no parenthetical reports data as '' (empty string), not None.
-    response = _agi('200 result=1\n')._get_result()
-    assert response.items['result'].data == ''
+    response = _agi("200 result=1\n")._get_result()
+    assert response.items["result"].data == ""
 
 
 def test_usage_error_collects_multiline_block():
@@ -54,66 +61,66 @@ def test_usage_error_collects_multiline_block():
     # the accumulated block.
     with pytest.raises(AGIUsageError) as exc_info:
         _agi(
-            '520 Invalid command syntax.\n',
-            'Usage: ANSWER\n',
-            '520 End of proper usage.\n',
+            "520 Invalid command syntax.\n",
+            "Usage: ANSWER\n",
+            "520 End of proper usage.\n",
         )._get_result()
     message = str(exc_info.value)
-    assert '520 Invalid command syntax.' in message
-    assert 'Usage: ANSWER' in message
+    assert "520 Invalid command syntax." in message
+    assert "Usage: ANSWER" in message
 
 
 def test_unrecognized_code_returns_none():
     # A line with no leading status code (for example after a signal) yields no
     # result rather than raising.
-    assert _agi('\n')._get_result() is None
+    assert _agi("\n")._get_result() is None
 
 
 def test_unknown_code_raises():
     with pytest.raises(AGIUnknownError):
-        _agi('418 unexpected\n')._get_result()
+        _agi("418 unexpected\n")._get_result()
 
 
 def test_hangup_detected_by_data_not_value():
     # The hangup guard keys on the parenthetical data, not the result value, so a
     # non-(-1) value with 'hangup' data must still raise.
     with pytest.raises(AGIResultHangup):
-        _agi('200 result=0 (hangup)\n')._get_result()
+        _agi("200 result=0 (hangup)\n")._get_result()
 
 
 def test_hangup_not_raised_when_check_disabled():
-    response = _agi('200 result=-1 (hangup)\n')._get_result(check_hangup=False)
-    assert response.items['result'].data == 'hangup'
+    response = _agi("200 result=-1 (hangup)\n")._get_result(check_hangup=False)
+    assert response.items["result"].data == "hangup"
 
 
 def test_invalid_command_raises():
     with pytest.raises(AGIInvalidCommandError):
-        _agi('510 Invalid or unknown command\n')._get_result()
+        _agi("510 Invalid or unknown command\n")._get_result()
 
 
 def test_dead_channel_raises():
     with pytest.raises(AGIDeadChannelError):
-        _agi('511 Command Not Permitted on a dead channel\n')._get_result()
+        _agi("511 Command Not Permitted on a dead channel\n")._get_result()
 
 
 def test_missing_result_key_raises():
     with pytest.raises(AGINoResultError):
-        _agi('200 foo=bar\n')._get_result()
+        _agi("200 foo=bar\n")._get_result()
 
 
 def test_hangup_result_raises():
     with pytest.raises(AGIResultHangup):
-        _agi('200 result=-1 (hangup)\n')._get_result()
+        _agi("200 result=-1 (hangup)\n")._get_result()
 
 
 def test_action_command_formatting():
-    assert _Action('ANSWER').command == 'ANSWER\n'
+    assert _Action("ANSWER").command == "ANSWER\n"
     # None arguments are dropped and a trailing newline is always present.
-    assert _Action('STREAM FILE', 'demo', None, '#').command == 'STREAM FILE demo #\n'
+    assert _Action("STREAM FILE", "demo", None, "#").command == "STREAM FILE demo #\n"
 
 
 def test_quote_wraps_in_double_quotes():
-    assert quote('demo') == '"demo"'
+    assert quote("demo") == '"demo"'
     assert quote(5) == '"5"'
 
 
@@ -126,7 +133,7 @@ class _StrReader:
 
     def readline(self):
         if self._index >= len(self._lines):
-            return ''
+            return ""
         line = self._lines[self._index]
         self._index += 1
         return line
@@ -141,15 +148,15 @@ def _agi_with_reader(reader):
 
 def test_str_input_is_read_without_decoding():
     # Plain AGI reads str from stdin; _read_line must not choke trying to decode it.
-    response = _agi_with_reader(_StrReader('200 result=1\n'))._get_result()
-    assert response.items['result'].value == '1'
+    response = _agi_with_reader(_StrReader("200 result=1\n"))._get_result()
+    assert response.items["result"].value == "1"
 
 
 def test_malformed_bytes_surface_a_decode_error():
     # A real decode failure on socket bytes propagates instead of being swallowed.
     class _BadBytesReader:
         def readline(self):
-            return b'\xff\xfe not utf-8\n'
+            return b"\xff\xfe not utf-8\n"
 
     with pytest.raises(UnicodeDecodeError):
         _agi_with_reader(_BadBytesReader())._get_result()

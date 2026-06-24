@@ -28,22 +28,23 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU General Public License and
 GNU Lesser General Public License along with this program. If not, see
 <http://www.gnu.org/licenses/>.
- 
+
 (C) Ivrnet, inc., 2011
 
 Authors:
 
 - Neil Tallim <n.tallim@ivrnet.com>
 """
+
 import platform
 import socket
+import socketserver
 import subprocess
 import threading
 from urllib.parse import parse_qs
+
 from pystrix.agi.agi_core import *
 from pystrix.agi.agi_core import _AGI
-
-import socketserver
 
 
 class _ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
@@ -89,6 +90,7 @@ class _AGIClientHandler(socketserver.StreamRequestHandler):
     """
     Handles TCP connections.
     """
+
     def handle(self):
         """
         Creates an instance of an AGI-interface object and passes it to a pre-specified callable,
@@ -98,7 +100,7 @@ class _AGIClientHandler(socketserver.StreamRequestHandler):
 
         (path, kwargs) = self._extract_query_elements(agi_instance)
         args = self._extract_positional_args(agi_instance)
-        
+
         (handler, match) = self.server.get_script_handler(path)
         if handler:
             handler(agi_instance, args, kwargs, match, path)
@@ -109,8 +111,8 @@ class _AGIClientHandler(socketserver.StreamRequestHandler):
         the specification by which they're supplied may change in the future.
         """
         env = agi_instance.get_environment()
-        keys = sorted((int(key[8:]) for key in env if key.startswith('agi_arg_')))
-        return tuple((env['agi_arg_%i' % key] for key in keys))
+        keys = sorted((int(key[8:]) for key in env if key.startswith("agi_arg_")))
+        return tuple((env["agi_arg_%i" % key] for key in keys))
 
     def _extract_query_elements(self, agi_instance):
         """
@@ -118,29 +120,37 @@ class _AGIClientHandler(socketserver.StreamRequestHandler):
         request. Arguments are supplied as a list, since the same parameter may be specified
         multiple times.
         """
-        tokens = (agi_instance.get_environment().get('agi_network_script') or '/').split('?', 1)
+        tokens = (
+            agi_instance.get_environment().get("agi_network_script") or "/"
+        ).split("?", 1)
         path = tokens[0]
         if len(tokens) == 1:
             return (path, {})
         return (path, parse_qs(tokens[1]))
 
+
 class FastAGIServer(_ThreadedTCPServer):
     """
     Provides a FastAGI TCP server to handle requests from Asterisk servers.
     """
-    debug = False #Used to enable various printouts for library development
-    _default_script_handler = None #A script-handler to use if nothing else matched
-    _script_handlers = None #A list of regex/callable pairs to use when determining how to handle an AGI request
-    _script_handlers_lock = None #A lock used to prevent race conditions on the handlers list
-    
-    def __init__(self, interface='127.0.0.1', port=4573, daemon_threads=True, debug=False):
+
+    debug = False  # Used to enable various printouts for library development
+    _default_script_handler = None  # A script-handler to use if nothing else matched
+    _script_handlers = None  # A list of regex/callable pairs to use when determining how to handle an AGI request
+    _script_handlers_lock = (
+        None  # A lock used to prevent race conditions on the handlers list
+    )
+
+    def __init__(
+        self, interface="127.0.0.1", port=4573, daemon_threads=True, debug=False
+    ):
         """
         Creates the server and binds the client-handler callable.
-        
+
         `interface` is the address of the interface on which to listen; defaults
         to localhost, but may be any interface on the host or `'0.0.0.0'` for
         all. `port` is the TCP port on which to listen.
-        
+
         `daemon_threads` indicates whether any threads spawned to handle
         requests should be killed if the main thread dies. (Generally a good
         idea to avoid hung calls keeping the process alive forever)
@@ -169,7 +179,7 @@ class FastAGIServer(_ThreadedTCPServer):
         `script_path` is the path received from Asterisk.
         """
         with self._script_handlers_lock:
-            for (regex, handler) in self._script_handlers:
+            for regex, handler in self._script_handlers:
                 match = None
                 if isinstance(regex, str):
                     match = re.match(regex, script_path)
@@ -177,7 +187,7 @@ class FastAGIServer(_ThreadedTCPServer):
                     match = regex.match(script_path)
                 if match:
                     return (handler, match)
-                    
+
             return (self._default_script_handler, None)
 
     def register_script_handler(self, regex, handler):
@@ -200,12 +210,12 @@ class FastAGIServer(_ThreadedTCPServer):
                 self._default_script_handler = handler
                 return
 
-            #Ensure that the regex hasn't been registered before
-            for (old_regex, old_handler) in self._script_handlers:
+            # Ensure that the regex hasn't been registered before
+            for old_regex, old_handler in self._script_handlers:
                 if old_regex == regex:
                     return
 
-            #Add the handler to the end of the list
+            # Add the handler to the end of the list
             self._script_handlers.append((regex, handler))
 
     def unregister_script_handler(self, regex):
@@ -218,16 +228,18 @@ class FastAGIServer(_ThreadedTCPServer):
         handlers in the desired order.
         """
         with self._script_handlers_lock:
-            for (i, (old_regex, old_handler)) in enumerate(self._script_handlers):
+            for i, (old_regex, old_handler) in enumerate(self._script_handlers):
                 if old_regex == regex:
                     self._script_handlers.pop(i)
                     break
+
 
 class FastAGI(_AGI):
     """
     An interface to Asterisk, exposing request-response functions for
     synchronous management of the call associated with this channel.
     """
+
     def __init__(self, rfile, wfile, debug=False):
         """
         Associates I/O with `rfile` and `wfile`.
@@ -236,6 +248,5 @@ class FastAGI(_AGI):
         """
         self._rfile = rfile
         self._wfile = wfile
-        
+
         _AGI.__init__(self, debug)
-        

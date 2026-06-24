@@ -4,7 +4,7 @@ pystrix.agi
 
 Provides a library suitable for interacting with an Asterisk server using the
 Asterisk Gateway Interface (AGI) protocol.
- 
+
 Usage
 -----
 
@@ -27,27 +27,33 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU General Public License and
 GNU Lesser General Public License along with this program. If not, see
 <http://www.gnu.org/licenses/>.
- 
+
 (C) Ivrnet, inc., 2011
 
 Authors:
 
 - Neil Tallim <n.tallim@ivrnet.com>
 """
-from pystrix.agi.agi_core import (
- AGIException, AGIError, AGINoResultError, AGIUnknownError, AGIAppError,
- AGIHangup, AGISIGPIPEHangup, AGIResultHangup,
- AGIDeadChannelError, AGIUsageError, AGIInvalidCommandError,
-)
-
-from pystrix.agi.agi import (
- AGI,
- AGISIGHUPHangup,
-)
-
-from pystrix.agi.fastagi import (
- FastAGIServer, FastAGI,
-)
 
 from pystrix.agi import core
-
+from pystrix.agi.agi import (
+    AGI,
+    AGISIGHUPHangup,
+)
+from pystrix.agi.agi_core import (
+    AGIAppError,
+    AGIDeadChannelError,
+    AGIError,
+    AGIException,
+    AGIHangup,
+    AGIInvalidCommandError,
+    AGINoResultError,
+    AGIResultHangup,
+    AGISIGPIPEHangup,
+    AGIUnknownError,
+    AGIUsageError,
+)
+from pystrix.agi.fastagi import (
+    FastAGI,
+    FastAGIServer,
+)

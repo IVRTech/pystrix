@@ -6,7 +6,7 @@ All standard AGI actions as instantiable classes, suitable for passing to the
 `execute()` function of an AGI interface.
 
 Also includes constants to make programmatic interaction cleaner.
- 
+
 Legal
 -----
 
@@ -24,20 +24,21 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU General Public License and
 GNU Lesser General Public License along with this program. If not, see
 <http://www.gnu.org/licenses/>.
- 
+
 (C) Ivrnet, inc., 2011
 
 Authors:
 
 - Neil Tallim <n.tallim@ivrnet.com>
 """
+
 import time
 
 from pystrix.agi.agi_core import (
-    _Action,
-    quote,
     _RESULT_KEY,
     AGIAppError,
+    _Action,
+    quote,
 )
 
 CHANNEL_DOWN_AVAILABLE = 0  # Channel is down and available
@@ -49,14 +50,14 @@ CHANNEL_REMOTE_ALERTING = 5  # The channel is remotely ringing
 CHANNEL_UP = 6  # The channel is connected
 CHANNEL_BUSY = 7  # The channel is in a busy, non-conductive state
 
-FORMAT_SLN = 'sln'
-FORMAT_G723 = 'g723'
-FORMAT_G729 = 'g729'
-FORMAT_GSM = 'gsm'
-FORMAT_ALAW = 'alaw'
-FORMAT_ULAW = 'ulaw'
-FORMAT_VOX = 'vox'
-FORMAT_WAV = 'wav'
+FORMAT_SLN = "sln"
+FORMAT_G723 = "g723"
+FORMAT_G729 = "g729"
+FORMAT_GSM = "gsm"
+FORMAT_ALAW = "alaw"
+FORMAT_ULAW = "ulaw"
+FORMAT_VOX = "vox"
+FORMAT_WAV = "wav"
 
 LOG_DEBUG = 0
 LOG_INFO = 1
@@ -64,9 +65,9 @@ LOG_WARN = 2
 LOG_ERROR = 3
 LOG_CRITICAL = 4
 
-TDD_ON = 'on'
-TDD_OFF = 'off'
-TDD_MATE = 'mate'
+TDD_ON = "on"
+TDD_OFF = "off"
+TDD_MATE = "mate"
 
 
 # Functions
@@ -79,9 +80,13 @@ def _convert_to_char(value, items):
     try:
         return chr(int(value))
     except ValueError:
-        raise AGIAppError("Unable to convert Asterisk result to DTMF character: %(value)r" % {
-            'value': value,
-        }, items)
+        raise AGIAppError(
+            "Unable to convert Asterisk result to DTMF character: %(value)r"
+            % {
+                "value": value,
+            },
+            items,
+        )
 
 
 def _convert_to_int(items):
@@ -89,7 +94,7 @@ def _convert_to_int(items):
     Extracts the offset-value from Asterisk's response, `items`, or returns -1 if the value
     can't be parsed.
     """
-    offset = items.get('endpos')
+    offset = items.get("endpos")
     if offset and offset.data.isdigit():
         return int(offset.data)
     else:
@@ -101,7 +106,7 @@ def _process_digit_list(digits):
     Ensures that digit-lists are processed uniformly.
     """
     if type(digits) in (list, tuple, set, frozenset):
-        digits = ''.join([str(d) for d in digits])
+        digits = "".join([str(d) for d in digits])
     return quote(digits)
 
 
@@ -110,7 +115,7 @@ def _process_digit_list(digits):
 class Answer(_Action):
     """
     Answers the call on the channel.
-    
+
     If the channel has already been answered, this is a no-op.
 
     `AGIAppError` is raised on failure, most commonly because the connection
@@ -118,16 +123,16 @@ class Answer(_Action):
     """
 
     def __init__(self):
-        _Action.__init__(self, 'ANSWER')
+        _Action.__init__(self, "ANSWER")
 
 
 class ChannelStatus(_Action):
     """
     Provides the current state of this channel or, if `channel` is set, that of the named
     channel.
-    
+
     Returns one of the channel-state constants listed below:
-    
+
     - CHANNEL_DOWN_AVAILABLE: Channel is down and available
     - CHANNEL_DOWN_RESERVED: Channel is down and reserved
     - CHANNEL_OFFHOOK: Channel is off-hook
@@ -148,7 +153,7 @@ class ChannelStatus(_Action):
     """
 
     def __init__(self, channel=None):
-        _Action.__init__(self, 'CHANNEL STATUS', (channel and quote(channel)) or None)
+        _Action.__init__(self, "CHANNEL STATUS", (channel and quote(channel)) or None)
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
@@ -156,24 +161,27 @@ class ChannelStatus(_Action):
             return int(result.value)
         except ValueError:
             raise AGIAppError(
-                "'%(result-key)s' key-value pair received from Asterisk contained a non-numeric value: %(value)r" % {
-                    'result-key': _RESULT_KEY,
-                    'value': result.value,
-                }, response.items)
+                "'%(result-key)s' key-value pair received from Asterisk contained a non-numeric value: %(value)r"
+                % {
+                    "result-key": _RESULT_KEY,
+                    "value": result.value,
+                },
+                response.items,
+            )
 
 
 class ControlStreamFile(_Action):
     """
     See also `GetData`, `GetOption`, `StreamFile`.
-    
+
     Plays back the specified file, which is the `filename` of the file to be played, either in
     an Asterisk-searched directory or as an absolute path, without extension. ('myfile.wav'
     would be specified as 'myfile', to allow Asterisk to choose the most efficient encoding,
     based on extension, for the channel)
-    
+
     `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
     of possibly mixed ints and strings. Playback ends immediately when one is received.
-    
+
     `sample_offset` may be used to jump an arbitrary number of milliseconds into the audio data.
 
     If specified, `forward`, `rewind`, and `pause` are DTMF characters that will seek forwards
@@ -182,21 +190,35 @@ class ControlStreamFile(_Action):
 
     If a DTMF key is received, it is returned as a string. If nothing is received or the file
     could not be played back (see Asterisk logs), None is returned.
-    
+
     `AGIAppError` is raised on failure, most commonly because the channel was
     hung-up.
     """
 
-    def __init__(self, filename, escape_digits='', sample_offset=0, forward='', rewind='', pause=''):
+    def __init__(
+        self,
+        filename,
+        escape_digits="",
+        sample_offset=0,
+        forward="",
+        rewind="",
+        pause="",
+    ):
         escape_digits = _process_digit_list(escape_digits)
-        _Action.__init__(self, 'CONTROL STREAM FILE', quote(filename),
-                         quote(escape_digits), quote(sample_offset),
-                         quote(forward), quote(rewind), quote(pause)
-                         )
+        _Action.__init__(
+            self,
+            "CONTROL STREAM FILE",
+            quote(filename),
+            quote(escape_digits),
+            quote(sample_offset),
+            quote(forward),
+            quote(rewind),
+            quote(pause),
+        )
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
-        if not result.value == '0':
+        if not result.value == "0":
             return _convert_to_char(result.value, response.items)
         return None
 
@@ -204,25 +226,29 @@ class ControlStreamFile(_Action):
 class DatabaseDel(_Action):
     """
     Deletes the specified family/key entry from Asterisk's database.
-    
+
     `AGIAppError` is raised on failure.
-    
+
     `AGIDBError` is raised if the key could not be removed, which usually indicates that it
     didn't exist in the first place.
     """
 
     def __init__(self, family, key):
-        _Action.__init__(self, 'DATABASE DEL', quote(family), quote(key))
+        _Action.__init__(self, "DATABASE DEL", quote(family), quote(key))
         self.family = family
         self.key = key
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
-        if result.value == '0':
-            raise AGIDBError("Unable to delete from database: family=%(family)r, key=%(key)r" % {
-                'family': self.family,
-                'key': self.key,
-            }, response.items)
+        if result.value == "0":
+            raise AGIDBError(
+                "Unable to delete from database: family=%(family)r, key=%(key)r"
+                % {
+                    "family": self.family,
+                    "key": self.key,
+                },
+                response.items,
+            )
 
 
 class DatabaseDeltree(_Action):
@@ -230,84 +256,104 @@ class DatabaseDeltree(_Action):
     Deletes the specificed family (and optionally keytree) from Asterisk's database.
 
     `AGIAppError` is raised on failure.
-    
+
     `AGIDBError` is raised if the family (or keytree) could not be removed, which usually
     indicates that it didn't exist in the first place.
     """
 
     def __init__(self, family, keytree=None):
-        _Action.__init__(self,
-                         'DATABASE DELTREE', quote(family), (keytree and quote(keytree) or None)
-                         )
+        _Action.__init__(
+            self,
+            "DATABASE DELTREE",
+            quote(family),
+            (keytree and quote(keytree) or None),
+        )
         self.family = family
         self.keytree = keytree
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
-        if result.value == '0':
-            raise AGIDBError("Unable to delete family from database: family=%(family)r, keytree=%(keytree)r" % {
-                'family': self.family,
-                'keytree': self.keytree or '<unspecified>',
-            }, response.items)
+        if result.value == "0":
+            raise AGIDBError(
+                "Unable to delete family from database: family=%(family)r, keytree=%(keytree)r"
+                % {
+                    "family": self.family,
+                    "keytree": self.keytree or "<unspecified>",
+                },
+                response.items,
+            )
 
 
 class DatabaseGet(_Action):
     """
     Retrieves the value of the specified family/key entry from Asterisk's database.
-    
+
     `AGIAppError` is raised on failure.
-    
+
     `AGIDBError` is raised if the key could not be found or if some other database problem
     occurs.
     """
+
     check_hangup = False
 
     def __init__(self, family, key):
-        _Action.__init__(self, 'DATABASE GET', quote(family), quote(key))
+        _Action.__init__(self, "DATABASE GET", quote(family), quote(key))
         self.family = family
         self.key = key
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
-        if result.value == '0':
-            raise AGIDBError("Key not found in database: family=%(family)r, key=%(key)r" % {
-                'family': self.family,
-                'key': self.key,
-            }, response.items)
-        elif result.value == '1':
+        if result.value == "0":
+            raise AGIDBError(
+                "Key not found in database: family=%(family)r, key=%(key)r"
+                % {
+                    "family": self.family,
+                    "key": self.key,
+                },
+                response.items,
+            )
+        elif result.value == "1":
             return result.data
 
-        raise AGIDBError("Unable to query database: family=%(family)r, key=%(key)r, result=%(result)r" % {
-            'family': self.family,
-            'key': self.key,
-            'result': result.value,
-        }, response.items)
+        raise AGIDBError(
+            "Unable to query database: family=%(family)r, key=%(key)r, result=%(result)r"
+            % {
+                "family": self.family,
+                "key": self.key,
+                "result": result.value,
+            },
+            response.items,
+        )
 
 
 class DatabasePut(_Action):
     """
     Inserts or updates value of the specified family/key entry in Asterisk's database.
-    
+
     `AGIAppError` is raised on failure.
-    
+
     `AGIDBError` is raised if the key could not be inserted or if some other database problem
     occurs.
     """
 
     def __init__(self, family, key, value):
-        _Action.__init__(self, 'DATABASE PUT', quote(family), quote(key), quote(value))
+        _Action.__init__(self, "DATABASE PUT", quote(family), quote(key), quote(value))
         self.family = family
         self.key = key
         self.value = value
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
-        if result.value == '0':
-            raise AGIDBError("Unable to store value in database: family=%(family)r, key=%(key)r, value=%(value)r" % {
-                'family': self.family,
-                'key': self.key,
-                'value': self.value,
-            }, response.items)
+        if result.value == "0":
+            raise AGIDBError(
+                "Unable to store value in database: family=%(family)r, key=%(key)r, value=%(value)r"
+                % {
+                    "family": self.family,
+                    "key": self.key,
+                    "value": self.value,
+                },
+                response.items,
+            )
 
 
 class Exec(_Action):
@@ -320,31 +366,38 @@ class Exec(_Action):
 
     `AGIAppError` is raised if the application could not be executed.
     """
+
     check_hangup = False
 
     def __init__(self, application, options=()):
         self._application = application
-        options = ','.join((str(o or '') for o in options))
-        _Action.__init__(self, 'EXEC', self._application, (options and quote(options)) or '')
+        options = ",".join((str(o or "") for o in options))
+        _Action.__init__(
+            self, "EXEC", self._application, (options and quote(options)) or ""
+        )
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
-        if result.value == '-2':
-            raise AGIAppError("Unable to execute application '%(application)r'" % {
-                'application': self._application,
-            }, response.items)
+        if result.value == "-2":
+            raise AGIAppError(
+                "Unable to execute application '%(application)r'"
+                % {
+                    "application": self._application,
+                },
+                response.items,
+            )
         return response.raw[7:]  # Everything after 'result='
 
 
 class GetData(_Action):
     """
     See also `ControlStreamFile`, `GetOption`, `StreamFile`.
-    
+
     Plays back the specified file, which is the `filename` of the file to be played, either in
     an Asterisk-searched directory or as an absolute path, without extension. ('myfile.wav'
     would be specified as 'myfile', to allow Asterisk to choose the most efficient encoding,
     based on extension, for the channel)
-    
+
     `timeout` is the number of milliseconds to wait between DTMF presses or following the end
     of playback if no keys were pressed to interrupt playback prior to that point. It defaults
     to 2000.
@@ -353,38 +406,39 @@ class GetData(_Action):
 
     The value returned is a tuple consisting of (dtmf_keys:str, timeout:bool). '#' is always
     interpreted as an end-of-event character and will never be present in the output.
-    
+
     `AGIAppError` is raised on failure, most commonly because no keys, aside from '#', were
     entered.
     """
 
     def __init__(self, filename, timeout=2000, max_digits=255):
-        _Action.__init__(self,
-                         'GET DATA', quote(filename), quote(timeout), quote(max_digits)
-                         )
+        _Action.__init__(
+            self, "GET DATA", quote(filename), quote(timeout), quote(max_digits)
+        )
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
-        return (result.value, result.data == 'timeout')
+        return (result.value, result.data == "timeout")
 
 
 class GetFullVariable(_Action):
     """
     Returns a `variable` associated with this channel, with full expression-processing.
-    
+
     The value of the requested variable is returned as a string. If the variable is
     undefined, `None` is returned.
 
     `AGIAppError` is raised on failure.
     """
+
     check_hangup = False
 
     def __init__(self, variable):
-        _Action.__init__(self, 'GET FULL VARIABLE', quote(variable))
+        _Action.__init__(self, "GET FULL VARIABLE", quote(variable))
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
-        if result.value == '1':
+        if result.value == "1":
             return result.data
         return None
 
@@ -397,31 +451,30 @@ class GetOption(_Action):
     an Asterisk-searched directory or as an absolute path, without extension. ('myfile.wav'
     would be specified as 'myfile', to allow Asterisk to choose the most efficient encoding,
     based on extension, for the channel)
-    
+
     `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
     of possibly mixed ints and strings. Playback ends immediately when one is received.
-    
+
     `timeout` is the number of milliseconds to wait following the end of playback if no keys
     were pressed to interrupt playback prior to that point. It defaults to 2000.
-    
+
     The value returned is a tuple consisting of (dtmf_key:str, offset:int), where the offset is
     the number of milliseconds that elapsed since the start of playback, or None if playback
     completed successfully or the sample could not be opened.
-    
+
     `AGIAppError` is raised on failure, most commonly because the channel was
     hung-up.
     """
 
-    def __init__(self, filename, escape_digits='', timeout=2000):
+    def __init__(self, filename, escape_digits="", timeout=2000):
         escape_digits = _process_digit_list(escape_digits)
-        _Action.__init__(self,
-                         'GET OPTION', quote(filename),
-                         quote(escape_digits), quote(timeout)
-                         )
+        _Action.__init__(
+            self, "GET OPTION", quote(filename), quote(escape_digits), quote(timeout)
+        )
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
-        if not result.value == '0':
+        if not result.value == "0":
             dtmf_character = _convert_to_char(result.value, response.items)
             offset = _convert_to_int(response.items)
             return (dtmf_character, offset)
@@ -431,20 +484,21 @@ class GetOption(_Action):
 class GetVariable(_Action):
     """
     Returns a `variable` associated with this channel.
-    
+
     The value of the requested variable is returned as a string. If the variable is
     undefined, `None` is returned.
 
     `AGIAppError` is raised on failure.
     """
+
     check_hangup = False
 
     def __init__(self, variable):
-        _Action.__init__(self, 'GET VARIABLE', quote(variable))
+        _Action.__init__(self, "GET VARIABLE", quote(variable))
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
-        if result.value == '1':
+        if result.value == "1":
             return result.data
         return None
 
@@ -457,22 +511,22 @@ class Hangup(_Action):
     """
 
     def __init__(self, channel=None):
-        _Action.__init__(self, 'HANGUP', (channel and quote(channel) or None))
+        _Action.__init__(self, "HANGUP", (channel and quote(channel) or None))
 
 
 class Noop(_Action):
     """
     Does nothing.
-    
+
     Good for testing the connection to the Asterisk server, like a ping, but
     not useful for much else. If you wish to log information through
     Asterisk, use the `verbose` method instead.
-    
+
     `AGIAppError` is raised on failure.
     """
 
     def __init__(self):
-        _Action.__init__(self, 'NOOP')
+        _Action.__init__(self, "NOOP")
 
 
 class ReceiveChar(_Action):
@@ -491,12 +545,15 @@ class ReceiveChar(_Action):
     """
 
     def __init__(self, timeout=0):
-        _Action.__init__(self, 'RECEIVE CHAR', quote(timeout))
+        _Action.__init__(self, "RECEIVE CHAR", quote(timeout))
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
-        if not result.value == '0':
-            return (_convert_to_char(result.value, response.items), result.data == 'timeout')
+        if not result.value == "0":
+            return (
+                _convert_to_char(result.value, response.items),
+                result.data == "timeout",
+            )
         return None
 
 
@@ -513,7 +570,7 @@ class ReceiveText(_Action):
     """
 
     def __init__(self, timeout=0):
-        _Action.__init__(self, 'RECEIVE TEXT', quote(timeout))
+        _Action.__init__(self, "RECEIVE TEXT", quote(timeout))
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
@@ -526,7 +583,7 @@ class RecordFile(_Action):
     defaulting to Asterisk's sounds path or an absolute path, without extension. ('myfile.wav'
     would be specified as 'myfile') `format` is one of the following, which sets the extension
     and encoding, with WAV being the default:
-    
+
     - FORMAT_SLN
     - FORMAT_G723
     - FORMAT_G729
@@ -539,10 +596,10 @@ class RecordFile(_Action):
     The filename may also contain the special string '%d', which Asterisk will replace with an
     auto-incrementing number, with the resulting filename appearing in the 'RECORDED_FILE'
     channel variable.
-    
+
     `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
     of possibly mixed ints and strings. Playback ends immediately when one is received.
-    
+
     `timeout` is the number of milliseconds to wait following the end of playback if no keys
     were pressed to end recording prior to that point. By default, it waits forever.
 
@@ -552,49 +609,69 @@ class RecordFile(_Action):
 
     `silence`, if given, is the number of seconds of silence to allow before terminating
     recording early.
-    
+
     The value returned is a tuple consisting of (dtmf_key:str, offset:int, timeout:bool), where
     the offset is the number of milliseconds that elapsed since the start of playback dtmf_key
     may be the empty string if no key was pressed, and timeout is `False` if recording ended due
     to another condition (DTMF or silence).
-    
+
     The raising of `AGIResultHangup` is another condition that signals a successful recording,
     though it also means the user hung up.
-    
+
     `AGIAppError` is raised on failure, most commonly because the destination file isn't
     writable.
     """
 
-    def __init__(self, filename, format=FORMAT_WAV, escape_digits='', timeout=-1, sample_offset=0, beep=True,
-                 silence=None):
+    def __init__(
+        self,
+        filename,
+        format=FORMAT_WAV,
+        escape_digits="",
+        timeout=-1,
+        sample_offset=0,
+        beep=True,
+        silence=None,
+    ):
         escape_digits = _process_digit_list(escape_digits)
-        _Action.__init__(self,
-                         'RECORD FILE', quote(filename), quote(format),
-                         quote(escape_digits), quote(timeout), quote(sample_offset),
-                         (beep and quote('beep') or None),
-                         (silence and quote('s=' + str(silence)) or None)
-                         )
+        _Action.__init__(
+            self,
+            "RECORD FILE",
+            quote(filename),
+            quote(format),
+            quote(escape_digits),
+            quote(timeout),
+            quote(sample_offset),
+            (beep and quote("beep") or None),
+            (silence and quote("s=" + str(silence)) or None),
+        )
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
         offset = _convert_to_int(response.items)
 
-        if result.data == 'randomerror':
-            raise AGIAppError("Unknown error occurred %(ms)i into recording: %(error)s" % {
-                'ms': offset,
-                'error': result.value,
-            })
-        elif result.data == 'timeout':
-            return ('', offset, True)
-        elif result.data == 'dtmf':
+        if result.data == "randomerror":
+            raise AGIAppError(
+                "Unknown error occurred %(ms)i into recording: %(error)s"
+                % {
+                    "ms": offset,
+                    "error": result.value,
+                }
+            )
+        elif result.data == "timeout":
+            return ("", offset, True)
+        elif result.data == "dtmf":
             return (_convert_to_char(result.value, response.items), offset, False)
-        return ('', offset, True)  # Assume a timeout if any other result data is received.
+        return (
+            "",
+            offset,
+            True,
+        )  # Assume a timeout if any other result data is received.
 
 
 class _SayAction(_Action):
     """
     A specialised subclass of `_Action` that provides behaviour common to several children.
-    
+
     Synthesises speech on a channel. This abstracts the commonalities between the "SAY ?"
     subclasses.
 
@@ -611,14 +688,14 @@ class _SayAction(_Action):
 
     def __init__(self, say_type, argument, escape_digits, *args):
         escape_digits = _process_digit_list(escape_digits)
-        _Action.__init__(self,
-                         'SAY ' + say_type, quote(argument), quote(escape_digits), *args
-                         )
+        _Action.__init__(
+            self, "SAY " + say_type, quote(argument), quote(escape_digits), *args
+        )
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
 
-        if not result.value == '0':
+        if not result.value == "0":
             return _convert_to_char(result.value, response.items)
         return None
 
@@ -635,16 +712,16 @@ class SayAlpha(_SayAction):
     hung-up.
     """
 
-    def __init__(self, characters, escape_digits=''):
+    def __init__(self, characters, escape_digits=""):
         characters = _process_digit_list(characters)
-        _SayAction.__init__(self, 'ALPHA', characters, escape_digits)
+        _SayAction.__init__(self, "ALPHA", characters, escape_digits)
 
 
 class SayDate(_SayAction):
     """
     Reads the date associated with `seconds` since the UNIX Epoch. If not given, the local time
     is used.
-    
+
     `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
     of possibly mixed ints and strings. Playback ends immediately when one is received and it is
     returned. If nothing is recieved, `None` is returned.
@@ -653,24 +730,24 @@ class SayDate(_SayAction):
     hung-up.
     """
 
-    def __init__(self, seconds=None, escape_digits=''):
+    def __init__(self, seconds=None, escape_digits=""):
         if seconds is None:
             seconds = int(time.time())
-        _SayAction.__init__(self, 'DATE', seconds, escape_digits)
+        _SayAction.__init__(self, "DATE", seconds, escape_digits)
 
 
 class SayDatetime(_SayAction):
     """
     Reads the datetime associated with `seconds` since the UNIX Epoch. If not given, the local
     time is used.
-    
+
     `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
     of possibly mixed ints and strings. Playback ends immediately when one is received and it is
     returned. If nothing is recieved, `None` is returned.
 
     `format` defaults to `"ABdY 'digits/at' IMp"`, but may be a string with any of the following
     meta-characters (or single-quote-escaped sound-file references):
-    
+
     - A: Day of the week
     - B: Month (Full Text)
     - m: Month (Numeric)
@@ -687,20 +764,24 @@ class SayDatetime(_SayAction):
 
     `timezone` may be a string in standard UNIX form, like 'America/Edmonton'. If `format` is
     undefined, `timezone` is ignored and left to default to the system's local value.
-    
+
     `AGIAppError` is raised on failure, most commonly because the channel was
     hung-up.
     """
 
-    def __init__(self, seconds=None, escape_digits='', format=None, timezone=None):
+    def __init__(self, seconds=None, escape_digits="", format=None, timezone=None):
         if seconds is None:
             seconds = int(time.time())
         if not format:
             timezone = None
-        _SayAction.__init__(self,
-                            'DATETIME', seconds, escape_digits,
-                            (format and quote(format) or None), (timezone and quote(timezone) or None)
-                            )
+        _SayAction.__init__(
+            self,
+            "DATETIME",
+            seconds,
+            escape_digits,
+            (format and quote(format) or None),
+            (timezone and quote(timezone) or None),
+        )
 
 
 class SayDigits(_SayAction):
@@ -715,9 +796,9 @@ class SayDigits(_SayAction):
     hung-up.
     """
 
-    def __init__(self, digits, escape_digits=''):
+    def __init__(self, digits, escape_digits=""):
         digits = _process_digit_list(digits)
-        _SayAction.__init__(self, 'DIGITS', digits, escape_digits)
+        _SayAction.__init__(self, "DIGITS", digits, escape_digits)
 
 
 class SayNumber(_SayAction):
@@ -732,9 +813,9 @@ class SayNumber(_SayAction):
     hung-up.
     """
 
-    def __init__(self, number, escape_digits=''):
+    def __init__(self, number, escape_digits=""):
         number = _process_digit_list(number)
-        _SayAction.__init__(self, 'NUMBER', number, escape_digits)
+        _SayAction.__init__(self, "NUMBER", number, escape_digits)
 
 
 class SayPhonetic(_SayAction):
@@ -749,16 +830,16 @@ class SayPhonetic(_SayAction):
     hung-up.
     """
 
-    def __init__(self, characters, escape_digits=''):
+    def __init__(self, characters, escape_digits=""):
         characters = _process_digit_list(characters)
-        _SayAction.__init__(self, 'PHONETIC', characters, escape_digits)
+        _SayAction.__init__(self, "PHONETIC", characters, escape_digits)
 
 
 class SayTime(_SayAction):
     """
     Reads the time associated with `seconds` since the UNIX Epoch. If not given, the local
     time is used.
-    
+
     `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
     of possibly mixed ints and strings. Playback ends immediately when one is received and it is
     returned. If nothing is received, `None` is returned.
@@ -767,10 +848,10 @@ class SayTime(_SayAction):
     hung-up.
     """
 
-    def __init__(self, seconds=None, escape_digits=''):
+    def __init__(self, seconds=None, escape_digits=""):
         if seconds is None:
             seconds = int(time.time())
-        _SayAction.__init__(self, 'TIME', seconds, escape_digits)
+        _SayAction.__init__(self, "TIME", seconds, escape_digits)
 
 
 class SendImage(_Action):
@@ -784,7 +865,7 @@ class SendImage(_Action):
     """
 
     def __init__(self, filename):
-        _Action.__init__(self, 'SEND FILE', quote(filename))
+        _Action.__init__(self, "SEND FILE", quote(filename))
 
 
 class SendText(_Action):
@@ -795,7 +876,7 @@ class SendText(_Action):
     """
 
     def __init__(self, text):
-        _Action.__init__(self, 'SEND TEXT', quote(text))
+        _Action.__init__(self, "SEND TEXT", quote(text))
 
 
 class SetAutohangup(_Action):
@@ -808,7 +889,7 @@ class SetAutohangup(_Action):
     """
 
     def __init__(self, seconds=0):
-        _Action.__init__(self, 'SET AUTOHANGUP', quote(seconds))
+        _Action.__init__(self, "SET AUTOHANGUP", quote(seconds))
 
 
 class SetCallerid(_Action):
@@ -821,43 +902,43 @@ class SetCallerid(_Action):
     def __init__(self, number, name=None):
         if name:  # Escape it
             name = '\\"%(name)s\\"' % {
-                'name': name,
+                "name": name,
             }
         else:  # Make sure it's the empty string
-            name = ''
+            name = ""
         number = "%(name)s<%(number)s>" % {
-            'name': name,
-            'number': number,
+            "name": name,
+            "number": number,
         }
-        _Action.__init__(self, 'SET CALLERID', quote(number))
+        _Action.__init__(self, "SET CALLERID", quote(number))
 
 
 class SetContext(_Action):
     """
     Sets the context for Asterisk to use upon completion of this AGI instance.
-    
+
     No context-validation is performed; specifying an invalid context will cause the call to
     terminate unexpectedly.
-    
+
     `AGIAppError` is raised on failure.
     """
 
     def __init__(self, context):
-        _Action.__init__(self, 'SET CONTEXT', quote(context))
+        _Action.__init__(self, "SET CONTEXT", quote(context))
 
 
 class SetExtension(_Action):
     """
     Sets the extension for Asterisk to use upon completion of this AGI instance.
-    
+
     No extension-validation is performed; specifying an invalid extension will cause the call to
     terminate unexpectedly.
-    
+
     `AGIAppError` is raised on failure.
     """
 
     def __init__(self, extension):
-        _Action.__init__(self, 'SET EXTENSION', quote(extension))
+        _Action.__init__(self, "SET EXTENSION", quote(extension))
 
 
 class SetMusic(_Action):
@@ -865,29 +946,31 @@ class SetMusic(_Action):
     Enables or disables music-on-hold for this channel, per the state of the `on` argument.
 
     If specified, `moh_class` identifies the music-on-hold class to be used.
-    
+
     `AGIAppError` is raised on failure.
     """
 
     def __init__(self, on, moh_class=None):
-        _Action.__init__(self,
-                         'SET MUSIC', quote(on and 'on' or 'off'),
-                         (moh_class and quote(moh_class) or None)
-                         )
+        _Action.__init__(
+            self,
+            "SET MUSIC",
+            quote(on and "on" or "off"),
+            (moh_class and quote(moh_class) or None),
+        )
 
 
 class SetPriority(_Action):
     """
     Sets the priority for Asterisk to use upon completion of this AGI instance.
-    
+
     No priority-validation is performed; specifying an invalid priority will cause the call to
     terminate unexpectedly.
-    
+
     `AGIAppError` is raised on failure.
     """
 
     def __init__(self, priority):
-        _Action.__init__(self, 'SET PRIORITY', quote(priority))
+        _Action.__init__(self, "SET PRIORITY", quote(priority))
 
 
 class SetVariable(_Action):
@@ -898,7 +981,7 @@ class SetVariable(_Action):
     """
 
     def __init__(self, name, value):
-        _Action.__init__(self, 'SET VARIABLE', quote(name), quote(value))
+        _Action.__init__(self, "SET VARIABLE", quote(name), quote(value))
 
 
 class StreamFile(_Action):
@@ -909,30 +992,33 @@ class StreamFile(_Action):
     an Asterisk-searched directory or as an absolute path, without extension. ('myfile.wav'
     would be specified as 'myfile', to allow Asterisk to choose the most efficient encoding,
     based on extension, for the channel)
-    
+
     `escape_digits` may optionally be a list of DTMF digits, specified as a string or a sequence
     of possibly mixed ints and strings. Playback ends immediately when one is received.
-    
+
     `sample_offset` may be used to jump an arbitrary number of milliseconds into the audio data.
-    
+
     The value returned is a tuple consisting of (dtmf_key:str, offset:int), where the offset is
     the number of milliseconds that elapsed since the start of playback, or None if playback
     completed successfully or the sample could not be opened.
-    
+
     `AGIAppError` is raised on failure, most commonly because the channel was
     hung-up.
     """
 
-    def __init__(self, filename, escape_digits='', sample_offset=0):
+    def __init__(self, filename, escape_digits="", sample_offset=0):
         escape_digits = _process_digit_list(escape_digits)
-        _Action.__init__(self,
-                         'STREAM FILE', quote(filename),
-                         quote(escape_digits), quote(sample_offset)
-                         )
+        _Action.__init__(
+            self,
+            "STREAM FILE",
+            quote(filename),
+            quote(escape_digits),
+            quote(sample_offset),
+        )
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
-        if not result.value == '0':
+        if not result.value == "0":
             dtmf_character = _convert_to_char(result.value, response.items)
             offset = _convert_to_int(response.items)
             return (dtmf_character, offset)
@@ -942,22 +1028,22 @@ class StreamFile(_Action):
 class TDDMode(_Action):
     """
     Sets the TDD transmission `mode` on supporting channels, one of the following:
-    
+
     - TDD_ON
     - TDD_OFF
     - TDD_MATE
-    
+
     `True` is returned if the mode is set, `False` if the channel isn't capable, and
     `AGIAppError` is raised if a problem occurs. According to documentation from 2006,
     all non-capable channels will cause an exception to occur.
     """
 
     def __init__(self, mode):
-        _Action.__init__(self, 'TDD MODE', mode)
+        _Action.__init__(self, "TDD MODE", mode)
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
-        return result.value == '1'
+        return result.value == "1"
 
 
 class Verbose(_Action):
@@ -965,20 +1051,20 @@ class Verbose(_Action):
     Causes Asterisk to process `message`, logging it to console or disk,
     depending on whether `level` is greater-than-or-equal-to Asterisk's
     corresponding verbosity threshold.
-    
+
     `level` is one of the following, defaulting to LOG_INFO:
-    
+
     - LOG_DEBUG
     - LOG_INFO
     - LOG_WARN
     - LOG_ERROR
     - LOG_CRITICAL
-    
+
     `AGIAppError` is raised on failure.
     """
 
     def __init__(self, message, level=LOG_INFO):
-        _Action.__init__(self, 'VERBOSE', quote(message), quote(level))
+        _Action.__init__(self, "VERBOSE", quote(message), quote(level))
 
 
 class WaitForDigit(_Action):
@@ -987,17 +1073,17 @@ class WaitForDigit(_Action):
     value. By default, this function blocks indefinitely.
 
     If no DTMF key is pressed, `None` is returned.
-    
+
     `AGIAppError` is raised on failure, most commonly because the channel was
     hung-up.
     """
 
     def __init__(self, timeout=-1):
-        _Action.__init__(self, 'WAIT FOR DIGIT', quote(timeout))
+        _Action.__init__(self, "WAIT FOR DIGIT", quote(timeout))
 
     def process_response(self, response):
         result = response.items.get(_RESULT_KEY)
-        if not result.value == '0':
+        if not result.value == "0":
             return _convert_to_char(result.value, response.items)
         return None
 

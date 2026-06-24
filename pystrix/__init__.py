@@ -14,7 +14,7 @@ Usage
 
 Importing this package, or the 'agi' or 'ami' sub-packages is recommended over
 importing individual modules.
- 
+
 Legal
 -----
 
@@ -32,15 +32,16 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU General Public License and
 GNU Lesser General Public License along with this program. If not, see
 <http://www.gnu.org/licenses/>.
- 
+
 (C) Ivrnet, inc., 2011
 
 Authors:
 
 - Neil Tallim <n.tallim@ivrnet.com>
 """
+
 import pystrix.agi
 import pystrix.ami
 
-VERSION = '1.2.0'
-COPYRIGHT = '2013, Neil Tallim <flan@uguu.ca>'
+VERSION = "1.2.0"
+COPYRIGHT = "2013, Neil Tallim <flan@uguu.ca>"
