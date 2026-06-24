@@ -129,4 +129,4 @@ pystrix is licensed under the GNU Lesser General Public License v3 or later (`CO
 
 ## Credits
 
-[Ivrnet, inc.](https://www.ivrnet.com/) funded the initial development of pystrix, led by [Neil Tallim](http://uguu.ca/). See [AUTHORS](AUTHORS) for the full list of contributors and current maintainers.
+[Neil Tallim](http://uguu.ca/) created pystrix, and [Ivrnet, inc.](https://www.ivrnet.com/) funded its initial development. For the full list of contributors, see the [contributors page](https://github.com/IVRTech/pystrix/graphs/contributors) or the commit history.
