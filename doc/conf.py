@@ -13,14 +13,20 @@ master_doc = 'index'
 
 project = u'pystrix'
 copyright = module.COPYRIGHT
-version = re.match('^(\d+\.\d+)', module.VERSION).group(1)
+version = re.match(r'^(\d+\.\d+)', module.VERSION).group(1)
 release = module.VERSION
 
-exclude_trees = ['_build']
+exclude_patterns = ['_build']
 
 pygments_style = 'sphinx'
 
-html_theme = 'default'
+# Prefer the Read the Docs theme when it is installed; fall back to the
+# bundled 'alabaster' theme so local builds work without extra packages.
+try:
+    import sphinx_rtd_theme  # noqa: F401
+    html_theme = 'sphinx_rtd_theme'
+except ImportError:
+    html_theme = 'alabaster'
 html_static_path = ['_static']
 html_show_sourcelink = False
 

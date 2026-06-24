@@ -3,7 +3,6 @@
 Release-building script for pystrix.
 """
 import tarfile
-import fileinput
 
 from pystrix import VERSION
 
@@ -31,14 +30,12 @@ if __name__ == '__main__':
     archive_name = base_name + ".tar.bz2"
     print("Assembling " + archive_name)
     f = tarfile.open(name=archive_name, mode="w:bz2")
-    for line in fileinput.input("pystrix.spec", inplace=True, backup=False):
-        if line.startswith('%define initversion'):
-            line = "%%define initversion %s" % VERSION 
-        print("%s" % (line.rstrip()))
-    f.add('pystrix.spec', arcname="%s/pystrix.spec" % base_name)
     f.add('COPYING', arcname="%s/COPYING" % base_name)
     f.add('COPYING.LESSER', arcname="%s/COPYING.LESSER" % base_name)
     print("\tAdded license files")
+    f.add('README.md', arcname="%s/README.md" % base_name)
+    f.add('CHANGELOG.md', arcname="%s/CHANGELOG.md" % base_name)
+    print("\tAdded README and changelog")
     f.add('doc',arcname="%s/doc" % base_name, filter=doc_filter)
     f.add('build-release.py', arcname="%s/build-release.py" % base_name, filter=python_filter)
     f.add('setup.py', arcname="%s/setup.py" % base_name, filter=python_filter)
