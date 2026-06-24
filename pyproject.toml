@@ -1,0 +1,62 @@
+[build-system]
+# setuptools >= 77 is required for the PEP 639 SPDX license expression below.
+# Build isolation supplies it regardless of the locally installed version.
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pystrix"
+description = "Python bindings for Asterisk Manager Interface and Asterisk Gateway Interface"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "LGPL-3.0-or-later"
+license-files = ["COPYING", "COPYING.LESSER"]
+authors = [{ name = "Neil Tallim" }]
+maintainers = [{ name = "Marta Solano", email = "marta.solano@ivrtechnology.com" }]
+keywords = ["asterisk", "ami", "agi", "fastagi", "telephony"]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Communications :: Telephony",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+test = ["pytest", "pytest-cov"]
+
+[project.urls]
+Homepage = "https://github.com/IVRTech/pystrix"
+Documentation = "https://pystrix.readthedocs.io/"
+Repository = "https://github.com/IVRTech/pystrix"
+Changelog = "https://github.com/IVRTech/pystrix/blob/master/CHANGELOG.md"
+
+[tool.setuptools]
+packages = ["pystrix", "pystrix.agi", "pystrix.ami"]
+
+[tool.setuptools.dynamic]
+version = { attr = "pystrix.VERSION" }
+
+# Lint and format configuration (moved from ruff.toml).
+[tool.ruff]
+target-version = "py39"
+
+[tool.ruff.lint]
+# pycodestyle errors, pyflakes, import sorting (isort), and invalid escape
+# sequences. Whitespace, indentation, and line length are owned by ruff format.
+select = ["E4", "E7", "E9", "F", "I", "W605"]
+
+[tool.ruff.lint.per-file-ignores]
+# The __init__ modules deliberately re-export their public API.
+"pystrix/__init__.py" = ["F401"]
+"pystrix/agi/__init__.py" = ["F401"]
+"pystrix/ami/__init__.py" = ["F401"]
+# The AGI wrapper modules intentionally star-import the shared core.
+"pystrix/agi/agi.py" = ["F403", "F405"]
+"pystrix/agi/fastagi.py" = ["F403", "F405"]

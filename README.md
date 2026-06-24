@@ -123,7 +123,7 @@ A few things to know before you send a change:
 - **Lint and format with ruff.** `ruff check .` and `ruff format --check .` must pass, and CI enforces both. Install the hooks to run them on each commit: `pip install pre-commit && pre-commit install`.
 - **Target Python 3.9+.** The codebase is Python 3 only; the old Python 2 compatibility shims have been removed, so don't reintroduce them.
 - **Build the docs** when you touch them: `pip install -r doc/requirements.txt`, then `cd doc && make html`.
-- **Version bumps** go in `pystrix/__init__.py`. `setup.py` reads `VERSION` from there.
+- **Version bumps** go in `pystrix/__init__.py`. `pyproject.toml` reads `VERSION` from there dynamically.
 - **Keep docstrings complete** and written in reStructuredText. The reference docs are generated from them.
 
 ## License
