@@ -14,7 +14,16 @@ pystrix runs on Python 3.9+. It targets Asterisk 1.10+ and provides a rich, easy
 
 The package is a toolkit, not a framework. You can drop it into a larger project without adopting an async framework such as Twisted.
 
-This repository is version **1.2.0**. The canonical version lives in `pystrix/__init__.py`. New releases follow `<major>.<minor>.<patch>`, with a patch release cut for each bug fix.
+This repository is version **1.3.0**. The canonical version lives in `pystrix/__init__.py`. New releases follow `<major>.<minor>.<patch>`, with a patch release cut for each bug fix.
+
+## Compatibility
+
+| pystrix | Python |
+| --- | --- |
+| 1.3.x | 3.9 – 3.13 |
+| 1.2.0 and earlier | 2.7, 3.4+ (legacy, unmaintained) |
+
+From 1.3.0 on, the `requires-python` metadata makes pip resolve automatically: a project on an older Python receives 1.2.x. All versions target Asterisk 1.10+.
 
 ## Installation
 

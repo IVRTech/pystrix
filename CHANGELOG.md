@@ -6,6 +6,8 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-06-24
+
 ### Added
 - `AGENTS.md` with an architecture overview and contributor guidance.
 - `CLAUDE.md` pointing to `AGENTS.md`.
@@ -29,7 +31,7 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Migrated packaging from `setup.py` to `pyproject.toml` (PEP 621) with a PEP 639 SPDX license expression (`LGPL-3.0-or-later`). Moved the ruff config into `[tool.ruff]`, and removed `setup.py`, `build-release.py`, and `ruff.toml`. Build with `python -m build`; the version is read dynamically from `pystrix.VERSION`.
 
 ### Removed
-- The Python 2 compatibility shims: the `queue` and `socketserver` import fallbacks, the `basestring` branch in `generic_transforms`, and the explicit `(object)` base classes. The codebase is now Python 3 only.
+- The Python 2 compatibility shims: the `queue` and `socketserver` import fallbacks, the `basestring` branch in `generic_transforms`, and the explicit `(object)` base classes. The codebase is now Python 3 only. Dropping Python 2 is released as a pragmatic minor bump rather than a major one, since Python 2 support was already nominal and end-of-life.
 
 ### Fixed
 - Narrowed the bare `except` around `line.decode()` in `_AGI._read_line` to an `isinstance(line, bytes)` check. A real `UnicodeDecodeError` on malformed socket bytes now surfaces instead of being swallowed and leaving raw bytes in the line (#50).
@@ -51,5 +53,6 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 Releases before 1.2.0 are recorded in the git commit history.
 
-[Unreleased]: https://github.com/IVRTech/pystrix/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/IVRTech/pystrix/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/IVRTech/pystrix/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/IVRTech/pystrix/releases/tag/v1.2.0
