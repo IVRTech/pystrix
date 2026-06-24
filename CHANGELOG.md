@@ -11,17 +11,19 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `CLAUDE.md` pointing to `AGENTS.md`.
 - A Contributing section and AGI, FastAGI, and AMI quick-start examples in the README.
 - `.readthedocs.yaml` and `doc/requirements.txt` for reproducible documentation builds.
+- A GitHub Actions CI workflow that installs the package and runs an import smoke test across Python 3.9 through 3.13, plus a documentation build check.
 - This changelog.
 
 ### Changed
 - Converted `README.rst` to `README.md` and corrected the version and install URL.
 - Stated the license as the GNU LGPLv3 or later across the README and `setup.py`. pystrix is not dual-licensed. Both `COPYING` and `COPYING.LESSER` ship because the LGPL extends the GPL.
-- Declared Python 3.9+ in `setup.py` through `python_requires` and trove classifiers, and dropped Python 2 and the end-of-life 3.x entries. The classifiers stop at 3.12, because `pystrix/agi/fastagi.py` imports the `cgi` module that Python 3.13 removed (tracked in #36).
+- Declared Python 3.9+ in `setup.py` through `python_requires` and trove classifiers (3.9 through 3.13), and dropped Python 2 and the end-of-life 3.x entries.
 - Narrowed the "any platform" claim. The FastAGI server runs on Linux and macOS only, because it reads `SOMAXCONN` with `sysctl`.
 - Removed the `AUTHORS` file. Provenance now lives in the README, and the contributor list comes from git history and the GitHub contributors page.
 - Modernized `doc/conf.py` (`exclude_patterns`, Read the Docs theme with a fallback, raw-string regex).
 
 ### Fixed
+- Replaced the removed `cgi.urlparse.parse_qs` in `pystrix/agi/fastagi.py` with `urllib.parse.parse_qs`. This fixes FastAGI query-string parsing on all Python 3 and restores Python 3.13 support (#36).
 - `build-release.py` no longer fails on the missing `pystrix.spec`. The RPM packaging path was removed, and the release tarball now ships `README.md` and `CHANGELOG.md` so a build from the sdist can read the long description.
 - Corrected the `_Response.time` description in the AMI docs and fixed several typos.
 - Stopped tracking `doc/_build/` output and macOS `._` metadata files, and fixed the `.gitignore` rule that let them in.
