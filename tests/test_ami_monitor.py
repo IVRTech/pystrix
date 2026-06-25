@@ -86,7 +86,32 @@ def test_monitor_connection_pings_until_disconnected():
     assert isinstance(monitor, threading.Thread)  # returns a joinable thread
     assert not monitor.is_alive()  # exited on the first disconnected check
     assert len(pings) == 3  # one ping per connected check, none after
+    assert [request["Action"] for request in pings] == ["Ping"] * 3  # all Pings
     assert unhandled == []
+
+
+def test_monitor_connection_logs_reason_on_exit():
+    # When a logger is configured, the monitor records why it stopped so a
+    # vanished monitor thread is traceable rather than silent.
+    class _RecordingLogger:
+        def __init__(self):
+            self.messages = []
+
+        def debug(self, message):
+            self.messages.append(message)
+
+    logger = _RecordingLogger()
+
+    def send_action(request, *args, **kwargs):
+        raise ManagerSocketError("Asterisk service stopped")
+
+    manager = _bare_manager(send_action)
+    manager._logger = logger
+    monitor, unhandled = _run_monitor(manager)
+
+    assert not monitor.is_alive()
+    assert unhandled == []
+    assert any("monitor stopping" in message for message in logger.messages)
 
 
 def test_monitor_connection_propagates_unexpected_errors():

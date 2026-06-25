@@ -601,6 +601,14 @@ class Manager:
         )
         events = self._add_outstanding_request(action_id, request)
         with self._connection_lock:
+            if self._connection is None:
+                # A concurrent disconnect() cleared the connection after the
+                # liveness check above. Drop the request we just registered and
+                # raise the documented exception instead of dereferencing None.
+                self._outstanding_requests.pop(action_id, None)
+                raise ManagerSocketError(
+                    "Connection closed before the request could be sent"
+                )
             self._connection.send_message(command)
 
         if (
