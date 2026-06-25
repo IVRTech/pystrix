@@ -458,13 +458,29 @@ class Manager:
 
         `interval` is the number of seconds to wait between automated Pings to see if Asterisk
         is still alive; defaults to 2.5.
+
+        Returns the monitoring `threading.Thread`, which a caller may join. The thread stops on
+        its own when the connection drops: pinging a downed connection raises `ManagerSocketError`
+        (broken socket) or `ManagerError` (the liveness re-check inside `send_action` fails when
+        the connection dropped just after the loop's own check), and the monitor catches both to
+        exit cleanly rather than dying with an unhandled traceback.
         """
 
         def _monitor_connection():
             from pystrix.ami import core
 
             while self.is_connected():
-                self.send_action(core.Ping())
+                try:
+                    self.send_action(core.Ping())
+                except (ManagerError, ManagerSocketError) as exc:
+                    # The connection dropped between the loop's check and the ping:
+                    # either the socket broke (ManagerSocketError) or send_action's
+                    # own liveness check failed (ManagerError, e.g. Asterisk stopped).
+                    # Nothing can be reported, so the monitor stops cleanly instead of
+                    # crashing the thread. Record why it left, when a logger is set.
+                    if self._logger:
+                        self._logger.debug("AMI connection monitor stopping: %s" % exc)
+                    break
                 time.sleep(interval)
 
         monitor = threading.Thread(
@@ -472,6 +488,7 @@ class Manager:
         )
         monitor.daemon = True
         monitor.start()
+        return monitor
 
     def _compile_callback_definition(self, event, function):
         """
@@ -570,7 +587,8 @@ class Manager:
 
         Raises `ManagerError` if the manager is not connected.
 
-        Raises `ManagerSocketError` if the socket is broken during transmission.
+        Raises `ManagerSocketError` if the socket is broken during transmission, including when a
+        concurrent `disconnect()` closes the connection before the request is sent.
 
         This function is thread-safe.
         """
@@ -584,7 +602,22 @@ class Manager:
         )
         events = self._add_outstanding_request(action_id, request)
         with self._connection_lock:
-            self._connection.send_message(command)
+            if self._connection is None:
+                # A concurrent disconnect() cleared the connection after the
+                # liveness check above. Drop the request we just registered and
+                # raise the documented exception instead of dereferencing None.
+                self._outstanding_requests.pop(action_id, None)
+                raise ManagerSocketError(
+                    "Connection to Asterisk manager closed before the request could be sent"
+                )
+            try:
+                self._connection.send_message(command)
+            except ManagerSocketError:
+                # The socket broke mid-send, before the normal cleanup below can
+                # run. Drop the request we just registered so it does not linger
+                # in _outstanding_requests, then surface the error.
+                self._outstanding_requests.pop(action_id, None)
+                raise
 
         if (
             request.aggregate and not request.synchronous
