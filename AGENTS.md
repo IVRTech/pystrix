@@ -67,7 +67,7 @@ Each raw message parses into a generic `_Message`. The reader then looks up the 
 
 ### FastAGI scaling
 
-This fork's main feature is FastAGI throughput. `_ThreadedTCPServer` (`fastagi.py:52`) sizes `request_queue_size` from the system `SOMAXCONN` (read via `sysctl` on Linux and Darwin) instead of the small Python default, and sets `allow_reuse_address`. The listen backlog directly bounds how many simultaneous calls the server can accept under a surge.
+This fork's main feature is FastAGI throughput. `_ThreadedTCPServer` (`fastagi.py`) sets `request_queue_size` to `_LISTEN_BACKLOG` (`INT_MAX`) instead of the small Python default, and sets `allow_reuse_address`. The listen backlog directly bounds how many simultaneous calls the server can accept under a surge. Rather than read the system limit, it passes the maximum and lets the OS cap the backlog. Unix-like kernels clamp it to the live `somaxconn` (`net.core.somaxconn` on Linux, `kern.ipc.somaxconn` on macOS/BSD), which tracks a tuned-up limit automatically; Windows applies the Winsock maximum (its `SOMAXCONN` is itself `INT_MAX`). This runs on every platform and avoids the old `sysctl` subprocess that raised on non-Linux/macOS hosts. See the `_LISTEN_BACKLOG` comment for the full rationale.
 
 ## Conventions for extending the library
 

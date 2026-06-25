@@ -36,15 +36,42 @@ Authors:
 - Neil Tallim <n.tallim@ivrnet.com>
 """
 
-import platform
-import socket
 import socketserver
-import subprocess
 import threading
 from urllib.parse import parse_qs
 
 from pystrix.agi.agi_core import *
 from pystrix.agi.agi_core import _AGI
+
+# The listen backlog bounds how many connections may queue while the server is
+# busy, which directly limits the call surge a FastAGI server can absorb. We
+# want the largest backlog the kernel will allow on the host.
+#
+# We do NOT read that limit ourselves. The kernel already enforces it: listen()
+# silently caps the backlog to the live system maximum -- net.core.somaxconn on
+# Linux, kern.ipc.somaxconn on macOS and the BSDs -- so passing a value at or
+# above that maximum yields exactly the system maximum. Passing the largest
+# value the call accepts therefore tracks a tuned-up maximum automatically, with
+# no per-call lookup.
+#
+# This is why we do not use socket.SOMAXCONN (a small compile-time constant,
+# historically 128 and 4096 since Linux 5.4) and do not hardcode a ceiling like
+# 65535: on modern kernels somaxconn is a 32-bit value that an administrator can
+# tune above 65535, so any fixed ceiling could undershoot. INT_MAX cannot, since
+# the kernel's own limit is then the only cap. It also replaces the previous
+# approach of shelling out to `sysctl`, which ran a subprocess, parsed
+# OS-specific output, and raised on any system that was neither Linux nor macOS.
+#
+# The value must be exactly INT_MAX (2**31 - 1), not larger: CPython parses the
+# listen() backlog into a C int and raises OverflowError above INT_MAX, which
+# would crash server startup. Do not "round up" this constant.
+#
+# Windows works too, but by a different route: it does not clamp to a system
+# somaxconn. Winsock's own SOMAXCONN constant is 0x7fffffff (= INT_MAX), and
+# Winsock treats that exact value as a sentinel meaning "use a maximum
+# reasonable backlog". So INT_MAX is the right value on every platform, though
+# Windows honors it as that sentinel rather than as a tuned registry limit.
+_LISTEN_BACKLOG = 2**31 - 1  # INT_MAX; Unix kernels cap this to the live somaxconn
 
 
 class _ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
@@ -53,35 +80,10 @@ class _ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     request.
     """
 
-    @staticmethod
-    def get_somaxconn():
-        """
-        Returns the value of SOMAXCONN configured in the system.
-        """
-        # determine the OS appropriate management informations base (MIB)
-        # name to determine SOMAXCONN
-        system = platform.system()
-        if "Linux" == system:
-            sysctl_mib_somaxconn = "net.core.somaxconn"
-            sysctl_output_delimiter = "="
-        elif "Darwin" == system:
-            sysctl_mib_somaxconn = "kern.ipc.somaxconn"
-            sysctl_output_delimiter = ":"
-        else:
-            raise NotImplementedError(
-                "Determining SOMAXCONN is not implemented for {} system.".format(system)
-            )
-        # run the cmd to determine the SOMAXCONN
-        cmd_result = subprocess.check_output(["sysctl", sysctl_mib_somaxconn])
-
-        # parse the output of the cmd to return the value of SOMAXCONN
-        return int(cmd_result.decode().split(sysctl_output_delimiter)[-1].strip())
-
     def __init__(self, *args, **kwargs):
-        # adjust request queue size to a saner value for modern systems
-        # further adjustments are automatically picked up for kernel
-        # settings on server start
-        self.request_queue_size = max(socket.SOMAXCONN, self.get_somaxconn())
+        # Request the maximum backlog and let the kernel cap it to the live
+        # system somaxconn; see _LISTEN_BACKLOG for the full rationale.
+        self.request_queue_size = _LISTEN_BACKLOG
         self.allow_reuse_address = True
         super().__init__(*args, **kwargs)
 
