@@ -610,7 +610,14 @@ class Manager:
                 raise ManagerSocketError(
                     "Connection to Asterisk manager closed before the request could be sent"
                 )
-            self._connection.send_message(command)
+            try:
+                self._connection.send_message(command)
+            except ManagerSocketError:
+                # The socket broke mid-send, before the normal cleanup below can
+                # run. Drop the request we just registered so it does not linger
+                # in _outstanding_requests, then surface the error.
+                self._outstanding_requests.pop(action_id, None)
+                raise
 
         if (
             request.aggregate and not request.synchronous

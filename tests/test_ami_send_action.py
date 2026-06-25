@@ -15,17 +15,30 @@ class _SynchronousRequest(_Request):
     synchronous = True
 
 
-def _disconnected_manager():
-    # is_connected() still reports True, but a raced disconnect() already
-    # cleared _connection. Bypass __init__ and supply only what send_action
-    # touches; neutralize __del__ cleanup to keep GC quiet.
+def _bare_manager(connection):
+    # Bypass __init__ and supply only what send_action touches; neutralize
+    # __del__ cleanup to keep GC quiet. is_connected() reports True so the
+    # send path runs; the supplied connection decides how the send behaves.
     manager = Manager.__new__(Manager)
     manager.is_connected = lambda: True
-    manager._connection = None
+    manager._connection = connection
     manager._connection_lock = threading.Lock()
     manager._outstanding_requests = {}
     manager.close = lambda: None
     return manager
+
+
+def _disconnected_manager():
+    # A raced disconnect() already cleared _connection while is_connected()
+    # still reports True.
+    return _bare_manager(None)
+
+
+class _FailingConnection:
+    # A connection whose send fails mid-write, as a real socket does when it
+    # breaks during transmission.
+    def send_message(self, command):
+        raise ManagerSocketError("Connection to Asterisk manager broken while sending")
 
 
 def test_send_action_raises_when_connection_closed_mid_send():
@@ -50,5 +63,28 @@ def test_send_action_drops_synchronous_request_when_connection_closed_mid_send()
 
     with pytest.raises(ManagerSocketError):
         manager.send_action(_SynchronousRequest("Test"), action_id="race-2")
+
+    assert manager._outstanding_requests == {}
+
+
+def test_send_action_drops_request_when_send_fails_mid_write():
+    # If the socket breaks during send_message, send_action must drop the
+    # request it just registered before re-raising, so it does not linger in
+    # _outstanding_requests with no response ever coming.
+    manager = _bare_manager(_FailingConnection())
+
+    with pytest.raises(ManagerSocketError):
+        manager.send_action(core.Ping(), action_id="send-fail-1")
+
+    assert manager._outstanding_requests == {}
+
+
+def test_send_action_drops_synchronous_request_when_send_fails_mid_write():
+    # The same cleanup for a synchronous request, whose tracking entry is a
+    # (events, finalisers) tuple rather than None.
+    manager = _bare_manager(_FailingConnection())
+
+    with pytest.raises(ManagerSocketError):
+        manager.send_action(_SynchronousRequest("Test"), action_id="send-fail-2")
 
     assert manager._outstanding_requests == {}
