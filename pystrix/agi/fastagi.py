@@ -71,7 +71,7 @@ from pystrix.agi.agi_core import _AGI
 # Winsock treats that exact value as a sentinel meaning "use a maximum
 # reasonable backlog". So INT_MAX is the right value on every platform, though
 # Windows honors it as that sentinel rather than as a tuned registry limit.
-_LISTEN_BACKLOG = 2**31 - 1  # INT_MAX; the kernel caps this to the live somaxconn
+_LISTEN_BACKLOG = 2**31 - 1  # INT_MAX; Unix kernels cap this to the live somaxconn
 
 
 class _ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):

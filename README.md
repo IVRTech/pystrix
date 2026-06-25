@@ -80,7 +80,7 @@ server.register_script_handler(None, demo_handler)  # default handler
 server.serve_forever()
 ```
 
-The FastAGI server requests the largest listen backlog the socket layer accepts and lets the kernel cap it to the host's configured maximum (`net.core.somaxconn` on Linux, `kern.ipc.somaxconn` on macOS and the BSDs), so it absorbs large bursts of simultaneous calls and automatically tracks a tuned-up limit. This needs no configuration and runs on any platform.
+The FastAGI server requests the largest listen backlog the socket layer accepts and lets the operating system cap it, so it absorbs large bursts of simultaneous calls. On Unix-like systems the kernel clamps it to the host's configured maximum (`net.core.somaxconn` on Linux, `kern.ipc.somaxconn` on macOS and the BSDs), so it automatically tracks a tuned-up limit; on Windows, Winsock applies its own maximum. This needs no configuration and runs on any platform.
 
 ### AMI — control and monitor the server
 

@@ -12,9 +12,10 @@ def test_server_requests_max_listen_backlog():
     server = FastAGIServer(interface="127.0.0.1", port=0)
     try:
         assert server.request_queue_size == _LISTEN_BACKLOG
-        # A fixed ceiling like 65535 could undershoot a tuned-up somaxconn; the
-        # backlog must exceed it so the kernel's own limit is the only cap.
-        assert _LISTEN_BACKLOG > 65535
+        # Lock the exact contract: the backlog must be INT_MAX, the largest value
+        # CPython's listen() accepts (2**31 raises OverflowError). A smaller fixed
+        # ceiling would also undershoot a tuned-up somaxconn.
+        assert _LISTEN_BACKLOG == 2**31 - 1
     finally:
         server.server_close()
 
