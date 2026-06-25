@@ -96,7 +96,17 @@ class _AGIClientHandler(socketserver.StreamRequestHandler):
         Creates an instance of an AGI-interface object and passes it to a pre-specified callable,
         selected by matching the request parameters against a series of regular expressions.
         """
-        agi_instance = FastAGI(self.rfile, self.wfile, debug=self.server.debug)
+        try:
+            agi_instance = FastAGI(self.rfile, self.wfile, debug=self.server.debug)
+        except AGIHangup:
+            # The client disconnected before sending the full AGI environment:
+            # the caller hung up as the call reached the AGI step, Asterisk
+            # aborted the leg, or a bare TCP probe connected and closed. No call
+            # is in flight, so end the request quietly instead of letting the
+            # hangup propagate into a socketserver stderr traceback. Errors from
+            # the handler itself are raised below, outside this guard, so they
+            # still surface.
+            return
 
         (path, kwargs) = self._extract_query_elements(agi_instance)
         args = self._extract_positional_args(agi_instance)
