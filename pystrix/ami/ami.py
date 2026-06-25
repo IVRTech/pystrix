@@ -460,9 +460,10 @@ class Manager:
         is still alive; defaults to 2.5.
 
         Returns the monitoring `threading.Thread`, which a caller may join. The thread stops on
-        its own when the connection drops: a broken socket raises `ManagerSocketError` during a
-        Ping, which the monitor catches to exit cleanly rather than dying with an unhandled
-        traceback.
+        its own when the connection drops: pinging a downed connection raises `ManagerSocketError`
+        (broken socket) or `ManagerError` (the liveness re-check inside `send_action` fails when
+        the connection dropped just after the loop's own check), and the monitor catches both to
+        exit cleanly rather than dying with an unhandled traceback.
         """
 
         def _monitor_connection():
@@ -471,10 +472,14 @@ class Manager:
             while self.is_connected():
                 try:
                     self.send_action(core.Ping())
-                except ManagerSocketError:
-                    # The socket died between the connection check and the ping
-                    # (for example, Asterisk stopped). Nothing can be reported,
-                    # so the monitor stops cleanly instead of crashing the thread.
+                except (ManagerError, ManagerSocketError) as exc:
+                    # The connection dropped between the loop's check and the ping:
+                    # either the socket broke (ManagerSocketError) or send_action's
+                    # own liveness check failed (ManagerError, e.g. Asterisk stopped).
+                    # Nothing can be reported, so the monitor stops cleanly instead of
+                    # crashing the thread. Record why it left, when a logger is set.
+                    if self._logger:
+                        self._logger.debug("AMI connection monitor stopping: %s" % exc)
                     break
                 time.sleep(interval)
 
