@@ -49,7 +49,28 @@ def test_handle_returns_quietly_when_client_disconnects_during_handshake():
     # environment makes the handshake raise AGISIGPIPEHangup. handle() must end
     # the request quietly instead of letting that propagate into a stderr
     # traceback from socketserver.
-    _handler(_ClosedReader()).handle()  # must not raise
+    invoked = []
+    handler = _handler(
+        _ClosedReader(), handler_callable=lambda *args: invoked.append(args)
+    )
+
+    handler.handle()  # must not raise
+
+    assert invoked == []  # no script handler runs when the client is already gone
+    assert handler.wfile.getvalue() == b""  # nothing written back on the quiet path
+
+
+def test_handle_returns_quietly_when_client_disconnects_mid_handshake():
+    # A client that sends part of the environment then drops hits EOF inside the
+    # parse loop, not on the first read. Still a handshake hangup that must end
+    # the request quietly.
+    invoked = []
+    reader = _EnvReader(b"agi_network_script: demo\n")  # no blank terminator, then EOF
+    handler = _handler(reader, handler_callable=lambda *args: invoked.append(args))
+
+    handler.handle()  # must not raise
+
+    assert invoked == []
 
 
 def test_handle_propagates_handler_errors():

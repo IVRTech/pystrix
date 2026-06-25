@@ -98,14 +98,14 @@ class _AGIClientHandler(socketserver.StreamRequestHandler):
         """
         try:
             agi_instance = FastAGI(self.rfile, self.wfile, debug=self.server.debug)
-        except AGIHangup:
-            # The client disconnected before sending the full AGI environment:
+        except AGISIGPIPEHangup:
+            # The client's pipe closed before the full AGI environment arrived:
             # the caller hung up as the call reached the AGI step, Asterisk
             # aborted the leg, or a bare TCP probe connected and closed. No call
             # is in flight, so end the request quietly instead of letting the
-            # hangup propagate into a socketserver stderr traceback. Errors from
-            # the handler itself are raised below, outside this guard, so they
-            # still surface.
+            # hangup propagate into a socketserver stderr traceback. This catches
+            # only the handshake-disconnect signal; errors from the handler
+            # itself are raised below, outside this guard, so they still surface.
             return
 
         (path, kwargs) = self._extract_query_elements(agi_instance)
