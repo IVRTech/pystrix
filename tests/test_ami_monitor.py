@@ -111,7 +111,12 @@ def test_monitor_connection_logs_reason_on_exit():
 
     assert not monitor.is_alive()
     assert unhandled == []
-    assert any("monitor stopping" in message for message in logger.messages)
+    # The log records both that the monitor stopped and the underlying reason,
+    # so the exception detail must survive into the message.
+    assert any(
+        "monitor stopping" in message and "Asterisk service stopped" in message
+        for message in logger.messages
+    )
 
 
 def test_monitor_connection_propagates_unexpected_errors():

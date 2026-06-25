@@ -587,7 +587,8 @@ class Manager:
 
         Raises `ManagerError` if the manager is not connected.
 
-        Raises `ManagerSocketError` if the socket is broken during transmission.
+        Raises `ManagerSocketError` if the socket is broken during transmission, including when a
+        concurrent `disconnect()` closes the connection before the request is sent.
 
         This function is thread-safe.
         """
@@ -607,7 +608,7 @@ class Manager:
                 # raise the documented exception instead of dereferencing None.
                 self._outstanding_requests.pop(action_id, None)
                 raise ManagerSocketError(
-                    "Connection closed before the request could be sent"
+                    "Connection to Asterisk manager closed before the request could be sent"
                 )
             self._connection.send_message(command)
 
