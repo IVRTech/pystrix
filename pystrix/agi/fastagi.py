@@ -61,6 +61,16 @@ from pystrix.agi.agi_core import _AGI
 # the kernel's own limit is then the only cap. It also replaces the previous
 # approach of shelling out to `sysctl`, which ran a subprocess, parsed
 # OS-specific output, and raised on any system that was neither Linux nor macOS.
+#
+# The value must be exactly INT_MAX (2**31 - 1), not larger: CPython parses the
+# listen() backlog into a C int and raises OverflowError above INT_MAX, which
+# would crash server startup. Do not "round up" this constant.
+#
+# Windows works too, but by a different route: it does not clamp to a system
+# somaxconn. Winsock's own SOMAXCONN constant is 0x7fffffff (= INT_MAX), and
+# Winsock treats that exact value as a sentinel meaning "use a maximum
+# reasonable backlog". So INT_MAX is the right value on every platform, though
+# Windows honors it as that sentinel rather than as a tuned registry limit.
 _LISTEN_BACKLOG = 2**31 - 1  # INT_MAX; the kernel caps this to the live somaxconn
 
 

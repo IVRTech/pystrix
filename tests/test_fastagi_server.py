@@ -1,6 +1,7 @@
 """Tests for FastAGIServer listen-backlog configuration."""
 
-from pystrix.agi.fastagi import FastAGIServer, _ThreadedTCPServer
+from pystrix.agi import fastagi
+from pystrix.agi.fastagi import _LISTEN_BACKLOG, FastAGIServer, _ThreadedTCPServer
 
 
 def test_server_requests_max_listen_backlog():
@@ -10,12 +11,18 @@ def test_server_requests_max_listen_backlog():
     # rather than rejecting it.
     server = FastAGIServer(interface="127.0.0.1", port=0)
     try:
-        assert server.request_queue_size == 2**31 - 1
+        assert server.request_queue_size == _LISTEN_BACKLOG
+        # A fixed ceiling like 65535 could undershoot a tuned-up somaxconn; the
+        # backlog must exceed it so the kernel's own limit is the only cap.
+        assert _LISTEN_BACKLOG > 65535
     finally:
         server.server_close()
 
 
 def test_backlog_sizing_does_not_shell_out():
-    # The sysctl-spawning, OS-branching helper is gone; backlog sizing no longer
-    # shells out or raises on platforms without sysctl (regression for #32).
+    # The sysctl-spawning, OS-branching helper is gone and the module no longer
+    # imports the subprocess/platform machinery it used, so backlog sizing cannot
+    # shell out or raise on platforms without sysctl (regression for #32).
     assert not hasattr(_ThreadedTCPServer, "get_somaxconn")
+    assert not hasattr(fastagi, "subprocess")
+    assert not hasattr(fastagi, "platform")
