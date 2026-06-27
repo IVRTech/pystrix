@@ -65,6 +65,9 @@ target/
 .venv/
 venv/
 
+# Git worktrees
+.worktrees/
+
 # macOS
 .DS_Store
 ._*
