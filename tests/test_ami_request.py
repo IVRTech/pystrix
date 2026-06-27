@@ -1,6 +1,13 @@
 """Tests for AMI request building (`pystrix.ami.ami._Request`)."""
 
+import array
+import ctypes
+import mmap
+
+import pytest
+
 from pystrix.ami.ami import _Request
+from pystrix.ami.core import Originate_Application
 
 
 def _build(request, action_id=None, **kwargs):
@@ -32,6 +39,99 @@ def test_multi_value_header_expands_to_repeated_lines():
     command, _ = _build(request)
     assert "Variable: a=1\r\n" in command
     assert "Variable: b=2\r\n" in command
+
+
+def test_originate_application_treats_string_data_as_one_argument():
+    request = Originate_Application("SIP/708", "Playback", "goodbye")
+
+    command, _ = _build(request)
+
+    assert "Data: goodbye\r\n" in command
+    assert "Data: g,o,o,d,b,y,e\r\n" not in command
+
+
+def test_originate_application_preserves_sequence_data_arguments():
+    request = Originate_Application("SIP/708", "Playback", ("goodbye", "noanswer"))
+
+    command, _ = _build(request)
+
+    assert "Data: goodbye,noanswer\r\n" in command
+
+
+@pytest.mark.parametrize(
+    "data_factory",
+    [
+        pytest.param(lambda: b"goodbye", id="bytes"),
+        pytest.param(lambda: b"", id="empty-bytes"),
+        pytest.param(lambda: bytearray(b"goodbye"), id="bytearray"),
+        pytest.param(lambda: bytearray(), id="empty-bytearray"),
+        pytest.param(lambda: memoryview(b"goodbye"), id="memoryview"),
+        pytest.param(lambda: memoryview(b""), id="empty-memoryview"),
+        pytest.param(lambda: array.array("b", b"hi"), id="array"),
+        pytest.param(lambda: (ctypes.c_ubyte * 2)(104, 105), id="ctypes-array"),
+        pytest.param(lambda: mmap.mmap(-1, 2), id="mmap"),
+    ],
+)
+def test_originate_application_rejects_binary_data(data_factory):
+    data = data_factory()
+    try:
+        with pytest.raises(
+            TypeError,
+            match="data must be a string or sequence of strings, not a bytes-like object",
+        ):
+            Originate_Application("SIP/708", "Playback", data)
+    finally:
+        if isinstance(data, memoryview):
+            data.release()
+        close = getattr(data, "close", None)
+        if close:
+            close()
+
+
+def test_originate_application_omits_empty_string_data():
+    request = Originate_Application("SIP/708", "Playback", "")
+
+    command, _ = _build(request)
+
+    assert "Data:" not in command
+
+
+def test_rejects_header_value_containing_crlf():
+    request = _Request("Originate")
+    request["Data"] = "goodbye\r\nInjected: x"
+
+    with pytest.raises(ValueError, match="AMI header values must not contain CR or LF"):
+        _build(request)
+
+
+def test_rejects_action_value_containing_crlf():
+    request = _Request("Ping\r\nInjected: x")
+
+    with pytest.raises(ValueError, match="AMI header values must not contain CR or LF"):
+        _build(request)
+
+
+def test_rejects_header_key_containing_crlf():
+    request = _Request("Originate")
+    request["Data\r\nInjected"] = "goodbye"
+
+    with pytest.raises(ValueError, match="AMI header keys must not contain CR or LF"):
+        _build(request)
+
+
+def test_rejects_multi_value_header_value_containing_crlf():
+    request = _Request("Originate")
+    request["Variable"] = ("a=1\r\nInjected: x", "b=2")
+
+    with pytest.raises(ValueError, match="AMI header values must not contain CR or LF"):
+        _build(request)
+
+
+def test_rejects_action_id_containing_crlf():
+    request = _Request("Ping")
+
+    with pytest.raises(ValueError, match="AMI header values must not contain CR or LF"):
+        _build(request, action_id="safe\r\nInjected: x")
 
 
 def test_multi_value_order_preserved_and_blank_line_terminator():

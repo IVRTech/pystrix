@@ -816,9 +816,10 @@ class Originate_Application(_Originate):
         `channel` is the destination to be called, expressed as a fully qualified Asterisk channel,
         like "SIP/test-account@example.org".
 
-        `application` is the name of the application to be executed, and `data` is optionally any
-        parameters to pass to the application, as an ordered sequence (list or tuple) of strings,
-        escaped as necessary (the ',' character is special).
+        `application` is the name of the application to be executed, and `data` is optionally a
+        single string argument or an ordered sequence (list or tuple) of strings to be joined with
+        commas. The ',' character is special and should be escaped as needed by the caller.
+        Bytes-like objects passed as `data` raise `TypeError`.
 
         `timeout`, if given, is the number of milliseconds to wait before dropping an unanwsered
         call. If set, the request's timeout value will be set to this number + 2 seconds, removing
@@ -841,7 +842,22 @@ class Originate_Application(_Originate):
             self, channel, timeout, callerid, variables, account, async_
         )
         self["Application"] = application
+        if not isinstance(data, str):
+            try:
+                data_view = memoryview(data)
+            except TypeError:
+                # Non-buffer sequences fall through to normal Data joining below.
+                pass
+            else:
+                data_view.release()
+                raise TypeError(
+                    "data must be a string or sequence of strings, "
+                    "not a bytes-like object"
+                )
         if data:
+            # Plain strings skip the buffer probe and need wrapping for join().
+            if isinstance(data, str):
+                data = (data,)
             self["Data"] = ",".join((str(d) for d in data))
 
 
