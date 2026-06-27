@@ -6,6 +6,9 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- Refreshed documentation copyright metadata and moved GitHub Actions workflow dependencies to current Node 24-backed major versions (#60).
+
 ### Fixed
 - `Manager.monitor_connection` no longer crashes its monitoring thread when the connection drops. Pinging a downed connection raised `ManagerSocketError` (broken socket) or `ManagerError` (the liveness check inside `send_action` failing when the connection dropped just after the loop's own check) inside the thread, which dumped a traceback to stderr and killed the monitor. The monitor now catches both and stops cleanly, logging the reason at debug level when a logger is set. The method also returns the monitoring thread so callers can join it (#3).
 - `Manager.send_action` no longer raises a raw `AttributeError` when a concurrent `disconnect()` clears the connection between the liveness check and the send. It now drops the just-registered request and raises `ManagerSocketError` instead (#3).
