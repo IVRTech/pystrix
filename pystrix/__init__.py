@@ -44,4 +44,4 @@ import pystrix.agi
 import pystrix.ami
 
 VERSION = "1.3.0"
-COPYRIGHT = "2013, Neil Tallim <flan@uguu.ca>"
+COPYRIGHT = "2026, IVR Technology Group"

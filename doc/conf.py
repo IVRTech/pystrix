@@ -16,6 +16,7 @@ master_doc = "index"
 
 project = "pystrix"
 copyright = module.COPYRIGHT
+copyright_holder = module.COPYRIGHT.split(", ", 1)[1]
 version = re.match(r"^(\d+\.\d+)", module.VERSION).group(1)
 release = module.VERSION
 
@@ -41,7 +42,7 @@ latex_documents = [
         "index",
         "pystrix.tex",
         "pystrix Documentation",
-        re.search(", (.*?) <", module.COPYRIGHT).group(1),
+        copyright_holder,
         "manual",
     ),
 ]
