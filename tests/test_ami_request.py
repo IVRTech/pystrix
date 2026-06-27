@@ -1,5 +1,9 @@
 """Tests for AMI request building (`pystrix.ami.ami._Request`)."""
 
+import array
+import ctypes
+import mmap
+
 import pytest
 
 from pystrix.ami.ami import _Request
@@ -55,21 +59,33 @@ def test_originate_application_preserves_sequence_data_arguments():
 
 
 @pytest.mark.parametrize(
-    "data",
+    "data_factory",
     [
-        b"goodbye",
-        b"",
-        bytearray(b"goodbye"),
-        bytearray(),
-        memoryview(b"goodbye"),
-        memoryview(b""),
+        pytest.param(lambda: b"goodbye", id="bytes"),
+        pytest.param(lambda: b"", id="empty-bytes"),
+        pytest.param(lambda: bytearray(b"goodbye"), id="bytearray"),
+        pytest.param(lambda: bytearray(), id="empty-bytearray"),
+        pytest.param(lambda: memoryview(b"goodbye"), id="memoryview"),
+        pytest.param(lambda: memoryview(b""), id="empty-memoryview"),
+        pytest.param(lambda: array.array("b", b"hi"), id="array"),
+        pytest.param(lambda: (ctypes.c_ubyte * 2)(104, 105), id="ctypes-array"),
+        pytest.param(lambda: mmap.mmap(-1, 2), id="mmap"),
     ],
 )
-def test_originate_application_rejects_binary_data(data):
-    with pytest.raises(
-        TypeError, match="data must be a string or sequence of strings, not bytes"
-    ):
-        Originate_Application("SIP/708", "Playback", data)
+def test_originate_application_rejects_binary_data(data_factory):
+    data = data_factory()
+    try:
+        with pytest.raises(
+            TypeError,
+            match="data must be a string or sequence of strings, not a bytes-like object",
+        ):
+            Originate_Application("SIP/708", "Playback", data)
+    finally:
+        if isinstance(data, memoryview):
+            data.release()
+        close = getattr(data, "close", None)
+        if close:
+            close()
 
 
 def test_originate_application_omits_empty_string_data():
