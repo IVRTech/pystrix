@@ -590,6 +590,8 @@ class Manager:
         Raises `ManagerSocketError` if the socket is broken during transmission, including when a
         concurrent `disconnect()` closes the connection before the request is sent.
 
+        Raises `ValueError` if any header key or value contains CR or LF.
+
         This function is thread-safe.
         """
         if not self.is_connected():
@@ -1056,17 +1058,24 @@ class _Request(dict):
         `**kwargs` is a dictionary of additional arguments that may be passed along with the request
         at submission time.
 
+        Raises `ValueError` if any header key or value contains CR or LF.
+
         The 'Action' line is always first.
         """
 
         def validate_header(key, value):
+            # AMI v2 uses '\r\n' as the field separator and a bare '\r\n' (blank
+            # line) as the packet terminator. The protocol defines no escaping
+            # mechanism, so a literal CR or LF inside a key or value is
+            # indistinguishable from a field boundary or end-of-packet marker.
+            # See: https://docs.asterisk.org/Configuration/Interfaces/Asterisk-Manager-Interface-AMI/AMI-v2-Specification/
             if "\r" in key or "\n" in key:
                 raise ValueError("AMI header keys must not contain CR or LF")
             if "\r" in value or "\n" in value:
                 raise ValueError("AMI header values must not contain CR or LF")
             return (key, value)
 
-        items = [(KEY_ACTION, self[KEY_ACTION])]
+        items = [validate_header(KEY_ACTION, str(self[KEY_ACTION]))]
         for key, value in [
             (k, v) for (k, v) in self.items() if k not in (KEY_ACTION, KEY_ACTIONID)
         ] + list(kwargs.items()):

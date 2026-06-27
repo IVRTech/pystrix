@@ -841,6 +841,8 @@ class Originate_Application(_Originate):
             self, channel, timeout, callerid, variables, account, async_
         )
         self["Application"] = application
+        if isinstance(data, bytes):
+            raise TypeError("data must be a string or sequence of strings, not bytes")
         if data:
             if isinstance(data, str):
                 data = (data,)
