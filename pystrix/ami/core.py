@@ -846,6 +846,7 @@ class Originate_Application(_Originate):
             try:
                 data_view = memoryview(data)
             except TypeError:
+                # Non-buffer sequences fall through to normal Data joining below.
                 pass
             else:
                 data_view.release()
@@ -854,6 +855,7 @@ class Originate_Application(_Originate):
                     "not a bytes-like object"
                 )
         if data:
+            # Plain strings skip the buffer probe and need wrapping for join().
             if isinstance(data, str):
                 data = (data,)
             self["Data"] = ",".join((str(d) for d in data))
