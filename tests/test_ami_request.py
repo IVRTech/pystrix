@@ -1,6 +1,9 @@
 """Tests for AMI request building (`pystrix.ami.ami._Request`)."""
 
+import pytest
+
 from pystrix.ami.ami import _Request
+from pystrix.ami.core import Originate_Application
 
 
 def _build(request, action_id=None, **kwargs):
@@ -32,6 +35,39 @@ def test_multi_value_header_expands_to_repeated_lines():
     command, _ = _build(request)
     assert "Variable: a=1\r\n" in command
     assert "Variable: b=2\r\n" in command
+
+
+def test_originate_application_treats_string_data_as_one_argument():
+    request = Originate_Application("SIP/708", "Playback", "goodbye")
+
+    command, _ = _build(request)
+
+    assert "Data: goodbye\r\n" in command
+    assert "Data: g,o,o,d,b,y,e\r\n" not in command
+
+
+def test_originate_application_preserves_sequence_data_arguments():
+    request = Originate_Application("SIP/708", "Playback", ("goodbye", "noanswer"))
+
+    command, _ = _build(request)
+
+    assert "Data: goodbye,noanswer\r\n" in command
+
+
+def test_rejects_header_value_containing_crlf():
+    request = _Request("Originate")
+    request["Data"] = "goodbye\r\nInjected: x"
+
+    with pytest.raises(ValueError, match="AMI header values must not contain CR or LF"):
+        _build(request)
+
+
+def test_rejects_header_key_containing_crlf():
+    request = _Request("Originate")
+    request["Data\r\nInjected"] = "goodbye"
+
+    with pytest.raises(ValueError, match="AMI header keys must not contain CR or LF"):
+        _build(request)
 
 
 def test_multi_value_order_preserved_and_blank_line_terminator():

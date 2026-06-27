@@ -11,6 +11,7 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `Manager.send_action` no longer raises a raw `AttributeError` when a concurrent `disconnect()` clears the connection between the liveness check and the send. It now drops the just-registered request and raises `ManagerSocketError` instead (#3).
 - The FastAGI server no longer prints an unhandled traceback to stderr when a client disconnects during the AGI environment handshake. A caller hanging up, Asterisk aborting the leg, or a bare TCP probe raised `AGISIGPIPEHangup` from the handler and printed a full traceback for a routine event. The handler now ends the request quietly. Errors raised by the script handler itself still propagate (#49).
 - The FastAGI server sizes its listen backlog without shelling out to `sysctl`. It now requests the maximum backlog and lets the operating system cap it: Unix-like kernels clamp it to the live `somaxconn`, which still tracks a tuned-up limit automatically, and Windows applies the Winsock maximum. This also lifts the platform restriction added in 1.3.0: the server previously raised `NotImplementedError` on any host that was neither Linux nor macOS, and now runs everywhere (#32).
+- `Originate_Application` now treats a plain string `data` argument as one application argument instead of splitting it into comma-separated characters (#11).
 
 ## [1.3.0] - 2026-06-24
 

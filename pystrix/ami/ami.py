@@ -1058,6 +1058,14 @@ class _Request(dict):
 
         The 'Action' line is always first.
         """
+
+        def validate_header(key, value):
+            if "\r" in key or "\n" in key:
+                raise ValueError("AMI header keys must not contain CR or LF")
+            if "\r" in value or "\n" in value:
+                raise ValueError("AMI header values must not contain CR or LF")
+            return (key, value)
+
         items = [(KEY_ACTION, self[KEY_ACTION])]
         for key, value in [
             (k, v) for (k, v) in self.items() if k not in (KEY_ACTION, KEY_ACTIONID)
@@ -1065,9 +1073,9 @@ class _Request(dict):
             key = str(key)
             if type(value) in (tuple, list, set, frozenset):
                 for val in value:
-                    items.append((key, str(val)))
+                    items.append(validate_header(key, str(val)))
             else:
-                items.append((key, str(value)))
+                items.append(validate_header(key, str(value)))
 
         # Resolve the ActionID using the precedence documented above: an explicit
         # argument wins, then any value already set on the request, then a generated
@@ -1076,7 +1084,7 @@ class _Request(dict):
         if action_id is None:
             action_id = self[KEY_ACTIONID] if KEY_ACTIONID in self else id_generator()
         action_id = str(action_id)
-        items.append((KEY_ACTIONID, action_id))
+        items.append(validate_header(KEY_ACTIONID, action_id))
 
         return (
             _EOL.join(
