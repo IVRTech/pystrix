@@ -54,11 +54,22 @@ def test_originate_application_preserves_sequence_data_arguments():
     assert "Data: goodbye,noanswer\r\n" in command
 
 
-def test_originate_application_rejects_bytes_data():
+@pytest.mark.parametrize(
+    "data",
+    [
+        b"goodbye",
+        b"",
+        bytearray(b"goodbye"),
+        bytearray(),
+        memoryview(b"goodbye"),
+        memoryview(b""),
+    ],
+)
+def test_originate_application_rejects_binary_data(data):
     with pytest.raises(
         TypeError, match="data must be a string or sequence of strings, not bytes"
     ):
-        Originate_Application("SIP/708", "Playback", b"goodbye")
+        Originate_Application("SIP/708", "Playback", data)
 
 
 def test_originate_application_omits_empty_string_data():
@@ -77,7 +88,7 @@ def test_rejects_header_value_containing_crlf():
         _build(request)
 
 
-def test_rejects_action_containing_crlf():
+def test_rejects_action_value_containing_crlf():
     request = _Request("Ping\r\nInjected: x")
 
     with pytest.raises(ValueError, match="AMI header values must not contain CR or LF"):
@@ -89,6 +100,14 @@ def test_rejects_header_key_containing_crlf():
     request["Data\r\nInjected"] = "goodbye"
 
     with pytest.raises(ValueError, match="AMI header keys must not contain CR or LF"):
+        _build(request)
+
+
+def test_rejects_multi_value_header_value_containing_crlf():
+    request = _Request("Originate")
+    request["Variable"] = ("a=1\r\nInjected: x", "b=2")
+
+    with pytest.raises(ValueError, match="AMI header values must not contain CR or LF"):
         _build(request)
 
 
