@@ -1080,6 +1080,170 @@ class VoicemailUserEntryComplete(_Event):
     """
 
 
+# Modern channel and bridge events
+####################################################################################################
+# These cover events added in Asterisk 13+ that are commonly needed in call-control applications.
+# Wire names confirmed against Asterisk 13 main/manager_channels.c and main/manager_bridges.c.
+
+
+class BridgeCreate(_Event):
+    """
+    Emitted when a bridge is created.
+
+    - 'BridgeType': The type of bridge
+    - 'BridgeUniqueid': A unique identifier for the bridge
+    - 'BridgeTechnology': The technology used by the bridge
+    - 'BridgeNumChannels': The number of channels currently in the bridge (int)
+    """
+
+    def process(self):
+        """
+        Translates the 'BridgeNumChannels' header's value into an int, or None on failure.
+        """
+        (headers, data) = _Event.process(self)
+        generic_transforms.to_int(headers, ("BridgeNumChannels",), None)
+        return (headers, data)
+
+
+class BridgeDestroy(_Event):
+    """
+    Emitted when a bridge is destroyed.
+
+    - 'BridgeType': The type of bridge
+    - 'BridgeUniqueid': A unique identifier for the bridge
+    - 'BridgeTechnology': The technology used by the bridge
+    - 'BridgeNumChannels': The number of channels at time of destruction (int)
+    """
+
+    def process(self):
+        """
+        Translates the 'BridgeNumChannels' header's value into an int, or None on failure.
+        """
+        (headers, data) = _Event.process(self)
+        generic_transforms.to_int(headers, ("BridgeNumChannels",), None)
+        return (headers, data)
+
+
+class BridgeEnter(_Event):
+    """
+    Emitted when a channel enters a bridge.
+
+    - 'BridgeType': The type of bridge
+    - 'BridgeUniqueid': A unique identifier for the bridge
+    - 'BridgeTechnology': The technology used by the bridge
+    - 'BridgeNumChannels': The number of channels now in the bridge (int)
+    - 'Channel': The channel that entered the bridge
+    - 'Uniqueid': The Asterisk unique identifier for the channel
+    - 'SwapUniqueid': The unique identifier of a channel swapped out (empty when no swap)
+    """
+
+    def process(self):
+        """
+        Translates the 'BridgeNumChannels' header's value into an int, or None on failure.
+        """
+        (headers, data) = _Event.process(self)
+        generic_transforms.to_int(headers, ("BridgeNumChannels",), None)
+        return (headers, data)
+
+
+class BridgeLeave(_Event):
+    """
+    Emitted when a channel leaves a bridge.
+
+    - 'BridgeType': The type of bridge
+    - 'BridgeUniqueid': A unique identifier for the bridge
+    - 'BridgeTechnology': The technology used by the bridge
+    - 'BridgeNumChannels': The number of channels remaining in the bridge (int)
+    - 'Channel': The channel that left the bridge
+    - 'Uniqueid': The Asterisk unique identifier for the channel
+    """
+
+    def process(self):
+        """
+        Translates the 'BridgeNumChannels' header's value into an int, or None on failure.
+        """
+        (headers, data) = _Event.process(self)
+        generic_transforms.to_int(headers, ("BridgeNumChannels",), None)
+        return (headers, data)
+
+
+class DialBegin(_Event):
+    """
+    Emitted when a dial operation begins on a channel.
+
+    - 'Channel': The calling channel
+    - 'Uniqueid': The Asterisk unique identifier for the calling channel
+    - 'DestChannel': The channel being dialled
+    - 'DestUniqueid': The Asterisk unique identifier for the destination channel
+    - 'DialString': The dial string used to reach the destination
+    """
+
+
+class DialEnd(_Event):
+    """
+    Emitted when a dial operation ends.
+
+    - 'Channel': The calling channel
+    - 'Uniqueid': The Asterisk unique identifier for the calling channel
+    - 'DestChannel': The channel that was dialled
+    - 'DestUniqueid': The Asterisk unique identifier for the destination channel
+    - 'DialStatus': The outcome: "ANSWER", "BUSY", "CANCEL", "CONGESTION", "NOANSWER", "CHANUNAVAIL"
+    - 'Forward' (optional): The forwarding destination, if the call was forwarded
+    """
+
+
+class Hold(_Event):
+    """
+    Emitted when a channel is placed on hold.
+
+    - 'MusicClass' (optional): The suggested music-on-hold class
+    """
+
+
+class MusicOnHoldStart(_Event):
+    """
+    Emitted when music on hold starts on a channel.
+
+    - 'Class': The music-on-hold class being played
+    """
+
+
+class MusicOnHoldStop(_Event):
+    """
+    Emitted when music on hold stops on a channel.
+    """
+
+
+class NewCallerid(_Event):
+    """
+    Emitted when a channel receives new Caller ID information.
+
+    - 'Channel': The channel whose Caller ID changed
+    - 'Uniqueid': The Asterisk unique identifier for the channel
+    - 'CallerIDNum': The new caller ID number
+    - 'CallerIDName': The new caller ID name
+    - 'CID-CallingPres': A description of the Caller ID presentation, e.g.
+      ``'0 (Presentation Allowed, Not Screened)'``; always a string, not an int
+    """
+
+
+class NewConnectedLine(_Event):
+    """
+    Emitted when a channel's connected line information changes.
+
+    - 'Channel': The channel whose connected line changed
+    - 'Uniqueid': The Asterisk unique identifier for the channel
+    - 'ConnectedLineNum': The connected line number (may be alphanumeric)
+    - 'ConnectedLineName': The connected line name
+    """
+
+
+class Unhold(_Event):
+    """
+    Emitted when a channel is taken off hold.
+    """
+
+
 # List-aggregation events
 ####################################################################################################
 # These define non-Asterisk-native event-types that collect multiple events (cases where multiple
