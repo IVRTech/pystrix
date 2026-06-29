@@ -70,3 +70,31 @@ up::
             time.sleep(1)
         fastagi_core.kill()
         
+
+Hangup signaling
+----------------
+
+Asterisk sends FastAGI hangup notifications over the same network connection used for command
+responses. If ``HANGUP`` arrives while pystrix is waiting for a command response, pystrix consumes
+that notification and continues reading the actual response from Asterisk.
+
+If a channel hangs up while a long-running application such as ``Dial`` is active, Asterisk may also
+send a final ``HANGUP`` after the FastAGI handler has already returned and the socket has been
+closed. On some Asterisk versions this can appear in the Asterisk console as an
+``ast_carefulwrite`` ``Broken pipe`` error even though the FastAGI handler completed normally.
+
+Set ``AGISIGHUP`` before entering FastAGI if Asterisk should not send those hangup notifications::
+
+    exten => 97153654,1,Progress()
+    same => n,Set(AGISIGHUP=no)
+    same => n,AGI(agi://127.0.0.1/router)
+
+If Asterisk should instead stop AGI processing as soon as it detects the hangup, set
+``AGIEXITONHANGUP`` before entering FastAGI; Asterisk closes the AGI connection itself in this
+case::
+
+    exten => 97153654,1,Progress()
+    same => n,Set(AGIEXITONHANGUP=yes)
+    same => n,AGI(agi://127.0.0.1/router)
+
+A closed FastAGI connection is reported to pystrix as :class:`agi.AGISIGPIPEHangup`.
