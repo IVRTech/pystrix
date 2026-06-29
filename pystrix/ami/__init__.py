@@ -59,6 +59,10 @@ from pystrix.ami.ami import (
     Manager,
     ManagerError,
     ManagerSocketError,
+    _Aggregate,
+    _Event,
+    register_event_class,
+    unregister_event_class,
 )
 
 for module in (
@@ -67,9 +71,16 @@ for module in (
     app_confbridge_events,
     app_meetme_events,
 ):
-    for event in (e for e in dir(module) if not e.startswith("_")):
-        class_object = getattr(module, event)
-        _EVENT_REGISTRY[event] = class_object
-        _EVENT_REGISTRY_REV[class_object] = event
+    for name in (e for e in dir(module) if not e.startswith("_")):
+        class_object = getattr(module, name)
+        if not (
+            isinstance(class_object, type)
+            and issubclass(class_object, (_Event, _Aggregate))
+        ):
+            continue
+        _EVENT_REGISTRY[name] = class_object
+        _EVENT_REGISTRY_REV[class_object] = name
 del _EVENT_REGISTRY
 del _EVENT_REGISTRY_REV
+del _Event
+del _Aggregate

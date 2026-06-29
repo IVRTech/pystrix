@@ -49,6 +49,66 @@ from pystrix.ami import generic_transforms
 _EVENT_REGISTRY = {}  # Meant to be internally managed only, this provides mappings from event-class-names to the classes, to enable type-mutation
 _EVENT_REGISTRY_REV = {}  # Provides the friendly names of events as strings, keyed by class object
 
+
+def register_event_class(event_class, name=None):
+    """
+    Registers a custom event class so that pystrix can type-mutate incoming AMI events
+    to it and class-based callbacks work with ``register_callback``.
+
+    ``event_class`` must be a subclass of :class:`_Event`; a :exc:`ValueError` is raised
+    otherwise.  ``name`` defaults to ``event_class.__name__``, which should match the
+    wire event name Asterisk sends.  Supply an explicit ``name`` only when the desired
+    wire name differs from the class name.
+
+    Register custom classes before calling :meth:`Manager.connect` to avoid a race
+    where events arrive before the class is registered.  Registration is not
+    thread-safe; call this function from the main thread before connecting.
+
+    Re-registering a class under a different name after callbacks have been wired
+    with :meth:`Manager.register_callback` does not update those callbacks; they
+    remain bound to the original wire name.
+    """
+    if not (isinstance(event_class, type) and issubclass(event_class, _Event)):
+        raise ValueError(
+            f"event_class must be a subclass of _Event, got {event_class!r}"
+        )
+    event_name = name or event_class.__name__
+    # Evict any class that previously held this wire name to prevent a stale reverse entry.
+    old_class = _EVENT_REGISTRY.get(event_name)
+    if old_class is not None and old_class is not event_class:
+        _EVENT_REGISTRY_REV.pop(old_class, None)
+    # Evict any wire name this class was previously registered under to prevent a zombie
+    # forward entry when the same class is re-registered under a different name.
+    old_name = _EVENT_REGISTRY_REV.get(event_class)
+    if old_name is not None and old_name != event_name:
+        _EVENT_REGISTRY.pop(old_name, None)
+    _EVENT_REGISTRY[event_name] = event_class
+    _EVENT_REGISTRY_REV[event_class] = event_name
+
+
+def unregister_event_class(event_class_or_name):
+    """
+    Removes the registration previously added with :func:`register_event_class`.
+
+    ``event_class_or_name`` may be the class object or the wire name string that was
+    passed as the ``name=`` argument to :func:`register_event_class` (which may differ
+    from ``event_class.__name__`` when an explicit name was supplied).
+    Returns ``True`` if a registration was removed, ``False`` if nothing matched.
+    """
+    if isinstance(event_class_or_name, str):
+        event_class = _EVENT_REGISTRY.pop(event_class_or_name, None)
+        if event_class is None:
+            return False
+        _EVENT_REGISTRY_REV.pop(event_class, None)
+        return True
+    else:
+        event_name = _EVENT_REGISTRY_REV.pop(event_class_or_name, None)
+        if event_name is None:
+            return False
+        _EVENT_REGISTRY.pop(event_name, None)
+        return True
+
+
 _EOC = "--END COMMAND--"  # A string used by Asterisk to mark the end of some of its responses.
 _EOL = "\r\n"  # Asterisk uses CRLF linebreaks to mark the ends of its lines.
 _EOL_FAKE = (

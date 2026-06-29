@@ -86,36 +86,52 @@ for information::
             self._manager.monitor_connection()
 
         def _register_callbacks(self):
-            #This sets up some event callbacks, so that interesting things, like calls being
-            #established or torn down, will be processed by your application's logic. Of course,
-            #since this is just an example, the same event will be registered using two different
-            #methods.
+            #This sets up some event callbacks so that interesting things, like calls being
+            #established or torn down, are processed by the application's logic.
 
-            #The event that will be registered is 'FullyBooted', sent by Asterisk immediately after
-            #connecting, to indicate that everything is online. What the following code does is
-            #register two different callback-handlers for this event using two different
-            #match-methods: string comparison and class-match. String-matching and class-resolution
-            #are equal in performance, so choose whichever you think looks better.
+            #pystrix supports four callback patterns:
+            #
+            #  1. Exact string match — fires when the wire event name matches exactly.
+            #  2. Class match — fires when the event has been typed to the given class.
+            #     This works for all built-in classes and any class registered with
+            #     pystrix.ami.register_event_class() (see below).
+            #  3. Empty string '' — a catch-all that fires for every event, useful for
+            #     logging or debugging.
+            #  4. None — fires for responses not associated with any request, which
+            #     typically indicates a glitch or a timed-out request.
+            #
+            #For events pystrix does not recognise, the event still arrives as a
+            #generic _Event object with all headers intact. Register against its wire
+            #name as a plain string to receive it.
+
+            #Register 'FullyBooted' two ways to illustrate that string and class
+            #matching are equivalent in performance and semantics.
             self._manager.register_callback('FullyBooted', self._handle_string_event)
             self._manager.register_callback(pystrix.ami.core_events.FullyBooted, self._handle_class_event)
-            #Now, when 'FullyBooted' is received, both handlers will be invoked in the order in
-            #which they were registered.
+            #Both handlers are invoked in registration order when 'FullyBooted' arrives.
 
-            #A catch-all-handler can be set using the empty string as a qualifier, causing it to
-            #receive every event emitted by Asterisk, which may be useful for debugging purposes.
+            #Catch every event, regardless of type.
             self._manager.register_callback('', self._handle_event)
 
-            #Additionally, an orphan-handler may be provided using the special qualifier None,
-            #causing any responses not associated with a request to be received. This should only
-            #apply to glitches in pre-production versions of Asterisk or requests that timed out
-            #while waiting for a response, which is also indicative of glitchy behaviour. This
-            #handler could be used to process the orphaned response in special cases, but is likely
-            #best relegated to a logging role.
+            #Catch orphaned responses (those with no matching request).
             self._manager.register_callback(None, self._handle_event)
 
-            #And here's another example of a registered event, this time catching Asterisk's
-            #Shutdown signal, emitted when the system is shutting down.
+            #Catch Asterisk's Shutdown signal using a plain string.
             self._manager.register_callback('Shutdown', self._handle_shutdown)
+
+            #To use a custom typed class for an event that pystrix does not define
+            #natively, register it before calling connect(). After registration,
+            #both type-mutation on arrival and class-based callbacks work normally.
+            #
+            #  class MyQueueCallerJoin(pystrix.ami.ami._Event):
+            #      pass
+            #
+            #  pystrix.ami.register_event_class(MyQueueCallerJoin)
+            #  self._manager.register_callback(MyQueueCallerJoin, self._handle_queue_event)
+            #
+            #Supply name= when the wire event name differs from the class name:
+            #
+            #  pystrix.ami.register_event_class(MyClass, name='QueueCallerJoin')
             
         def _handle_shutdown(self, event, manager):
             self._kill_flag = True
